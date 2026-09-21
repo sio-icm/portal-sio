@@ -11,53 +11,67 @@ const emit = defineEmits(['cambiar-pagina'])
       <h1 class="titulo-seccion">I+D+I</h1>
       <p class="subtitulo">Impulsando la innovación tecnológica marina y la transferencia de conocimiento del SIO.</p>
 
-      <div class="grid-horizontal">
+      <div class="contenido-oficina">
+        <h2 class="titulo-oficina">Oficina I+D+I</h2>
+        <p class="texto-oficina">Soporte integral a la investigación: desde la gestión de convocatorias hasta la protección de resultados y transferencia tecnológica.</p>
+
+        <div class="lista-items">
+          <div class="item-idi">
+            <span class="punto-azul">●</span>
+            <div>Gestión de proyectos y asesoramiento técnico especializado.</div>
+          </div>
+          <div class="item-idi">
+            <span class="punto-azul">●</span>
+            <div>Propiedad intelectual y valorización de la tecnología desarrollada.</div>
+          </div>
+          <div class="item-idi">
+            <span class="punto-azul">●</span>
+            <div>Fomento de la colaboración con empresas y centros del sector marino.</div>
+          </div>
+        </div>
         
-        <div class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Oficina I+D+I</h2>
-            <p>Soporte integral a la investigación: desde la gestión de convocatorias hasta la protección de resultados y transferencia tecnológica.</p>
-          </div>
+        <!-- 👇 FORMULARIO TRANSPARENTE 👇 -->
+        <div class="seccion-idi-innovacion" style="margin-top: 30px; padding: 15px; background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; text-align: left; max-width: 700px; backdrop-filter: blur(3px);">          <p style="font-size: 1.05rem; color: #e0e6ed; line-height: 1.6; margin-bottom: 30px;">
+            En el SIO creemos en la co-creación. Si tienes una necesidad técnica para tus campañas, una idea para un nuevo sensor, o buscas adaptar robótica a un entorno extremo, <strong>queremos escucharte</strong>.
+          </p>
 
-          <div class="lista-items">
-            <div class="item-idi">
-              <span class="punto-azul">●</span>
-              <div>Gestión de proyectos y asesoramiento técnico especializado.</div>
+          <form action="#" method="POST">
+            
+            <div style="margin-bottom: 10px;">
+              <label for="nombre" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Nombre y Apellidos</label>
+              <input type="text" id="nombre" name="nombre" placeholder="Ej: Dra. Elena Martínez" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
-            <div class="item-idi">
-              <span class="punto-azul">●</span>
-              <div>Propiedad intelectual y valorización de la tecnología desarrollada.</div>
+
+            <div style="margin-bottom: 20px;">
+              <label for="departamento" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Institución / Departamento</label>
+              <input type="text" id="departamento" name="departamento" placeholder="Ej: Dept. Oceanografía Física" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
-            <div class="item-idi">
-              <span class="punto-azul">●</span>
-              <div>Fomento de la colaboración con empresas y centros del sector marino.</div>
+
+            <div style="margin-bottom: 20px;">
+              <label for="reto" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">¿Cuál es el reto oceanográfico o la idea?</label>
+              <textarea id="reto" name="reto" rows="4" placeholder="Describe brevemente qué necesitas medir, qué problema técnico tienes o qué tecnología te gustaría explorar." style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; resize: vertical; background-color: rgba(255, 255, 255, 0.9);" required></textarea>
             </div>
-          </div>
+
+            <div style="margin-bottom: 25px;">
+              <label for="entorno" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Entorno de aplicación previsto</label>
+              <select id="entorno" name="entorno" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);">
+                <option value="costa">Zona Costera / Aguas Someras</option>
+                <option value="pelagico">Alta Mar / Plataforma Continental</option>
+                <option value="profundo">Aguas Profundas / Bentos</option>
+                <option value="laboratorio">Pruebas de Laboratorio / Tanque</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <div style="text-align: center;">
+              <button type="submit" style="background-color: #8cc63f; color: #003366; border: none; padding: 12px 30px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 100%; max-width: 300px;">
+                🚀 Enviar Propuesta
+              </button>
+            </div>
+            
+          </form>
         </div>
-
-          <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'bluelab')" style="cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija" style="display: flex; justify-content: space-between; align-items: center;">
-              BLUE Lab <span style="font-size: 1rem; color: #0086c0;">Ver más ➔</span>
-            </h2>
-            <p>Instalación estratégica del ICM-CSIC orientada a acelerar la adopción de la robótica marina autónoma y la IA en la observación del océano.</p>
-          </div>
-
-          <div class="lista-items">
-            <div class="item-idi">
-              <span class="punto-verde">●</span>
-              <div>Plataformas robóticas autónomas (AUVs, ASVs y drones).</div>
-            </div>
-            <div class="item-idi">
-              <span class="punto-verde">●</span>
-              <div>Diseño bioinspirado y robótica submarina de bajo impacto.</div>
-            </div>
-            <div class="item-idi">
-              <span class="punto-verde">●</span>
-              <div>Sensores en animales (Biologging) y Machine Learning.</div>
-            </div>
-          </div>
-        </div>
+        <!-- ☝️ FIN DEL FORMULARIO ☝️ -->
 
       </div> 
     </div>
@@ -65,16 +79,19 @@ const emit = defineEmits(['cambiar-pagina'])
 </template>
 
 <style scoped>
-.idi-hub { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
+.idi-hub { 
+  position: relative; 
+  min-height: 100vh; 
+  padding-bottom: 80px; 
+  background-color: #f4f7f9; 
+}
 
-/* 🌊 CONFIGURACIÓN DEL FONDO 🌊 */
 .fondo-idi { 
   position: absolute; 
   top: 0; 
   left: 0; 
   width: 100%; 
-  /* Recuperamos la altura original del fondo (550px) */
-  height: 550px; 
+  height: 100%; 
   background-image: linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), 
                     url('/tortuga.jpg');
   background-size: cover;
@@ -99,7 +116,6 @@ const emit = defineEmits(['cambiar-pagina'])
   padding-bottom: 8px;
 }
 
-/* Línea verde ICM */
 .titulo-seccion::after {
   content: '';
   position: absolute;
@@ -110,53 +126,52 @@ const emit = defineEmits(['cambiar-pagina'])
   background-color: #8cc63f; 
 }
 
-/* Recuperamos el margen original del subtítulo (40px) */
-.subtitulo { color: #e0e6ed; font-size: 1.1rem; margin-bottom: 40px; max-width: 800px; }
-
-.grid-horizontal {
-  display: grid;
-  grid-template-columns: 1fr 1fr; 
-  gap: 30px; 
+.subtitulo { 
+  color: #e0e6ed; 
+  font-size: 1.1rem; 
+  margin-bottom: 40px; 
+  max-width: 800px; 
 }
 
-.seccion-bloque { 
-  background: white; 
-  border-radius: 12px; 
-  /* Recuperamos el padding original (35px) y la altura mínima (350px) */
-  padding: 35px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
-  display: flex;
-  flex-direction: column; 
-  min-height: auto; 
+.contenido-oficina {
+  margin-top: 30px;
+  max-width: 850px;
+  padding-bottom: 40px;
 }
 
-.titulo-fija { color: #012169; margin-top: 0; font-size: 1.6rem; margin-bottom: 10px; }
+.titulo-oficina { 
+  color: white; 
+  margin-top: 0; 
+  font-size: 1.6rem; 
+  margin-bottom: 10px; 
+}
 
-/* Recuperamos el margen original de los párrafos (25px) */
-.cabecera-bloque p { color: #666; font-size: 0.95rem; line-height: 1.4; margin-bottom: 15px; }
+.texto-oficina { 
+  color: #e0e6ed; 
+  font-size: 1.05rem; 
+  line-height: 1.5; 
+  margin-bottom: 20px; 
+}
 
-/* 1. EL CONTENEDOR DE LA LISTA */
 .lista-items { 
   margin-top: 15px; 
   display: flex; 
   flex-direction: column; 
-  gap: 5px; /* Esto controla la separación principal. Si lo quieres más junto, pon 2px */
+  gap: 8px; 
 }
 
-/* 2. CADA PUNTO DE LA LISTA (AQUÍ ESTABA EL ERROR) */
 .item-idi { 
   display: flex; 
   gap: 10px; 
-  margin-bottom: 0px !important; /* <--- ¡Este es el culpable! Obligamos a que sea 0 */
-  font-size: 0.95rem; 
-  color: #333;
-  line-height: 1.2; /* Bajamos el interlineado de 1.4 a 1.2 para que las líneas estén más pegadas */
+  margin-bottom: 0px !important; 
+  font-size: 1rem; 
+  color: #e0e6ed;
+  line-height: 1.3; 
 }
-.punto-azul { color: #007bff; }
-.punto-verde { color: #28a745; }
+
+.punto-azul { color: #00a4eb; }
 
 @media (max-width: 992px) {
-  .grid-horizontal { grid-template-columns: 1fr; }
   .contenido-hub { padding-top: 150px; }
 }
 </style>

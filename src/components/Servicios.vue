@@ -58,6 +58,30 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-verde">●</span><div>Validación de datos de conductividad CTD.</div></div>
           </div>
         </div>
+        
+        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'fondeos')">
+          <div class="cabecera-bloque">
+            <h2 class="titulo-fija">Diseño e Instalación de Fondeos</h2>
+            <p>Planificación técnica, integración de sensores y despliegue en el mar de fondeos fijos y trípodes oceanográficos.</p>
+          </div>
+          <div class="lista-items">
+            <div class="item-servicio"><span class="punto-azul">●</span><div>Diseño y configuración de anclajes a medida.</div></div>
+            <div class="item-servicio"><span class="punto-azul">●</span><div>Integración y calibración de instrumentos.</div></div>
+            <div class="item-servicio"><span class="punto-azul">●</span><div>Operaciones de despliegue y seguimiento continuo.</div></div>
+          </div>
+        </div>
+
+        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'prototipado')">
+          <div class="cabecera-bloque">
+            <h2 class="titulo-fija">Prototipado Rápido y Fabricación</h2>
+            <p>Diseño CAD avanzado y producción de componentes mecánicos complejos empleando impresión 3D técnica en materiales de alta resistencia.</p>
+          </div>
+          <div class="lista-items">
+            <div class="item-servicio"><span class="punto-verde">●</span><div>Modelado 3D y diseño paramétrico.</div></div>
+            <div class="item-servicio"><span class="punto-verde">●</span><div>Impresión técnica FDM y resina.</div></div>
+            <div class="item-servicio"><span class="punto-verde">●</span><div>Desarrollo de carcasas submarinas y adaptadores.</div></div>
+          </div>
+        </div>
 
       </div> 
     </div>
