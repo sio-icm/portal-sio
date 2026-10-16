@@ -4,6 +4,10 @@ import fondoInstrumentacion from '../assets/instrumentacion.jpg'
 
 defineEmits(['cambiar-pagina'])
 
+// Ruta del PDF de la memoria (dentro de public/). Mientras esté vacía no se
+// muestra el recuadro de descarga. Ejemplo: '/memorias/Memoria_SIO_2025.pdf'
+const pdfMemoria = ''
+
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
 })
@@ -40,13 +44,13 @@ const backgroundStyle = computed(() => {
           </div>
         </div>
 
-        <div class="caja-descarga">
+        <div v-if="pdfMemoria" class="caja-descarga">
           <div class="icono-doc">📄</div>
           <div>
             <h3>Memoria Completa SIO 2025</h3>
-            <p>Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF, 4.2 MB).</p>
+            <p>Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF).</p>
           </div>
-          <a href="#" class="btn-descarga">Descargar PDF</a>
+          <a :href="pdfMemoria" class="btn-descarga" download>Descargar PDF</a>
         </div>
       </div>
     </div>
