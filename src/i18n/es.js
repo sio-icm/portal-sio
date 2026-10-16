@@ -305,5 +305,81 @@ export default {
       recogida: 'Recogida',
       entrega: 'Entrega'
     }
+  },
+
+  fondeos: {
+    titulo: 'Gestión de Fondeos Oceanográficos',
+    subtitulo: 'Planificación técnica, diseño, instalación y seguimiento de fondeos y trípodes instrumentados.',
+    intro: 'El Servicio de Ingeniería Oceanográfica participa en el diseño, preparación e instalación de fondeos y trípodes oceanográficos instrumentados. Nos encargamos de la planificación técnica completa, asegurando que todos los componentes sean óptimos para obtener datos de alta calidad en tus estudios oceanográficos.',
+    nota: 'Nota: Los instrumentos y material auxiliar necesarios, en función del tipo de estudio requerido, serán aportados por el usuario.',
+    fasesTitulo: 'Fases del Servicio',
+    fases: [
+      { titulo: 'Diseño', texto: 'Análisis de necesidades científicas y configuración óptima del fondeo.' },
+      { titulo: 'Preparación', texto: 'Integración, calibración de instrumentos y ensamblaje de componentes.' },
+      { titulo: 'Despliegue', texto: 'Instalación en el campo con equipo especializado y experto.' },
+      { titulo: 'Seguimiento', texto: 'Control y monitoreo continuo del fondeo durante su operación.' }
+    ],
+    instrumentosTitulo: 'Instrumentación Integrable',
+    instrumentosTexto: 'Nuestros sistemas pueden integrar una amplia variedad de sensores según los parámetros que necesites medir:',
+    instrumentos: [
+      { nombre: 'Correntímetros y Perfiladores Doppler', texto: 'Velocidades y direcciones de corrientes' },
+      { nombre: 'Sensores de Temperatura', texto: 'Monitoreo térmico del agua' },
+      { nombre: 'Sensores de Conductividad', texto: 'Medición de salinidad' },
+      { nombre: 'Sensores de Presión', texto: 'Determinación de profundidad' },
+      { nombre: 'Turbidímetros', texto: 'Concentración de partículas y turbidez' },
+      { nombre: 'Sensores de Oxígeno', texto: 'Oxígeno disuelto en el agua' },
+      { nombre: 'Fluorómetros', texto: 'Clorofila y materia orgánica' },
+      { nombre: 'Sensores de pH', texto: 'Acidez y alcalinidad' },
+      { nombre: 'Sensores de Turbulencia', texto: 'Caracterización de procesos turbulentos' },
+      { nombre: 'Trampas de Sedimento', texto: 'Recogida de partículas en suspensión' }
+    ],
+    solicitarTitulo: 'Solicitar Instalación de Fondeo',
+    proyecto: 'Nombre del Proyecto / Investigador Principal',
+    inicio: 'Fecha de inicio prevista',
+    retirada: 'Fecha de retirada prevista',
+    descripcion: 'Descripción de la campaña',
+    descripcionPh: 'Breve explicación de la campaña, objetivos e instrumentos que aportarás...',
+    avisoCorreo: 'Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a',
+    enviar: 'Preparar correo de solicitud',
+    estadoTitulo: 'Estado Actual de Fondeos',
+    activos: 'Activos en el mar',
+    retirados: 'Retirados / Histórico',
+    ip: 'IP',
+    correo: {
+      asunto: 'Solicitud de instalación de fondeo: {proyecto}',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Me gustaría solicitar la instalación de un fondeo.',
+      proyecto: 'Proyecto / IP',
+      inicio: 'Fecha de inicio prevista',
+      retirada: 'Fecha de retirada prevista',
+      despedida: 'Quedo a la espera de vuestra respuesta.\n\nUn saludo.'
+    }
+  },
+
+  prototipado: {
+    titulo: 'Prototipado Rápido y Fabricación',
+    subtitulo: 'Diseño CAD avanzado, mecanizado de precisión y producción de componentes mecánicos complejos.',
+    intro: 'El Servicio de Ingeniería Oceanográfica cuenta con capacidades avanzadas de fabricación y prototipado rápido para dar soporte directo a la investigación marina. Desde la concepción en diseño CAD, creamos piezas a medida.',
+    capacidadesTitulo: 'Capacidades del Taller',
+    capacidades: [
+      { titulo: 'Impresión 3D Técnica', texto: 'Fabricación aditiva en materiales de altas prestaciones (resinas técnicas, filamentos avanzados).' },
+      { titulo: 'Diseño CAD / CAE', texto: 'Modelado 3D paramétrico y validación de geometrías complejas para entornos subacuáticos.' }
+    ],
+    solicitarTitulo: 'Solicitar Pieza o Prototipo',
+    proyecto: 'Nombre del Proyecto / Investigador Principal',
+    pieza: 'Tipo de pieza o componente',
+    piezaPh: 'Tipo de pieza o componente requerido (Ej.: carcasa estanca, soporte de sensor...)',
+    requisitos: 'Requisitos técnicos',
+    requisitosPh: 'Describe los requisitos técnicos, dimensiones aproximadas o material previsto...',
+    avisoCorreo: 'Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a',
+    enviar: 'Preparar correo de solicitud',
+    correo: {
+      asunto: 'Solicitud de pieza o prototipo: {pieza}',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Me gustaría solicitar la fabricación de una pieza o prototipo.',
+      proyecto: 'Proyecto / IP',
+      pieza: 'Pieza o componente',
+      despedida: 'Quedo a la espera de vuestra respuesta.\n\nUn saludo.'
+    }
   }
 }

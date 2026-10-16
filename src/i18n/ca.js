@@ -305,5 +305,81 @@ export default {
       recogida: 'Recollida',
       entrega: 'Lliurament'
     }
+  },
+
+  fondeos: {
+    titulo: 'Gestió de fondejos oceanogràfics',
+    subtitulo: 'Planificació tècnica, disseny, instal·lació i seguiment de fondejos i trípodes instrumentats.',
+    intro: "El Servei d'Enginyeria Oceanogràfica participa en el disseny, la preparació i la instal·lació de fondejos i trípodes oceanogràfics instrumentats. Ens encarreguem de la planificació tècnica completa i ens assegurem que tots els components siguin òptims per obtenir dades d'alta qualitat en els teus estudis oceanogràfics.",
+    nota: "Nota: Els instruments i el material auxiliar necessaris, en funció del tipus d'estudi, els aportarà l'usuari.",
+    fasesTitulo: 'Fases del servei',
+    fases: [
+      { titulo: 'Disseny', texto: 'Anàlisi de les necessitats científiques i configuració òptima del fondeig.' },
+      { titulo: 'Preparació', texto: "Integració, calibratge d'instruments i muntatge de components." },
+      { titulo: 'Desplegament', texto: 'Instal·lació sobre el terreny amb un equip especialitzat i expert.' },
+      { titulo: 'Seguiment', texto: 'Control i monitoratge continu del fondeig mentre és operatiu.' }
+    ],
+    instrumentosTitulo: 'Instrumentació integrable',
+    instrumentosTexto: "Els nostres sistemes poden integrar una gran varietat de sensors segons els paràmetres que necessitis mesurar:",
+    instrumentos: [
+      { nombre: 'Correntòmetres i perfiladors Doppler', texto: 'Velocitats i direccions dels corrents' },
+      { nombre: 'Sensors de temperatura', texto: "Monitoratge tèrmic de l'aigua" },
+      { nombre: 'Sensors de conductivitat', texto: 'Mesura de la salinitat' },
+      { nombre: 'Sensors de pressió', texto: 'Determinació de la profunditat' },
+      { nombre: 'Turbidímetres', texto: 'Concentració de partícules i terbolesa' },
+      { nombre: "Sensors d'oxigen", texto: "Oxigen dissolt a l'aigua" },
+      { nombre: 'Fluoròmetres', texto: 'Clorofil·la i matèria orgànica' },
+      { nombre: 'Sensors de pH', texto: 'Acidesa i alcalinitat' },
+      { nombre: 'Sensors de turbulència', texto: 'Caracterització de processos turbulents' },
+      { nombre: 'Trampes de sediment', texto: 'Recollida de partícules en suspensió' }
+    ],
+    solicitarTitulo: "Sol·licitar la instal·lació d'un fondeig",
+    proyecto: 'Nom del projecte / Investigador principal',
+    inicio: "Data d'inici prevista",
+    retirada: 'Data de retirada prevista',
+    descripcion: 'Descripció de la campanya',
+    descripcionPh: 'Breu explicació de la campanya, objectius i instruments que aportaràs...',
+    avisoCorreo: "En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a",
+    enviar: 'Preparar correu de sol·licitud',
+    estadoTitulo: 'Estat actual dels fondejos',
+    activos: 'Actius al mar',
+    retirados: 'Retirats / Històric',
+    ip: 'IP',
+    correo: {
+      asunto: "Sol·licitud d'instal·lació de fondeig: {proyecto}",
+      saludo: 'Hola, equip del SIO:',
+      intro: "Voldria sol·licitar la instal·lació d'un fondeig.",
+      proyecto: 'Projecte / IP',
+      inicio: "Data d'inici prevista",
+      retirada: 'Data de retirada prevista',
+      despedida: "Quedo a l'espera de la vostra resposta.\n\nSalutacions."
+    }
+  },
+
+  prototipado: {
+    titulo: 'Prototipatge ràpid i fabricació',
+    subtitulo: 'Disseny CAD avançat, mecanitzat de precisió i producció de components mecànics complexos.',
+    intro: "El Servei d'Enginyeria Oceanogràfica disposa de capacitats avançades de fabricació i prototipatge ràpid per donar suport directe a la recerca marina. Des de la concepció en disseny CAD, creem peces a mida.",
+    capacidadesTitulo: 'Capacitats del taller',
+    capacidades: [
+      { titulo: 'Impressió 3D tècnica', texto: 'Fabricació additiva en materials d’altes prestacions (resines tècniques, filaments avançats).' },
+      { titulo: 'Disseny CAD / CAE', texto: 'Modelatge 3D paramètric i validació de geometries complexes per a entorns subaquàtics.' }
+    ],
+    solicitarTitulo: 'Sol·licitar una peça o prototip',
+    proyecto: 'Nom del projecte / Investigador principal',
+    pieza: 'Tipus de peça o component',
+    piezaPh: 'Tipus de peça o component necessari (Ex.: carcassa estanca, suport de sensor...)',
+    requisitos: 'Requisits tècnics',
+    requisitosPh: 'Descriu els requisits tècnics, les dimensions aproximades o el material previst...',
+    avisoCorreo: "En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a",
+    enviar: 'Preparar correu de sol·licitud',
+    correo: {
+      asunto: 'Sol·licitud de peça o prototip: {pieza}',
+      saludo: 'Hola, equip del SIO:',
+      intro: "Voldria sol·licitar la fabricació d'una peça o prototip.",
+      proyecto: 'Projecte / IP',
+      pieza: 'Peça o component',
+      despedida: "Quedo a l'espera de la vostra resposta.\n\nSalutacions."
+    }
   }
 }

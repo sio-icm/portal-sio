@@ -305,5 +305,81 @@ export default {
       recogida: 'Collection',
       entrega: 'Delivery'
     }
+  },
+
+  fondeos: {
+    titulo: 'Oceanographic Mooring Management',
+    subtitulo: 'Technical planning, design, installation and monitoring of instrumented moorings and tripods.',
+    intro: 'The Oceanographic Engineering Service takes part in the design, preparation and installation of instrumented oceanographic moorings and tripods. We handle the full technical planning, making sure every component is optimal for obtaining high-quality data in your oceanographic studies.',
+    nota: 'Note: The instruments and auxiliary equipment required for each type of study are to be provided by the user.',
+    fasesTitulo: 'Service Phases',
+    fases: [
+      { titulo: 'Design', texto: 'Analysis of scientific needs and optimal mooring configuration.' },
+      { titulo: 'Preparation', texto: 'Integration, instrument calibration and component assembly.' },
+      { titulo: 'Deployment', texto: 'Field installation by a specialised, expert team.' },
+      { titulo: 'Monitoring', texto: 'Continuous control and monitoring of the mooring while in operation.' }
+    ],
+    instrumentosTitulo: 'Integrable Instrumentation',
+    instrumentosTexto: 'Our systems can integrate a wide variety of sensors depending on the parameters you need to measure:',
+    instrumentos: [
+      { nombre: 'Current meters and Doppler profilers', texto: 'Current speeds and directions' },
+      { nombre: 'Temperature sensors', texto: 'Water temperature monitoring' },
+      { nombre: 'Conductivity sensors', texto: 'Salinity measurement' },
+      { nombre: 'Pressure sensors', texto: 'Depth determination' },
+      { nombre: 'Turbidity meters', texto: 'Particle concentration and turbidity' },
+      { nombre: 'Oxygen sensors', texto: 'Dissolved oxygen in the water' },
+      { nombre: 'Fluorometers', texto: 'Chlorophyll and organic matter' },
+      { nombre: 'pH sensors', texto: 'Acidity and alkalinity' },
+      { nombre: 'Turbulence sensors', texto: 'Characterisation of turbulent processes' },
+      { nombre: 'Sediment traps', texto: 'Collection of suspended particles' }
+    ],
+    solicitarTitulo: 'Request a Mooring Installation',
+    proyecto: 'Project name / Principal Investigator',
+    inicio: 'Planned start date',
+    retirada: 'Planned recovery date',
+    descripcion: 'Campaign description',
+    descripcionPh: 'Brief description of the campaign, its objectives and the instruments you will provide...',
+    avisoCorreo: 'When you press the button, your email program will open with the request ready to send to',
+    enviar: 'Prepare request email',
+    estadoTitulo: 'Current Mooring Status',
+    activos: 'Active at sea',
+    retirados: 'Recovered / History',
+    ip: 'PI',
+    correo: {
+      asunto: 'Mooring installation request: {proyecto}',
+      saludo: 'Hello SIO team,',
+      intro: 'I would like to request the installation of a mooring.',
+      proyecto: 'Project / PI',
+      inicio: 'Planned start date',
+      retirada: 'Planned recovery date',
+      despedida: 'I look forward to hearing from you.\n\nBest regards.'
+    }
+  },
+
+  prototipado: {
+    titulo: 'Rapid Prototyping and Manufacturing',
+    subtitulo: 'Advanced CAD design, precision machining and production of complex mechanical components.',
+    intro: 'The Oceanographic Engineering Service has advanced manufacturing and rapid prototyping capabilities to directly support marine research. Starting from CAD design, we create bespoke parts.',
+    capacidadesTitulo: 'Workshop Capabilities',
+    capacidades: [
+      { titulo: 'Technical 3D Printing', texto: 'Additive manufacturing in high-performance materials (technical resins, advanced filaments).' },
+      { titulo: 'CAD / CAE Design', texto: 'Parametric 3D modelling and validation of complex geometries for underwater environments.' }
+    ],
+    solicitarTitulo: 'Request a Part or Prototype',
+    proyecto: 'Project name / Principal Investigator',
+    pieza: 'Type of part or component',
+    piezaPh: 'Type of part or component needed (e.g. watertight housing, sensor mount...)',
+    requisitos: 'Technical requirements',
+    requisitosPh: 'Describe the technical requirements, approximate dimensions or intended material...',
+    avisoCorreo: 'When you press the button, your email program will open with the request ready to send to',
+    enviar: 'Prepare request email',
+    correo: {
+      asunto: 'Part or prototype request: {pieza}',
+      saludo: 'Hello SIO team,',
+      intro: 'I would like to request the manufacture of a part or prototype.',
+      proyecto: 'Project / PI',
+      pieza: 'Part or component',
+      despedida: 'I look forward to hearing from you.\n\nBest regards.'
+    }
   }
 }

@@ -1,28 +1,30 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
+
+const { t } = useI18n()
+
+// Icono de cada tipo de instrumento (los textos están en fondeos.instrumentos)
+const iconosInstrumentos = ['🌊', '🌡️', '🧂', '🔵', '📊', '🟢', '🌿', '🧪', '🌀', '🪣']
 
 // Solicitud: abre el correo del usuario con los datos preparados
 const solicitud = ref({ proyecto: '', inicio: '', retirada: '', descripcion: '' })
 
 const enviarSolicitud = () => {
   const { proyecto, inicio, retirada, descripcion } = solicitud.value
-  const asunto = encodeURIComponent(`Solicitud de instalación de fondeo: ${proyecto}`)
+  const asunto = encodeURIComponent(t('fondeos.correo.asunto', { proyecto }))
   const cuerpo = encodeURIComponent(
-    `Hola, equipo del SIO:\n\n` +
-    `Me gustaría solicitar la instalación de un fondeo.\n\n` +
-    `Proyecto / IP: ${proyecto}\n` +
-    `Fecha de inicio prevista: ${inicio}\n` +
-    `Fecha de retirada prevista: ${retirada}\n\n` +
+    `${t('fondeos.correo.saludo')}\n\n` +
+    `${t('fondeos.correo.intro')}\n\n` +
+    `${t('fondeos.correo.proyecto')}: ${proyecto}\n` +
+    `${t('fondeos.correo.inicio')}: ${inicio}\n` +
+    `${t('fondeos.correo.retirada')}: ${retirada}\n\n` +
     `${descripcion}\n\n` +
-    `Quedo a la espera de vuestra respuesta.\n\nUn saludo.`
+    `${t('fondeos.correo.despedida')}`
   )
   window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
 }
-
-const backgroundStyle = computed(() => {
-  return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
-})
 </script>
 
 <template>
@@ -30,105 +32,79 @@ const backgroundStyle = computed(() => {
     <div class="fondo-fondeos" :style="{ backgroundImage: backgroundStyle }"></div>
     
     <div class="contenedor-ancho contenido-fondeos">
-      <h1 class="titulo-seccion">Gestión de Fondeos Oceanográficos</h1>
-      <p class="subtitulo">Planificación técnica, diseño, instalación y seguimiento de fondeos y trípodes instrumentados.</p>
+      <h1 class="titulo-seccion">{{ $t('fondeos.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('fondeos.subtitulo') }}</p>
 
       <div class="tarjeta-contenido">
         
         <!-- 🌟 PRESENTACIÓN DEL SERVICIO (NUEVO) -->
         <div class="intro-servicio">
-          <p class="texto-destacado">
-            El <strong>Servicio de Ingeniería Oceanográfica</strong> participa en el diseño, preparación e instalación de fondeos y trípodes oceanográficos instrumentados. Nos encargamos de la planificación técnica completa, asegurando que todos los componentes sean óptimos para obtener datos de alta calidad en tus estudios oceanográficos.
-          </p>
-          <p class="nota-usuario">
-            <em>Nota: Los instrumentos y material auxiliar necesarios, en función del tipo de estudio requerido, serán aportados por el usuario.</em>
-          </p>
+          <p class="texto-destacado">{{ $t('fondeos.intro') }}</p>
+          <p class="nota-usuario"><em>{{ $t('fondeos.nota') }}</em></p>
         </div>
 
         <!-- ⚙️ FASES DEL SERVICIO -->
         <div class="seccion-bloque">
-          <h3 class="subtitulo-bloque">Fases del Servicio</h3>
+          <h3 class="subtitulo-bloque">{{ $t('fondeos.fasesTitulo') }}</h3>
           <div class="grid-fases">
-            <div class="fase-card">
-              <span class="fase-num">01</span>
-              <h4>Diseño</h4>
-              <p>Análisis de necesidades científicas y configuración óptima del fondeo.</p>
-            </div>
-            <div class="fase-card">
-              <span class="fase-num">02</span>
-              <h4>Preparación</h4>
-              <p>Integración, calibración de instrumentos y ensamblaje de componentes.</p>
-            </div>
-            <div class="fase-card">
-              <span class="fase-num">03</span>
-              <h4>Despliegue</h4>
-              <p>Instalación en el campo con equipo especializado y experto.</p>
-            </div>
-            <div class="fase-card">
-              <span class="fase-num">04</span>
-              <h4>Seguimiento</h4>
-              <p>Control y monitoreo continuo del fondeo durante su operación.</p>
+            <div v-for="(fase, i) in $tm('fondeos.fases')" :key="i" class="fase-card">
+              <span class="fase-num">{{ String(i + 1).padStart(2, '0') }}</span>
+              <h4>{{ $rt(fase.titulo) }}</h4>
+              <p>{{ $rt(fase.texto) }}</p>
             </div>
           </div>
         </div>
 
         <!-- 📊 TIPOS DE INSTRUMENTACIÓN INTEGRABLE -->
         <div class="seccion-bloque">
-          <h3 class="subtitulo-bloque">Instrumentación Integrable</h3>
-          <p class="texto-explicativo">Nuestros sistemas pueden integrar una amplia variedad de sensores según los parámetros que necesites medir:</p>
+          <h3 class="subtitulo-bloque">{{ $t('fondeos.instrumentosTitulo') }}</h3>
+          <p class="texto-explicativo">{{ $t('fondeos.instrumentosTexto') }}</p>
           <div class="grid-instrumentos">
-            <div class="inst-item">🌊 Correntímetros y Perfiladores Doppler <span class="inst-desc">Velocidades y direcciones de corrientes</span></div>
-            <div class="inst-item">🌡️ Sensores de Temperatura <span class="inst-desc">Monitoreo térmico del agua</span></div>
-            <div class="inst-item">🧂 Sensores de Conductividad <span class="inst-desc">Medición de salinidad</span></div>
-            <div class="inst-item">🔵 Sensores de Presión <span class="inst-desc">Determinación de profundidad</span></div>
-            <div class="inst-item">📊 Turbidímetros <span class="inst-desc">Concentración de partículas y turbidez</span></div>
-            <div class="inst-item">🟢 Sensores de Oxígeno <span class="inst-desc">Oxígeno disuelto en el agua</span></div>
-            <div class="inst-item">🌿 Fluorómetros <span class="inst-desc">Clorofila y materia orgánica</span></div>
-            <div class="inst-item">🧪 Sensores de pH <span class="inst-desc">Acidez y alcalinidad</span></div>
-            <div class="inst-item">🌀 Sensores de Turbulencia <span class="inst-desc">Caracterización de procesos turbulentos</span></div>
-            <div class="inst-item">🪣 Trampas de Sedimento <span class="inst-desc">Recogida de partículas en suspensión</span></div>
+            <div v-for="(inst, i) in $tm('fondeos.instrumentos')" :key="i" class="inst-item">
+              <span aria-hidden="true">{{ iconosInstrumentos[i] }}</span> {{ $rt(inst.nombre) }} <span class="inst-desc">{{ $rt(inst.texto) }}</span>
+            </div>
           </div>
         </div>
 
         <!-- 📝 FORMULARIO DE SOLICITUD -->
         <div class="seccion-bloque">
-          <h3 class="subtitulo-bloque">Solicitar Instalación de Fondeo</h3>
+          <h3 class="subtitulo-bloque">{{ $t('fondeos.solicitarTitulo') }}</h3>
           <form class="formulario-fondeo" @submit.prevent="enviarSolicitud">
             <div class="grupo-input">
-              <label for="fnd-proyecto" class="solo-lectores">Nombre del Proyecto / Investigador Principal</label>
-              <input type="text" id="fnd-proyecto" v-model="solicitud.proyecto" placeholder="Nombre del Proyecto / Investigador Principal" required>
+              <label for="fnd-proyecto" class="solo-lectores">{{ $t('fondeos.proyecto') }}</label>
+              <input type="text" id="fnd-proyecto" v-model="solicitud.proyecto" :placeholder="$t('fondeos.proyecto')" required>
             </div>
             <div class="fila-fechas">
               <div class="input-fecha-box">
-                <label for="fnd-inicio">Fecha de inicio prevista:</label>
+                <label for="fnd-inicio">{{ $t('fondeos.inicio') }}:</label>
                 <input type="date" id="fnd-inicio" v-model="solicitud.inicio" required>
               </div>
               <div class="input-fecha-box">
-                <label for="fnd-retirada">Fecha de retirada prevista:</label>
+                <label for="fnd-retirada">{{ $t('fondeos.retirada') }}:</label>
                 <input type="date" id="fnd-retirada" v-model="solicitud.retirada" required>
               </div>
             </div>
             <div class="grupo-input">
-              <label for="fnd-descripcion" class="solo-lectores">Descripción de la campaña</label>
-              <textarea id="fnd-descripcion" v-model="solicitud.descripcion" rows="4" placeholder="Breve explicación de la campaña, objetivos e instrumentos que aportarás..." required></textarea>
+              <label for="fnd-descripcion" class="solo-lectores">{{ $t('fondeos.descripcion') }}</label>
+              <textarea id="fnd-descripcion" v-model="solicitud.descripcion" rows="4" :placeholder="$t('fondeos.descripcionPh')" required></textarea>
             </div>
-            <p class="aviso-correo">Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
-            <button type="submit" class="btn-solicitar">Preparar correo de solicitud</button>
+            <p class="aviso-correo">{{ $t('fondeos.avisoCorreo') }} <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
+            <button type="submit" class="btn-solicitar">{{ $t('fondeos.enviar') }}</button>
           </form>
         </div>
 
         <!-- ⚓ ESTADO ACTUAL DE FONDEOS -->
         <div class="seccion-bloque" style="margin-top: 40px;">
-          <h3 class="subtitulo-bloque">Estado Actual de Fondeos</h3>
+          <h3 class="subtitulo-bloque">{{ $t('fondeos.estadoTitulo') }}</h3>
           <div class="estados-container">
             <div class="estado-grupo">
-              <span class="punto-verde"></span> <strong>Activos en el mar</strong>
+              <span class="punto-verde"></span> <strong>{{ $t('fondeos.activos') }}</strong>
               <div class="item-estado">
-                <strong>FND-001</strong> - Cañón de Blanes <br><small>IP: Ivan Masmitja</small>
+                <strong>FND-001</strong> - Cañón de Blanes <br><small>{{ $t('fondeos.ip') }}: Ivan Masmitja</small>
               </div>
             </div>
             <div class="estado-grupo">
-              <span class="punto-gris"></span> <strong>Retirados / Histórico</strong>
+              <span class="punto-gris"></span> <strong>{{ $t('fondeos.retirados') }}</strong>
               <div class="item-estado gris">
                 <strong>FND-000</strong> - Plataforma B
               </div>

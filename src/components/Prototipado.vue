@@ -1,27 +1,26 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
+
+const { t } = useI18n()
 
 // Solicitud: abre el correo del usuario con los datos preparados
 const solicitud = ref({ proyecto: '', pieza: '', requisitos: '' })
 
 const enviarSolicitud = () => {
   const { proyecto, pieza, requisitos } = solicitud.value
-  const asunto = encodeURIComponent(`Solicitud de pieza o prototipo: ${pieza}`)
+  const asunto = encodeURIComponent(t('prototipado.correo.asunto', { pieza }))
   const cuerpo = encodeURIComponent(
-    `Hola, equipo del SIO:\n\n` +
-    `Me gustaría solicitar la fabricación de una pieza o prototipo.\n\n` +
-    `Proyecto / IP: ${proyecto}\n` +
-    `Pieza o componente: ${pieza}\n\n` +
+    `${t('prototipado.correo.saludo')}\n\n` +
+    `${t('prototipado.correo.intro')}\n\n` +
+    `${t('prototipado.correo.proyecto')}: ${proyecto}\n` +
+    `${t('prototipado.correo.pieza')}: ${pieza}\n\n` +
     `${requisitos}\n\n` +
-    `Quedo a la espera de vuestra respuesta.\n\nUn saludo.`
+    `${t('prototipado.correo.despedida')}`
   )
   window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
 }
-
-const backgroundStyle = computed(() => {
-  return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
-})
 </script>
 
 <template>
@@ -29,55 +28,46 @@ const backgroundStyle = computed(() => {
     <div class="fondo-prototipado" :style="{ backgroundImage: backgroundStyle }"></div>
     
     <div class="contenedor-ancho contenido-prototipado">
-      <h1 class="titulo-seccion">Prototipado Rápido y Fabricación</h1>
-      <p class="subtitulo">Diseño CAD avanzado, mecanizado de precisión y producción de componentes mecánicos complejos.</p>
+      <h1 class="titulo-seccion">{{ $t('prototipado.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('prototipado.subtitulo') }}</p>
 
       <div class="tarjeta-contenido">
         
         <!-- 🌟 PRESENTACIÓN DEL SERVICIO -->
         <div class="intro-servicio">
-          <p class="texto-destacado">
-            El <strong>Servicio de Ingeniería Oceanográfica</strong> cuenta con capacidades avanzadas de fabricación y prototipado rápido para dar soporte directo a la investigación marina. Desde la concepción en diseño CAD, creamos piezas a medida.
-          </p>
+          <p class="texto-destacado">{{ $t('prototipado.intro') }}</p>
         </div>
 
         <!-- ⚙️ TECNOLOGÍAS Y CAPACIDADES -->
         <div class="seccion-bloque">
-          <h3 class="subtitulo-bloque">Capacidades del Taller</h3>
+          <h3 class="subtitulo-bloque">{{ $t('prototipado.capacidadesTitulo') }}</h3>
           <div class="grid-fases">
-            <div class="fase-card">
-              <span class="fase-num">01</span>
-              <h4>Impresión 3D Técnica</h4>
-              <p>Fabricación aditiva en materiales de altas prestaciones (resinas técnicas, filamentos avanzados).</p>
+            <div v-for="(capacidad, i) in $tm('prototipado.capacidades')" :key="i" class="fase-card">
+              <span class="fase-num">{{ String(i + 1).padStart(2, '0') }}</span>
+              <h4>{{ $rt(capacidad.titulo) }}</h4>
+              <p>{{ $rt(capacidad.texto) }}</p>
             </div>
-
-            <div class="fase-card">
-              <span class="fase-num">02</span>
-              <h4>Diseño CAD / CAE</h4>
-              <p>Modelado 3D paramétrico y validación de geometrías complejas para entornos subacuáticos.</p>
-            </div>
-
           </div>
         </div>
 
         <!-- 📝 FORMULARIO DE SOLICITUD -->
         <div class="seccion-bloque">
-          <h3 class="subtitulo-bloque">Solicitar Pieza o Prototipo</h3>
+          <h3 class="subtitulo-bloque">{{ $t('prototipado.solicitarTitulo') }}</h3>
           <form class="formulario-prototipado" @submit.prevent="enviarSolicitud">
             <div class="grupo-input">
-              <label for="pro-proyecto" class="solo-lectores">Nombre del Proyecto / Investigador Principal</label>
-              <input type="text" id="pro-proyecto" v-model="solicitud.proyecto" placeholder="Nombre del Proyecto / Investigador Principal" required>
+              <label for="pro-proyecto" class="solo-lectores">{{ $t('prototipado.proyecto') }}</label>
+              <input type="text" id="pro-proyecto" v-model="solicitud.proyecto" :placeholder="$t('prototipado.proyecto')" required>
             </div>
             <div class="grupo-input">
-              <label for="pro-pieza" class="solo-lectores">Tipo de pieza o componente</label>
-              <input type="text" id="pro-pieza" v-model="solicitud.pieza" placeholder="Tipo de pieza o componente requerido (Ej: Carcasa estanca, soporte sensor...)" required>
+              <label for="pro-pieza" class="solo-lectores">{{ $t('prototipado.pieza') }}</label>
+              <input type="text" id="pro-pieza" v-model="solicitud.pieza" :placeholder="$t('prototipado.piezaPh')" required>
             </div>
             <div class="grupo-input">
-              <label for="pro-requisitos" class="solo-lectores">Requisitos técnicos</label>
-              <textarea id="pro-requisitos" v-model="solicitud.requisitos" rows="4" placeholder="Describe los requisitos técnicos, dimensiones aproximadas o material previsto..." required></textarea>
+              <label for="pro-requisitos" class="solo-lectores">{{ $t('prototipado.requisitos') }}</label>
+              <textarea id="pro-requisitos" v-model="solicitud.requisitos" rows="4" :placeholder="$t('prototipado.requisitosPh')" required></textarea>
             </div>
-            <p class="aviso-correo">Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
-            <button type="submit" class="btn-solicitar">Preparar correo de solicitud</button>
+            <p class="aviso-correo">{{ $t('prototipado.avisoCorreo') }} <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
+            <button type="submit" class="btn-solicitar">{{ $t('prototipado.enviar') }}</button>
           </form>
         </div>
 
