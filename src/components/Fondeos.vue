@@ -1,8 +1,24 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
 
-defineEmits(['cambiar-pagina'])
+// Solicitud: abre el correo del usuario con los datos preparados
+const solicitud = ref({ proyecto: '', inicio: '', retirada: '', descripcion: '' })
+
+const enviarSolicitud = () => {
+  const { proyecto, inicio, retirada, descripcion } = solicitud.value
+  const asunto = encodeURIComponent(`Solicitud de instalación de fondeo: ${proyecto}`)
+  const cuerpo = encodeURIComponent(
+    `Hola, equipo del SIO:\n\n` +
+    `Me gustaría solicitar la instalación de un fondeo.\n\n` +
+    `Proyecto / IP: ${proyecto}\n` +
+    `Fecha de inicio prevista: ${inicio}\n` +
+    `Fecha de retirada prevista: ${retirada}\n\n` +
+    `${descripcion}\n\n` +
+    `Quedo a la espera de vuestra respuesta.\n\nUn saludo.`
+  )
+  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+}
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
@@ -77,24 +93,27 @@ const backgroundStyle = computed(() => {
         <!-- 📝 FORMULARIO DE SOLICITUD -->
         <div class="seccion-bloque">
           <h3 class="subtitulo-bloque">Solicitar Instalación de Fondeo</h3>
-          <form class="formulario-fondeo">
+          <form class="formulario-fondeo" @submit.prevent="enviarSolicitud">
             <div class="grupo-input">
-              <input type="text" placeholder="Nombre del Proyecto / Investigador Principal" required>
+              <label for="fnd-proyecto" class="solo-lectores">Nombre del Proyecto / Investigador Principal</label>
+              <input type="text" id="fnd-proyecto" v-model="solicitud.proyecto" placeholder="Nombre del Proyecto / Investigador Principal" required>
             </div>
             <div class="fila-fechas">
               <div class="input-fecha-box">
-                <label>Fecha de inicio prevista:</label>
-                <input type="date" required>
+                <label for="fnd-inicio">Fecha de inicio prevista:</label>
+                <input type="date" id="fnd-inicio" v-model="solicitud.inicio" required>
               </div>
               <div class="input-fecha-box">
-                <label>Fecha de retirada prevista:</label>
-                <input type="date" required>
+                <label for="fnd-retirada">Fecha de retirada prevista:</label>
+                <input type="date" id="fnd-retirada" v-model="solicitud.retirada" required>
               </div>
             </div>
             <div class="grupo-input">
-              <textarea rows="4" placeholder="Breve explicación de la campaña, objetivos e instrumentos que aportarás..." required></textarea>
+              <label for="fnd-descripcion" class="solo-lectores">Descripción de la campaña</label>
+              <textarea id="fnd-descripcion" v-model="solicitud.descripcion" rows="4" placeholder="Breve explicación de la campaña, objetivos e instrumentos que aportarás..." required></textarea>
             </div>
-            <button type="submit" class="btn-solicitar">Solicitar Reserva al SIO</button>
+            <p class="aviso-correo">Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
+            <button type="submit" class="btn-solicitar">Preparar correo de solicitud</button>
           </form>
         </div>
 
@@ -123,6 +142,7 @@ const backgroundStyle = computed(() => {
 </template>
 
 <style scoped>
+.aviso-correo { font-size: 0.85rem; color: #666; margin: 0 0 12px; }
 .fondeos-page { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-fondeos { position: absolute; top: 0; left: 0; width: 100%; height: 550px; background-size: cover; background-position: center; z-index: 0; }
 .contenido-fondeos { position: relative; z-index: 10; padding-top: 120px; }

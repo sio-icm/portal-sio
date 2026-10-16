@@ -1,8 +1,23 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
 
-defineEmits(['cambiar-pagina'])
+// Solicitud: abre el correo del usuario con los datos preparados
+const solicitud = ref({ proyecto: '', pieza: '', requisitos: '' })
+
+const enviarSolicitud = () => {
+  const { proyecto, pieza, requisitos } = solicitud.value
+  const asunto = encodeURIComponent(`Solicitud de pieza o prototipo: ${pieza}`)
+  const cuerpo = encodeURIComponent(
+    `Hola, equipo del SIO:\n\n` +
+    `Me gustaría solicitar la fabricación de una pieza o prototipo.\n\n` +
+    `Proyecto / IP: ${proyecto}\n` +
+    `Pieza o componente: ${pieza}\n\n` +
+    `${requisitos}\n\n` +
+    `Quedo a la espera de vuestra respuesta.\n\nUn saludo.`
+  )
+  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+}
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
@@ -37,7 +52,7 @@ const backgroundStyle = computed(() => {
             </div>
 
             <div class="fase-card">
-              <span class="fase-num">03</span>
+              <span class="fase-num">02</span>
               <h4>Diseño CAD / CAE</h4>
               <p>Modelado 3D paramétrico y validación de geometrías complejas para entornos subacuáticos.</p>
             </div>
@@ -48,17 +63,21 @@ const backgroundStyle = computed(() => {
         <!-- 📝 FORMULARIO DE SOLICITUD -->
         <div class="seccion-bloque">
           <h3 class="subtitulo-bloque">Solicitar Pieza o Prototipo</h3>
-          <form class="formulario-prototipado">
+          <form class="formulario-prototipado" @submit.prevent="enviarSolicitud">
             <div class="grupo-input">
-              <input type="text" placeholder="Nombre del Proyecto / Investigador Principal" required>
+              <label for="pro-proyecto" class="solo-lectores">Nombre del Proyecto / Investigador Principal</label>
+              <input type="text" id="pro-proyecto" v-model="solicitud.proyecto" placeholder="Nombre del Proyecto / Investigador Principal" required>
             </div>
             <div class="grupo-input">
-              <input type="text" placeholder="Tipo de pieza o componente requerido (Ej: Carcasa estanca, soporte sensor...)" required>
+              <label for="pro-pieza" class="solo-lectores">Tipo de pieza o componente</label>
+              <input type="text" id="pro-pieza" v-model="solicitud.pieza" placeholder="Tipo de pieza o componente requerido (Ej: Carcasa estanca, soporte sensor...)" required>
             </div>
             <div class="grupo-input">
-              <textarea rows="4" placeholder="Describe los requisitos técnicos, dimensiones aproximadas o material previsto..." required></textarea>
+              <label for="pro-requisitos" class="solo-lectores">Requisitos técnicos</label>
+              <textarea id="pro-requisitos" v-model="solicitud.requisitos" rows="4" placeholder="Describe los requisitos técnicos, dimensiones aproximadas o material previsto..." required></textarea>
             </div>
-            <button type="submit" class="btn-solicitar">Solicitar Trabajo al SIO</button>
+            <p class="aviso-correo">Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
+            <button type="submit" class="btn-solicitar">Preparar correo de solicitud</button>
           </form>
         </div>
 
@@ -68,6 +87,7 @@ const backgroundStyle = computed(() => {
 </template>
 
 <style scoped>
+.aviso-correo { font-size: 0.85rem; color: #666; margin: 0 0 12px; }
 .prototipado-page { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-prototipado { position: absolute; top: 0; left: 0; width: 100%; height: 550px; background-size: cover; background-position: center; z-index: 0; }
 .contenido-prototipado { position: relative; z-index: 10; padding-top: 120px; }
