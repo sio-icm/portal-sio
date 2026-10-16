@@ -133,6 +133,13 @@ import logoBlueLab from '../assets/logobluelab.png'
     height: 100px;
   }
 
+  .contenido h3 {
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    padding: 0 8px;
+    text-align: center;
+  }
+
   .seccion-fichas-sio {
     margin-top: -30px;
   }
