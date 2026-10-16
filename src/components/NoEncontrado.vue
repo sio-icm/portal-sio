@@ -1,9 +1,9 @@
 <template>
   <div class="pagina-no-encontrada">
     <div class="contenedor-ancho">
-      <h1 class="titulo-seccion">Página no encontrada</h1>
-      <p>La dirección que buscas no existe o ha cambiado.</p>
-      <RouterLink to="/" class="btn-inicio">Volver al inicio</RouterLink>
+      <h1 class="titulo-seccion">{{ $t('noEncontrado.titulo') }}</h1>
+      <p>{{ $t('noEncontrado.texto') }}</p>
+      <RouterLink to="/" class="btn-inicio">{{ $t('noEncontrado.volver') }}</RouterLink>
     </div>
   </div>
 </template>

@@ -16,19 +16,19 @@ import logoBlueLab from '../assets/logobluelab.png'
 
         <RouterLink :to="{ name: 'memoria' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgRoig})` }">
           <div class="contenido">
-            <h3>Memoria anual</h3>
+            <h3>{{ $t('inicio.fichas.memoria') }}</h3>
           </div>
         </RouterLink>
 
         <RouterLink :to="{ name: 'noticias' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgVerd})` }">
           <div class="contenido">
-            <h3>Noticias</h3>
+            <h3>{{ $t('inicio.fichas.noticias') }}</h3>
           </div>
         </RouterLink>
 
         <RouterLink :to="{ name: 'equipo' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgGroc})` }">
           <div class="contenido">
-            <h3>Equipo SIO</h3>
+            <h3>{{ $t('inicio.fichas.equipo') }}</h3>
           </div>
         </RouterLink>
 

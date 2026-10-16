@@ -8,49 +8,42 @@ let temporizador = null
 const inicioX = ref(0)
 const arrastrando = ref(false)
 
+// Textos y descripciones de cada foto: inicio.carrusel.<clave> en src/i18n
 const slides = [
   {
     imagen: '/peces.webp',
-    alt: 'Banco de peces formando una esfera bajo el agua',
-    texto: 'Apoyo técnico especializado en el ámbito de las ciencias del mar'
+    clave: 'peces'
   },
   {
     imagen: '/niskin.webp',
-    alt: 'Roseta de botellas Niskin suspendida sobre el mar desde un barco',
-    texto: 'Equipo cualificado, con una amplia gama de instrumentación y recursos',
+    clave: 'niskin',
     posicion: 'center top'
   },
   {
     imagen: '/marmarejada.webp',
-    alt: 'Ola rompiendo en un mar agitado bajo un cielo de tormenta',
-    texto: 'Asesoramiento y soluciones técnicas adaptadas a las necesidades específicas'
+    clave: 'marejada'
   },
   {
     imagen: '/pelagia.webp',
-    alt: 'Embarcación neumática con técnicos junto a una boya oceanográfica amarilla frente a la costa de Barcelona',
-    texto: 'Embarcación y apoyo logístico en el litoral para trabajos científicos',
+    clave: 'pelagia',
     posicion: 'center bottom' 
   },
-    {
+  {
     imagen: '/reflexesmar.webp',
-    alt: 'Reflejos de luz sobre el agua y un fondo de arena',
-    texto: 'Innovar, desarrollar, diseñar, desplegar, implementar y personalizar equipos'
+    clave: 'reflejos'
   },
   {
     imagen: '/fondeo.webp',
-    alt: 'Fondeo oceanográfico con boyas e instrumentos anclado al fondo marino',
-    texto: 'Diseño y despliegue de fondeos instrumentados para la observación y recolección de datos marinos de forma continuada',
+    clave: 'fondeo',
     posicion: 'center bottom'
   },
   {
-  imagen: '/rov.webp',
-    alt: 'Vehículo submarino teledirigido (ROV) sobre un arrecife',
-    texto: 'Integración de sensores en plataformas robóticas para muestreos de precisión'
+    imagen: '/rov.webp',
+    clave: 'rov'
   },
   {
     imagen: '/oficinatecnica.webp',
-    alt: 'Mesa de trabajo con planos técnicos de equipos oceanográficos y una placa electrónica',
-    texto: 'Herramientas y técnicas específicas de verificación para garantizar la calidad de los datos obtenidos en los estudios oceanográficos.'
+    clave: 'oficina'
   },
 ]
 
@@ -156,7 +149,7 @@ const finalizarArrastre = (evento) => {
         
         <img 
           :src="cargadas.has(index) ? slide.imagen : undefined" 
-          :alt="slide.alt" 
+          :alt="$t(`inicio.carrusel.${slide.clave}.alt`)" 
           :fetchpriority="index === 0 ? 'high' : 'auto'"
           decoding="async"
           class="carrusel-img"
@@ -167,7 +160,7 @@ const finalizarArrastre = (evento) => {
         
         <div class="carrusel-contenido">
           <div class="contenedor-ancho">
-            <p class="texto-slide">{{ slide.texto }}</p>
+            <p class="texto-slide">{{ $t(`inicio.carrusel.${slide.clave}.texto`) }}</p>
           </div>
         </div>
 
@@ -175,13 +168,17 @@ const finalizarArrastre = (evento) => {
     </div>
 
     <div class="contenedor-puntos">
-      <span 
+      <button 
         v-for="(slide, index) in slides" 
         :key="'punto-' + index"
+        type="button"
         class="punto" 
         :class="{ activo: indiceActual === index }"
+        :aria-label="$t('inicio.irADiapositiva', { n: index + 1 })"
+        :aria-current="indiceActual === index ? 'true' : undefined"
+        @mousedown.stop
         @click.stop="irASlide(index)"
-      ></span>
+      ></button>
     </div>
 
   </div>
@@ -301,6 +298,7 @@ const finalizarArrastre = (evento) => {
 }
 
 .punto {
+  padding: 0;
   width: 7px;
   height: 7px;
   border-radius: 50%;

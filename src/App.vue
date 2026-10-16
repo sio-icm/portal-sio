@@ -1,41 +1,27 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { cambiarIdioma } from './i18n'
+import { actualizarTitulo } from './router'
 import logoSio from './assets/sioblanco2baix.png'
 import logoCsic from './assets/csic.png'
 import logoIcm from './assets/icm.png'
 import logoSevero from './assets/severo.png'
 
 const route = useRoute()
-const idiomaActual = ref('es') // Controla qué botón de idioma está activo
+const { locale } = useI18n()
+
+const idiomas = [
+  { codigo: 'ca', etiqueta: 'CAT', nombre: 'Català' },
+  { codigo: 'es', etiqueta: 'ES', nombre: 'Español' },
+  { codigo: 'en', etiqueta: 'EN', nombre: 'English' }
+]
 
 const mostrarCabecera = computed(() => !route.meta.sinCabecera)
 const cabeceraSolida = computed(() => Boolean(route.meta.cabeceraSolida))
 
-// --- FUNCIÓN PARA CAMBIAR DE IDIOMA CON GOOGLE ---
-const cambiarIdioma = (lang) => {
-  idiomaActual.value = lang
-  
-  if (lang === 'es') {
-    location.reload(); // Vuelve al original recargando limpio
-    return;
-  }
-
-  const selectField = document.querySelector('.goog-te-combo');
-  if (selectField) {
-    selectField.value = lang;
-    selectField.dispatchEvent(new Event('change'));
-  } else {
-    // Si Google tarda un poco en inyectar el elemento, reintentamos a los 800ms
-    setTimeout(() => {
-      const retryField = document.querySelector('.goog-te-combo');
-      if (retryField) {
-        retryField.value = lang;
-        retryField.dispatchEvent(new Event('change'));
-      }
-    }, 800);
-  }
-}
+watch(locale, () => actualizarTitulo(route))
 </script>
 
 <template>
@@ -45,13 +31,22 @@ const cambiarIdioma = (lang) => {
       <div class="contenedor-ancho top-bar-inner">
         <div class="spacer"></div>
         <div class="top-nav-group">
-          <RouterLink :to="{ name: 'contacto' }" class="top-item border-left underline-item">CONTACTO</RouterLink>
-          <RouterLink :to="{ name: 'intranet' }" class="top-item border-left underline-item">INTRANET</RouterLink>
+          <RouterLink :to="{ name: 'contacto' }" class="top-item border-left underline-item">{{ $t('comun.contacto') }}</RouterLink>
+          <RouterLink :to="{ name: 'intranet' }" class="top-item border-left underline-item">{{ $t('comun.intranet') }}</RouterLink>
           
-          <div class="top-item border-left idiomas-container">
-            <span class="lang-link" :class="{ active: idiomaActual === 'ca' }" @click="cambiarIdioma('ca')">CAT</span> | 
-            <span class="lang-link" :class="{ active: idiomaActual === 'es' }" @click="cambiarIdioma('es')">ES</span> | 
-            <span class="lang-link" :class="{ active: idiomaActual === 'en' }" @click="cambiarIdioma('en')">EN</span>
+          <div class="top-item border-left idiomas-container" role="group" :aria-label="$t('comun.idiomas')">
+            <template v-for="(idioma, i) in idiomas" :key="idioma.codigo">
+              <span v-if="i > 0" class="lang-separator" aria-hidden="true">|</span>
+              <button
+                type="button"
+                class="lang-link btn-reset"
+                :class="{ active: locale === idioma.codigo }"
+                :lang="idioma.codigo"
+                :aria-label="idioma.nombre"
+                :aria-pressed="locale === idioma.codigo"
+                @click="cambiarIdioma(idioma.codigo)"
+              >{{ idioma.etiqueta }}</button>
+            </template>
           </div>
         </div>
       </div>
@@ -61,7 +56,7 @@ const cambiarIdioma = (lang) => {
       <div class="contenedor-ancho header-inner">
         
         <div class="header-left">
-          <RouterLink to="/" aria-label="Inicio">
+          <RouterLink to="/" :aria-label="$t('comun.inicio')">
             <img :src="logoSio" alt="SIO" class="logo-principal">
           </RouterLink>
           
@@ -83,10 +78,10 @@ const cambiarIdioma = (lang) => {
         </div>
 
         <nav class="nav-menu">
-          <RouterLink :to="{ name: 'inicio' }" class="nav-item">EL SIO</RouterLink>
-          <RouterLink :to="{ name: 'servicios' }" class="nav-item">SERVICIOS</RouterLink>
-          <RouterLink :to="{ name: 'proyectos' }" class="nav-item">PROYECTOS</RouterLink>
-          <RouterLink :to="{ name: 'idi' }" class="nav-item">I+D+I</RouterLink>
+          <RouterLink :to="{ name: 'inicio' }" class="nav-item">{{ $t('comun.menu.sio') }}</RouterLink>
+          <RouterLink :to="{ name: 'servicios' }" class="nav-item">{{ $t('comun.menu.servicios') }}</RouterLink>
+          <RouterLink :to="{ name: 'proyectos' }" class="nav-item">{{ $t('comun.menu.proyectos') }}</RouterLink>
+          <RouterLink :to="{ name: 'idi' }" class="nav-item">{{ $t('comun.menu.idi') }}</RouterLink>
         </nav>
         
       </div>
@@ -98,7 +93,7 @@ const cambiarIdioma = (lang) => {
 
     <footer class="footer-icm">
       <div class="contenedor-ancho">
-        <p>© 2026 Servicio de Ingeniería Oceanográfica - CSIC</p>
+        <p>{{ $t('comun.pie') }}</p>
       </div>
     </footer>
     
@@ -106,13 +101,6 @@ const cambiarIdioma = (lang) => {
 </template>
   
 <style>
-/* 🌐 ESTILOS PARA EL TRADUCTOR DE GOOGLE */
-.goog-te-banner-frame.skiptranslate { display: none !important; }
-body { top: 0px !important; }
-.goog-tooltip { display: none !important; }
-.goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
-#google_translate_element { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
-
 :root { 
   --icm-navy: #012169ff;   
   --icm-blue: #0086c0;
