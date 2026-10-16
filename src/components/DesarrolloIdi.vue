@@ -1,5 +1,29 @@
 <script setup>
-const emit = defineEmits(['cambiar-pagina'])
+import { ref } from 'vue'
+
+// Propuesta de colaboración: abre el correo del usuario con los datos preparados
+const propuesta = ref({ nombre: '', departamento: '', reto: '', entorno: 'costa' })
+const ENTORNOS = {
+  costa: 'Zona Costera / Aguas Someras',
+  pelagico: 'Alta Mar / Plataforma Continental',
+  profundo: 'Aguas Profundas / Bentos',
+  laboratorio: 'Pruebas de Laboratorio / Tanque',
+  otro: 'Otro'
+}
+
+const enviarPropuesta = () => {
+  const { nombre, departamento, reto, entorno } = propuesta.value
+  const asunto = encodeURIComponent(`Propuesta de I+D+I: ${nombre}`)
+  const cuerpo = encodeURIComponent(
+    `Hola, equipo del SIO:\n\n` +
+    `Nombre: ${nombre}\n` +
+    `Institución / Departamento: ${departamento}\n` +
+    `Entorno de aplicación: ${ENTORNOS[entorno]}\n\n` +
+    `${reto}\n\n` +
+    `Un saludo.`
+  )
+  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+}
 </script>
 
 <template>
@@ -35,26 +59,26 @@ const emit = defineEmits(['cambiar-pagina'])
             En el SIO creemos en la co-creación. Si tienes una necesidad técnica para tus campañas, una idea para un nuevo sensor, o buscas adaptar robótica a un entorno extremo, <strong>queremos escucharte</strong>.
           </p>
 
-          <form action="#" method="POST">
+          <form @submit.prevent="enviarPropuesta">
             
             <div style="margin-bottom: 10px;">
               <label for="nombre" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Nombre y Apellidos</label>
-              <input type="text" id="nombre" name="nombre" placeholder="Ej: Dra. Elena Martínez" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
+              <input type="text" id="nombre" name="nombre" v-model="propuesta.nombre" placeholder="Ej: Dra. Elena Martínez" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
 
             <div style="margin-bottom: 20px;">
               <label for="departamento" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Institución / Departamento</label>
-              <input type="text" id="departamento" name="departamento" placeholder="Ej: Dept. Oceanografía Física" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
+              <input type="text" id="departamento" name="departamento" v-model="propuesta.departamento" placeholder="Ej: Dept. Oceanografía Física" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
 
             <div style="margin-bottom: 20px;">
               <label for="reto" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">¿Cuál es el reto oceanográfico o la idea?</label>
-              <textarea id="reto" name="reto" rows="4" placeholder="Describe brevemente qué necesitas medir, qué problema técnico tienes o qué tecnología te gustaría explorar." style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; resize: vertical; background-color: rgba(255, 255, 255, 0.9);" required></textarea>
+              <textarea id="reto" name="reto" v-model="propuesta.reto" rows="4" placeholder="Describe brevemente qué necesitas medir, qué problema técnico tienes o qué tecnología te gustaría explorar." style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; resize: vertical; background-color: rgba(255, 255, 255, 0.9);" required></textarea>
             </div>
 
             <div style="margin-bottom: 25px;">
               <label for="entorno" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Entorno de aplicación previsto</label>
-              <select id="entorno" name="entorno" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);">
+              <select id="entorno" name="entorno" v-model="propuesta.entorno" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);">
                 <option value="costa">Zona Costera / Aguas Someras</option>
                 <option value="pelagico">Alta Mar / Plataforma Continental</option>
                 <option value="profundo">Aguas Profundas / Bentos</option>
@@ -62,6 +86,8 @@ const emit = defineEmits(['cambiar-pagina'])
                 <option value="otro">Otro</option>
               </select>
             </div>
+
+            <p style="font-size: 0.85rem; color: #e0e6ed; margin: 0 0 15px;">Al pulsar el botón se abrirá tu programa de correo con la propuesta preparada para enviar a <a href="mailto:sio@icm.csic.es" style="color: white;">sio@icm.csic.es</a>.</p>
 
             <div style="text-align: center;">
               <button type="submit" style="background-color: #8cc63f; color: #003366; border: none; padding: 12px 30px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 100%; max-width: 300px;">
