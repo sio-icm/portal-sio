@@ -34,7 +34,7 @@ const slides = [
     {
     imagen: '/reflexesmar.webp',
     alt: 'Reflejos de luz sobre el agua y un fondo de arena',
-    texto: 'Innovar, desarrollar, diseñar, desplegar, implementar i personalizar equipos '
+    texto: 'Innovar, desarrollar, diseñar, desplegar, implementar y personalizar equipos'
   },
   {
     imagen: '/fondeo.webp',
