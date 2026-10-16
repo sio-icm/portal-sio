@@ -270,5 +270,40 @@ export default {
       gruaNo: 'No',
       despedida: "Quedo a l'espera de la vostra confirmació per coordinar-nos.\n\nSalutacions."
     }
+  },
+
+  salinidad: {
+    titulo: 'Anàlisi de salinitat',
+    subtitulo: "Determinació d'alta precisió per a mostres d'aigua de mar amb salinòmetre de laboratori.",
+    ficha: 'Fitxa tècnica',
+    descripcionTitulo: 'Descripció general',
+    descripcion: "El Servei d'Enginyeria Oceanogràfica (SIO) ofereix l'anàlisi de salinitat de mostres d'aigua de mar. Aquest servei és fonamental per calibrar la conductivitat de les sondes CTD i garantir la màxima qualitat de les dades físiques.",
+    especificaciones: 'Especificacions principals',
+    equipo: 'Equip',
+    equipoTexto: 'Salinòmetre Guildline Autosal 8400B',
+    precision: 'Precisió',
+    precisionTexto: 'Millor que 0,002 PSU',
+    calibracion: 'Calibratge',
+    calibracionTexto: 'IAPSO Standard Seawater',
+    control: 'Control tèrmic',
+    controlTexto: "Bany termostàtic d'alta estabilitat",
+    solicitud: "Sol·licitud d'ús",
+    operativa: 'OPERATIVA',
+    explicacion: "Emplena les dades per coordinar l'anàlisi.",
+    proyecto: 'Projecte i investigador principal (IP)',
+    botellas: "Nombre d'ampolles necessàries",
+    recogida: "Recollida d'ampolles",
+    entrega: 'Lliurament de mostres',
+    enviar: 'PREPARAR CORREU DE SOL·LICITUD',
+    faltanDatos: 'Si us plau, emplena tots els camps.',
+    correo: {
+      asunto: "Sol·licitud d'anàlisi de salinitat: {proyecto}",
+      saludo: 'Hola, equip del SIO:',
+      intro: "Sol·licitud d'anàlisi de salinitat:",
+      proyecto: 'Projecte',
+      botellas: "Nombre d'ampolles",
+      recogida: 'Recollida',
+      entrega: 'Lliurament'
+    }
   }
 }

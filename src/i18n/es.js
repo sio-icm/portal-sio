@@ -270,5 +270,40 @@ export default {
       gruaNo: 'No',
       despedida: 'Quedo a la espera de vuestra confirmación para coordinarnos.\n\nUn saludo.'
     }
+  },
+
+  salinidad: {
+    titulo: 'Análisis de Salinidad',
+    subtitulo: 'Determinación de alta precisión para muestras de agua de mar mediante salinómetro de laboratorio.',
+    ficha: 'Ficha Técnica',
+    descripcionTitulo: 'Descripción General',
+    descripcion: 'El Servicio de Ingeniería Oceanográfica (SIO) ofrece el análisis de salinidad para muestras de agua de mar. Este servicio es fundamental para calibrar la conductividad de las sondas CTD y garantizar la máxima calidad de los datos físicos.',
+    especificaciones: 'Especificaciones Principales',
+    equipo: 'Equipo',
+    equipoTexto: 'Salinómetro Guildline Autosal 8400B',
+    precision: 'Precisión',
+    precisionTexto: 'Mejor que 0,002 PSU',
+    calibracion: 'Calibración',
+    calibracionTexto: 'IAPSO Standard Seawater',
+    control: 'Control térmico',
+    controlTexto: 'Baño termostático de alta estabilidad',
+    solicitud: 'Solicitud de Uso',
+    operativa: 'OPERATIVA',
+    explicacion: 'Rellena los datos para coordinar el análisis.',
+    proyecto: 'Proyecto e Investigador Principal (IP)',
+    botellas: 'Número de botellas necesarias',
+    recogida: 'Recogida de botellas',
+    entrega: 'Entrega de muestras',
+    enviar: 'PREPARAR CORREO DE SOLICITUD',
+    faltanDatos: 'Por favor, rellena todos los campos.',
+    correo: {
+      asunto: 'Solicitud de análisis de salinidad: {proyecto}',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Solicitud de análisis de salinidad:',
+      proyecto: 'Proyecto',
+      botellas: 'Número de botellas',
+      recogida: 'Recogida',
+      entrega: 'Entrega'
+    }
   }
 }

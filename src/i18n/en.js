@@ -270,5 +270,40 @@ export default {
       gruaNo: 'No',
       despedida: 'I look forward to your confirmation so we can coordinate.\n\nBest regards.'
     }
+  },
+
+  salinidad: {
+    titulo: 'Salinity Analysis',
+    subtitulo: 'High-precision determination for seawater samples using a laboratory salinometer.',
+    ficha: 'Technical Sheet',
+    descripcionTitulo: 'General Description',
+    descripcion: 'The Oceanographic Engineering Service (SIO) offers salinity analysis of seawater samples. This service is essential for calibrating the conductivity of CTD probes and ensuring the highest quality of physical data.',
+    especificaciones: 'Main Specifications',
+    equipo: 'Equipment',
+    equipoTexto: 'Guildline Autosal 8400B salinometer',
+    precision: 'Accuracy',
+    precisionTexto: 'Better than 0.002 PSU',
+    calibracion: 'Calibration',
+    calibracionTexto: 'IAPSO Standard Seawater',
+    control: 'Temperature control',
+    controlTexto: 'High-stability thermostatic bath',
+    solicitud: 'Service Request',
+    operativa: 'OPERATIONAL',
+    explicacion: 'Fill in the details so we can arrange the analysis.',
+    proyecto: 'Project and Principal Investigator (PI)',
+    botellas: 'Number of bottles needed',
+    recogida: 'Bottle collection',
+    entrega: 'Sample delivery',
+    enviar: 'PREPARE REQUEST EMAIL',
+    faltanDatos: 'Please fill in all the fields.',
+    correo: {
+      asunto: 'Salinity analysis request: {proyecto}',
+      saludo: 'Hello SIO team,',
+      intro: 'Salinity analysis request:',
+      proyecto: 'Project',
+      botellas: 'Number of bottles',
+      recogida: 'Collection',
+      entrega: 'Delivery'
+    }
   }
 }

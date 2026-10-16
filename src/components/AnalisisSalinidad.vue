@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const emit = defineEmits(['cambiar-pagina'])
+const { t } = useI18n()
 
 // Lógica del formulario
 const proyecto = ref('')
@@ -9,20 +10,21 @@ const numeroBotellas = ref('')
 const fechaRecogida = ref('')
 const fechaEntrega = ref('')
 
+// Abre el correo del usuario con la solicitud preparada
 const enviarSolicitud = () => {
   if (!proyecto.value || !numeroBotellas.value || !fechaRecogida.value || !fechaEntrega.value) {
-    alert('Por favor, rellena todos los campos.')
+    alert(t('salinidad.faltanDatos'))
     return
   }
   const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent(`Solicitud Servicio Salinidad - ${proyecto.value}`)
+  const asunto = encodeURIComponent(t('salinidad.correo.asunto', { proyecto: proyecto.value }))
   const cuerpo = encodeURIComponent(
-    `Hola equipo del SIO,\n\n` +
-    `Solicitud de análisis de salinidad:\n` +
-    `Proyecto: ${proyecto.value}\n` +
-    `Número de botellas: ${numeroBotellas.value}\n` +
-    `Recogida: ${fechaRecogida.value}\n` +
-    `Entrega: ${fechaEntrega.value}`
+    `${t('salinidad.correo.saludo')}\n\n` +
+    `${t('salinidad.correo.intro')}\n` +
+    `${t('salinidad.correo.proyecto')}: ${proyecto.value}\n` +
+    `${t('salinidad.correo.botellas')}: ${numeroBotellas.value}\n` +
+    `${t('salinidad.correo.recogida')}: ${fechaRecogida.value}\n` +
+    `${t('salinidad.correo.entrega')}: ${fechaEntrega.value}`
   )
   window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
 }
@@ -33,8 +35,8 @@ const enviarSolicitud = () => {
     
     <div class="hero-detalle hero-salinidad">
       <div class="contenedor-ancho contenido-hero">
-        <h1 class="titulo-hero">Análisis de Salinidad</h1>
-        <p class="subtitulo-hero">Determinación de alta precisión para muestras de agua de mar mediante salinómetro de laboratorio.</p>
+        <h1 class="titulo-hero">{{ $t('salinidad.titulo') }}</h1>
+        <p class="subtitulo-hero">{{ $t('salinidad.subtitulo') }}</p>
       </div>
     </div>
 
@@ -42,20 +44,20 @@ const enviarSolicitud = () => {
       <div class="grid-dos-columnas">
         
         <div class="columna-ficha">
-          <h2 class="titulo-seccion-pequeno">Ficha Técnica</h2>
+          <h2 class="titulo-seccion-pequeno">{{ $t('salinidad.ficha') }}</h2>
           
           <div class="bloque-info">
-            <h3>Descripción General</h3>
-            <p>El Servicio de Ingeniería Oceanográfica (SIO) ofrece el análisis de salinidad para muestras de agua de mar. Este servicio es fundamental para calibrar la conductividad de las sondes CTD y garantizar la máxima calidad de los datos físicos.</p>
+            <h3>{{ $t('salinidad.descripcionTitulo') }}</h3>
+            <p>{{ $t('salinidad.descripcion') }}</p>
           </div>
 
           <div class="bloque-info">
-            <h3>Especificaciones Principales</h3>
+            <h3>{{ $t('salinidad.especificaciones') }}</h3>
             <ul class="lista-especificaciones">
-              <li><strong>Equipo:</strong> Salinómetro Guildline Autosal 8400B</li>
-              <li><strong>Precisión:</strong> Mejor que 0.002 PSU</li>
-              <li><strong>Calibración:</strong> IAPSO Standard Seawater</li>
-              <li><strong>Control Térmico:</strong> Baño termostático de alta estabilidad</li>
+              <li><strong>{{ $t('salinidad.equipo') }}:</strong> {{ $t('salinidad.equipoTexto') }}</li>
+              <li><strong>{{ $t('salinidad.precision') }}:</strong> {{ $t('salinidad.precisionTexto') }}</li>
+              <li><strong>{{ $t('salinidad.calibracion') }}:</strong> {{ $t('salinidad.calibracionTexto') }}</li>
+              <li><strong>{{ $t('salinidad.control') }}:</strong> {{ $t('salinidad.controlTexto') }}</li>
             </ul>
           </div>
         </div>
@@ -63,32 +65,32 @@ const enviarSolicitud = () => {
         <div class="columna-reserva">
           <div class="tarjeta-reserva">
             <div class="cabecera-reserva">
-              <h2>Solicitud de Uso</h2>
-              <span class="badge-operativa">OPERATIVA</span>
+              <h2>{{ $t('salinidad.solicitud') }}</h2>
+              <span class="badge-operativa">{{ $t('salinidad.operativa') }}</span>
             </div>
             
-            <p class="texto-explicativo">Rellena los datos para coordinar el análisis.</p>
+            <p class="texto-explicativo">{{ $t('salinidad.explicacion') }}</p>
             
             <form @submit.prevent="enviarSolicitud" class="formulario-salinidad">
               <div class="grupo-input">
-                <label>Proyecto e Investigador Principal (IP):</label>
-                <input type="text" v-model="proyecto" required>
+                <label for="sal-proyecto">{{ $t('salinidad.proyecto') }}:</label>
+                <input type="text" id="sal-proyecto" v-model="proyecto" required>
               </div>
               <div class="grupo-input mt-3">
-                <label>Número de botellas necesarias:</label>
-                <input type="number" v-model="numeroBotellas" required>
+                <label for="sal-botellas">{{ $t('salinidad.botellas') }}:</label>
+                <input type="number" id="sal-botellas" min="1" v-model="numeroBotellas" required>
               </div>
               <div class="grid-fechas mt-3">
                 <div class="grupo-input">
-                  <label>Recogida botellas:</label>
-                  <input type="date" v-model="fechaRecogida" required>
+                  <label for="sal-recogida">{{ $t('salinidad.recogida') }}:</label>
+                  <input type="date" id="sal-recogida" v-model="fechaRecogida" required>
                 </div>
                 <div class="grupo-input">
-                  <label>Entrega muestras:</label>
-                  <input type="date" v-model="fechaEntrega" required>
+                  <label for="sal-entrega">{{ $t('salinidad.entrega') }}:</label>
+                  <input type="date" id="sal-entrega" v-model="fechaEntrega" required>
                 </div>
               </div>
-              <button type="submit" class="btn-enviar mt-4">ENVIAR SOLICITUD AL SIO</button>
+              <button type="submit" class="btn-enviar mt-4">{{ $t('salinidad.enviar') }}</button>
             </form>
           </div>
         </div>
