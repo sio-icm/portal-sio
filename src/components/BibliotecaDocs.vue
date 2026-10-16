@@ -220,7 +220,7 @@ const getIconoFormato = (formato) => {
                   <p class="desc-wiki">{{ doc.descripcion || 'Sense descripció disponible.' }}</p>
                   <div class="pie-tarjeta">
                     <span class="badge-formato">{{ doc.formato }}</span>
-                    <a :href="'/portal-sio' + doc.enlace" target="_blank" class="btn-descargar">Descarregar</a>
+                    <a :href="doc.enlace" target="_blank" class="btn-descargar">Descarregar</a>
                   </div>
                 </div>
               </div>

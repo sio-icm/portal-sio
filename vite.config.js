@@ -2,10 +2,10 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  base: '/portal-sio/', 
+  base: '/', // La web se sirve desde la raíz del servidor (10.100.201.12)
   plugins: [vue()],
   build: {
-    outDir: 'docs', // <-- ¡Esto obliga a Vite a usar la carpeta de GitHub Pages!
-    emptyOutDir: true // <-- Esto limpia la carpeta antes de construir para evitar basura vieja
+    outDir: 'dist',
+    emptyOutDir: true
   }
 })
