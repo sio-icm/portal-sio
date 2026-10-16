@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const indiceActual = ref(0)
 const conTransicion = ref(true)
@@ -10,41 +10,56 @@ const arrastrando = ref(false)
 
 const slides = [
   {
-    imagen: 'peces.png', 
+    imagen: '/peces.webp',
+    alt: 'Banco de peces formando una esfera bajo el agua',
     texto: 'Apoyo técnico especializado en el ámbito de las ciencias del mar'
   },
   {
-    imagen: 'niskin.png', 
+    imagen: '/niskin.webp',
+    alt: 'Roseta de botellas Niskin suspendida sobre el mar desde un barco',
     texto: 'Equipo cualificado, con una amplia gama de instrumentación y recursos',
     posicion: 'center top'
   },
   {
-    imagen: 'marmarejada.jpeg', 
+    imagen: '/marmarejada.webp',
+    alt: 'Ola rompiendo en un mar agitado bajo un cielo de tormenta',
     texto: 'Asesoramiento y soluciones técnicas adaptadas a las necesidades específicas'
   },
   {
-    imagen: 'pelagia.jpg', 
+    imagen: '/pelagia.webp',
+    alt: 'Embarcación neumática con técnicos junto a una boya oceanográfica amarilla frente a la costa de Barcelona',
     texto: 'Embarcación y apoyo logístico en el litoral para trabajos científicos',
     posicion: 'center bottom' 
   },
     {
-    imagen: 'reflexesmar.jpeg', 
+    imagen: '/reflexesmar.webp',
+    alt: 'Reflejos de luz sobre el agua y un fondo de arena',
     texto: 'Innovar, desarrollar, diseñar, desplegar, implementar i personalizar equipos '
   },
   {
-    imagen: 'fondeo.jpeg', 
+    imagen: '/fondeo.webp',
+    alt: 'Fondeo oceanográfico con boyas e instrumentos anclado al fondo marino',
     texto: 'Diseño y despliegue de fondeos instrumentados para la observación y recolección de datos marinos de forma continuada',
     posicion: 'center bottom'
   },
   {
-  imagen: 'rov.jpeg',
+  imagen: '/rov.webp',
+    alt: 'Vehículo submarino teledirigido (ROV) sobre un arrecife',
     texto: 'Integración de sensores en plataformas robóticas para muestreos de precisión'
   },
   {
-    imagen: 'oficinatecnica.jpeg', 
+    imagen: '/oficinatecnica.webp',
+    alt: 'Mesa de trabajo con planos técnicos de equipos oceanográficos y una placa electrónica',
     texto: 'Herramientas y técnicas específicas de verificación para garantizar la calidad de los datos obtenidos en los estudios oceanográficos.'
   },
 ]
+
+// Solo se descargan la diapositiva visible y sus vecinas; el resto, cuando toca
+const cargadas = ref(new Set([0, 1, slides.length - 1]))
+watch(indiceActual, (i) => {
+  const n = slides.length
+  ;[i, (i + 1) % n, (i - 1 + n) % n].forEach((x) => cargadas.value.add(x))
+})
 
 const iniciarAutoplay = () => {
   detenerAutoplay()
@@ -140,8 +155,10 @@ const finalizarArrastre = (evento) => {
       <div class="carrusel-slide" v-for="(slide, index) in slides" :key="index">
         
         <img 
-          :src="slide.imagen" 
-          alt="Slide del SIO" 
+          :src="cargadas.has(index) ? slide.imagen : undefined" 
+          :alt="slide.alt" 
+          :fetchpriority="index === 0 ? 'high' : 'auto'"
+          decoding="async"
           class="carrusel-img"
           :style="{ 'object-position': slide.posicion ? slide.posicion : 'center center' }"
         >

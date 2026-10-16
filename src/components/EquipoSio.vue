@@ -82,7 +82,7 @@ const equipo = ref([
           
           <div class="contenedor-foto">
             <!-- La foto carga la ruta, y si falla (aún no la has subido), pone la silueta por defecto -->
-            <img :src="persona.fotoSrc" :alt="persona.nombre" class="foto-perfil" onerror="this.src='perfil-default.jpg'">
+            <img :src="persona.fotoSrc" :alt="persona.nombre" class="foto-perfil" onerror="this.onerror=null; this.src='/fotos/equipo/perfil-default.svg'">
           </div>
 
           <div :class="['rol-tag', persona.tagClase]">{{ persona.tagTexto }}</div>

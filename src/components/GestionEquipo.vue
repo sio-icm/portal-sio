@@ -9,7 +9,7 @@ const equip = ref([
     carrec: 'Responsable Técnico del SIO', 
     email: 'rbardaji@icm.csic.es', // Puedes actualizar el email real luego
     bio: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
     id: 2, 
@@ -17,7 +17,7 @@ const equip = ref([
     carrec: 'Personal Técnico de Investigación (PIT)', 
     email: 'rferrando@icm.csic.es', 
     bio: 'Diseño industrial, desarrollo de sistemas embebidos, prototipado rápido (Mecanizado/Impresión 3D) y mantenimiento de la flota autónoma.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
     id: 3, 
@@ -25,7 +25,7 @@ const equip = ref([
     carrec: 'Especialista en Instrumentación', 
     email: 'nhoareau@icm.csic.es', 
     bio: 'Calibración de sensores oceanográficos, análisis físico-químico de muestras de agua (Salinidad) y asistencia técnica en campañas.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
     id: 4, 
@@ -33,7 +33,7 @@ const equip = ref([
     carrec: 'Técnico en Electrónica y Sistemas', 
     email: 'bnicolas@icm.csic.es', 
     bio: 'Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
     id: 5, 
@@ -41,7 +41,7 @@ const equip = ref([
     carrec: 'Técnico de Soporte', 
     email: 'ksalvador@icm.csic.es', 
     bio: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Kintxo dentro del Servicio de Ingeniería.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
     id: 6, 
@@ -49,7 +49,7 @@ const equip = ref([
     carrec: 'Técnica de Soporte', 
     email: 'mlloret@icm.csic.es', 
     bio: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Maribel dentro del Servicio de Ingeniería.', 
-    foto: '/perfil-default.jpg' 
+    foto: '/fotos/equipo/perfil-default.svg' 
   }
 ])
 
@@ -63,11 +63,11 @@ const membreActual = ref({
   carrec: '',
   email: '',
   bio: '',
-  foto: '/perfil-default.jpg'
+  foto: '/fotos/equipo/perfil-default.svg'
 })
 
 const nouMembre = () => {
-  membreActual.value = { id: null, nom: '', carrec: '', email: '', bio: '', foto: '/perfil-default.jpg' }
+  membreActual.value = { id: null, nom: '', carrec: '', email: '', bio: '', foto: '/fotos/equipo/perfil-default.svg' }
   modeEdicio.value = false
   mostrarFormulari.value = true
 }
