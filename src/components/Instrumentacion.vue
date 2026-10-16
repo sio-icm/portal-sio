@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const apiUrl = '/api/instrumentos'
 const emit = defineEmits(['volver'])
@@ -25,13 +28,13 @@ const cargarDatos = async () => {
     instrumentos.value = datosJson.map(fila => ({
       id: fila.id,
       tipo: fila.categoria || 'General',
-      subcategoria: fila.subcategoria || 'Sense Subcategoria',
+      subcategoria: fila.subcategoria || '',
       nombre: fila.nombre,
       marca: fila.marca || '',
       estado: fila.estado || 'Disponible',
-      ultimaCalibracion: fila.ultima_calibracion || 'N/A',
-      descripcionCompleta: fila.descripcion || 'No hi ha descripció disponible.',
-      parametros: fila.parametros_tecnicos || 'No hi ha paràmetres tècnics.'
+      ultimaCalibracion: fila.ultima_calibracion || '',
+      descripcionCompleta: fila.descripcion || '',
+      parametros: fila.parametros_tecnicos || ''
     }))
     cargando.value = false
   } catch (error) {
@@ -63,8 +66,12 @@ const toggleAcordeon = (id) => { instrumentoExpandido.value = instrumentoExpandi
 const fechaHoy = new Date()
 const mesActual = ref(fechaHoy.getMonth())
 const anioActual = ref(fechaHoy.getFullYear())
-const nombresMeses = ['Gener', 'Febrer', 'Març', 'Abril', 'Maig', 'Juny', 'Juliol', 'Agost', 'Setembre', 'Octubre', 'Novembre', 'Desembre']
-const nombreMes = computed(() => nombresMeses[mesActual.value])
+// Mes y año en el idioma de la web (p. ej. "octubre de 2026", "October 2026")
+const nombreMes = computed(() => {
+  const texto = new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' })
+    .format(new Date(anioActual.value, mesActual.value, 1))
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+})
 const diasEnMes = computed(() => new Date(anioActual.value, mesActual.value + 1, 0).getDate())
 
 const cambiarMes = (dir) => {
@@ -85,24 +92,27 @@ const toggleDia = (n) => {
     i > -1 ? diasSeleccionados.value.splice(i, 1) : diasSeleccionados.value.push(n)
 }
 
-const diasOrdenadosTexto = computed(() => diasSeleccionados.value.length === 0 ? 'Cap dia' : diasSeleccionados.value.sort((a, b) => a - b).join(', '))
+const diasOrdenadosTexto = computed(() => [...diasSeleccionados.value].sort((a, b) => a - b).join(', '))
 
 // Obre el correu de l'usuari amb la sol·licitud preparada (sense serveis externs)
 const enviarSolicitud = () => {
   if (diasSeleccionados.value.length === 0 || !nombreInvestigador.value.trim()) {
-    alert("Selecciona almenys un dia i escriu el teu nom.")
+    alert(t('instrumentacion.faltanDatos'))
     return
   }
   const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent(`Sol·licitud de préstec SIO: ${equipoSeleccionado.value.nombre}`)
+  const instrumento = equipoSeleccionado.value.nombre
+  const dias = t('instrumentacion.correo.diasValor', { dias: diasOrdenadosTexto.value, mes: nombreMes.value })
+  const institucion = institucionInvestigador.value.trim()
+  const asunto = encodeURIComponent(t('instrumentacion.correo.asunto', { instrumento }))
   const cuerpo = encodeURIComponent(
-    `Hola equip del SIO,\n\n` +
-    `Voldria sol·licitar el préstec d'aquest instrument:\n\n` +
-    `Instrument: ${equipoSeleccionado.value.nombre}\n` +
-    `Dies: ${diasOrdenadosTexto.value} de ${nombreMes.value} ${anioActual.value}\n` +
-    `Nom: ${nombreInvestigador.value.trim()}\n` +
-    (institucionInvestigador.value.trim() ? `Institució: ${institucionInvestigador.value.trim()}\n` : '') +
-    `\nQuedo a l'espera de la vostra confirmació.\n\nSalutacions.`
+    `${t('instrumentacion.correo.saludo')}\n\n` +
+    `${t('instrumentacion.correo.intro')}\n\n` +
+    `${t('instrumentacion.correo.instrumento')}: ${instrumento}\n` +
+    `${t('instrumentacion.correo.dias')}: ${dias}\n` +
+    `${t('instrumentacion.correo.nombre')}: ${nombreInvestigador.value.trim()}\n` +
+    (institucion ? `${t('instrumentacion.correo.institucion')}: ${institucion}\n` : '') +
+    `\n${t('instrumentacion.correo.despedida')}`
   )
   window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
 }
@@ -114,11 +124,11 @@ const enviarSolicitud = () => {
     <div class="fondo-servicios"></div>
 
     <div class="contenido-hub">
-      <h1 class="titulo-seccion">Instrumentación Oceanográfica</h1>
-      <p class="subtitulo">Catálogo técnico, calibraciones y gestión de préstamos del SIO.</p>
+      <h1 class="titulo-seccion">{{ $t('instrumentacion.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('instrumentacion.subtitulo') }}</p>
 
-      <div v-if="cargando" class="alerta-estado carga">⏳ Connectant amb la Base de Dades del SIO...</div>
-      <div v-else-if="errorCarga" class="alerta-estado error">❌ Error de connexió. No s'ha pogut carregar el catàleg d'instruments.</div>
+      <div v-if="cargando" class="alerta-estado carga">⏳ {{ $t('instrumentacion.cargando') }}</div>
+      <div v-else-if="errorCarga" class="alerta-estado error">❌ {{ $t('instrumentacion.errorCarga') }}</div>
 
       <div v-else>
         <div class="tabs-sio">
@@ -130,39 +140,39 @@ const enviarSolicitud = () => {
         <div class="grid-layout">
           <!-- ZONA IZQUIERDA: CATÁLOGO CON ACORDEÓN -->
           <div class="seccion-bloque ficha-wiki">
-            <div v-if="Object.keys(instrumentosAgrupados).length === 0" style="color: #666; font-style: italic;">No hi ha instruments catalogats en aquesta secció.</div>
+            <div v-if="Object.keys(instrumentosAgrupados).length === 0" style="color: #666; font-style: italic;">{{ $t('instrumentacion.sinInstrumentos') }}</div>
 
             <div v-for="(lista, subcat) in instrumentosAgrupados" :key="subcat" class="bloque-subcat">
-              <h3 class="titulo-subcat">{{ subcat }}</h3>
+              <h3 class="titulo-subcat">{{ subcat || $t('instrumentacion.sinSubcategoria') }}</h3>
               <ul class="lista-wiki">
                 <li v-for="inst in lista" :key="inst.id">
                   <div class="item-header">
                     <span class="punto-azul">•</span>
-                    <span class="enlace-wiki" @click="verDetalles(inst)" title="Click para reservar">{{ inst.nombre }}</span>
-                    <span class="marca-wiki">({{ inst.marca }})</span>
+                    <button type="button" class="enlace-wiki btn-enlace" @click="verDetalles(inst)" :title="$t('instrumentacion.verFicha')">{{ inst.nombre }}</button>
+                    <span v-if="inst.marca" class="marca-wiki">({{ inst.marca }})</span>
                   </div>
                   <div class="caja-gris-wiki">
-                    <div v-if="inst.ultimaCalibracion"><strong>- Última calibració:</strong> {{ inst.ultimaCalibracion }}</div>
+                    <div v-if="inst.ultimaCalibracion"><strong>- {{ $t('instrumentacion.ultimaCalibracion') }}:</strong> {{ inst.ultimaCalibracion }}</div>
                     
-                    <button class="btn-acordeon" @click="toggleAcordeon(inst.id)">
-                      <span v-if="instrumentoExpandido === inst.id">▲ Ocultar informació tècnica</span>
-                      <span v-else>▼ Veure informació tècnica i manuals</span>
+                    <button class="btn-acordeon" :aria-expanded="instrumentoExpandido === inst.id" @click="toggleAcordeon(inst.id)">
+                      <span v-if="instrumentoExpandido === inst.id">▲ {{ $t('instrumentacion.ocultarInfo') }}</span>
+                      <span v-else>▼ {{ $t('instrumentacion.verInfo') }}</span>
                     </button>
                     
                     <div v-show="instrumentoExpandido === inst.id" class="contenido-acordeon">
                       <div class="bloque-info-wiki">
-                        <h4>Descripció General</h4>
-                        <div class="texto-wiki" v-html="inst.descripcionCompleta" style="white-space: pre-wrap;"></div>
-                        <div class="bloque-info-wiki">
-                         <h4>Especificacions Tècniques / Manuals</h4>
-                         <div v-html="inst.parametros" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>
-                         </div>
-
-                      <div v-html="inst.parametros" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>
+                        <h4>{{ $t('instrumentacion.descripcion') }}</h4>
+                        <div v-if="inst.descripcionCompleta" class="texto-wiki" v-html="inst.descripcionCompleta" style="white-space: pre-wrap;"></div>
+                        <div v-else class="texto-wiki">{{ $t('instrumentacion.sinDescripcion') }}</div>
+                      </div>
+                      <div class="bloque-info-wiki">
+                        <h4>{{ $t('instrumentacion.especificaciones') }}</h4>
+                        <div v-if="inst.parametros" v-html="inst.parametros" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>
+                        <div v-else>{{ $t('instrumentacion.sinParametros') }}</div>
                       </div>
                       
                       <button class="btn-acordeon btn-cerrar-acordeon" @click="toggleAcordeon(inst.id)">
-                        ▲ Ocultar informació tècnica
+                        ▲ {{ $t('instrumentacion.ocultarInfo') }}
                       </button>
                     </div>
 
@@ -184,12 +194,12 @@ const enviarSolicitud = () => {
               </div>
               
               <div class="calendario-mini">
-                <h3 class="titulo-mini">Pàs 1: Selecciona els dies de reserva</h3>
+                <h3 class="titulo-mini">{{ $t('instrumentacion.paso1') }}</h3>
                 
                 <div class="controles-mes">
-                  <button @click.prevent="cambiarMes(-1)" class="btn-mes">◀</button>
-                  <span class="mes-actual">{{ nombreMes }} {{ anioActual }}</span>
-                  <button @click.prevent="cambiarMes(1)" class="btn-mes">▶</button>
+                  <button @click.prevent="cambiarMes(-1)" class="btn-mes" :aria-label="$t('instrumentacion.mesAnterior')">◀</button>
+                  <span class="mes-actual">{{ nombreMes }}</span>
+                  <button @click.prevent="cambiarMes(1)" class="btn-mes" :aria-label="$t('instrumentacion.mesSiguiente')">▶</button>
                 </div>
 
                 <div class="grid-dias">
@@ -197,23 +207,23 @@ const enviarSolicitud = () => {
                     {{ n }}
                   </div>
                 </div>
-                <p class="leyenda">* Gris: Disponible | Blau: Ocupat | Verd: La teva selecció</p>
+                <p class="leyenda">{{ $t('instrumentacion.leyenda') }}</p>
               </div>
 
               <div class="formulario-reserva">
-                <h3 class="titulo-mini">Pàs 2: Envia la sol·licitud</h3>
+                <h3 class="titulo-mini">{{ $t('instrumentacion.paso2') }}</h3>
                 <p class="txt-p" style="font-size: 0.85rem; margin-bottom: 15px;">
-                  En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a
-                  <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>. El SIO et respondrà per confirmar la reserva.
+                  {{ $t('instrumentacion.explicacion') }}
+                  <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>. {{ $t('instrumentacion.explicacionFin') }}
                 </p>
 
                 <div class="form-grupo">
-                  <label for="nombre-investigador">Nom i Cognoms:</label>
-                  <input type="text" id="nombre-investigador" v-model="nombreInvestigador" placeholder="Ex: Eve Galimany Sanromà" class="input-form">
+                  <label for="nombre-investigador">{{ $t('instrumentacion.nombre') }}:</label>
+                  <input type="text" id="nombre-investigador" v-model="nombreInvestigador" :placeholder="$t('instrumentacion.nombrePh')" class="input-form">
                 </div>
                 <div class="form-grupo">
-                  <label for="institucion-investigador">Institució (Opcional):</label>
-                  <input type="text" id="institucion-investigador" v-model="institucionInvestigador" placeholder="Ex: ICATMAR" class="input-form">
+                  <label for="institucion-investigador">{{ $t('instrumentacion.institucion') }}:</label>
+                  <input type="text" id="institucion-investigador" v-model="institucionInvestigador" :placeholder="$t('instrumentacion.institucionPh')" class="input-form">
                 </div>
 
                 <button
@@ -222,23 +232,20 @@ const enviarSolicitud = () => {
                   :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
                   :disabled="diasSeleccionados.length === 0"
                 >
-                  📧 Preparar correu de sol·licitud
+                  📧 {{ $t('instrumentacion.preparar') }}
                 </button>
               </div>
               
-              <button class="btn-cerrar" @click="equipoSeleccionado = null">Tancar Detalls</button>
+              <button class="btn-cerrar" @click="equipoSeleccionado = null">{{ $t('instrumentacion.cerrar') }}</button>
             </div>
 
             <div v-else>
-              <h2 class="titulo-fija">Préstecs SIO</h2>
-              <p class="txt-p">Feu clic a l'enllaç blau de qualsevol instrument a l'esquerra per veure la seva fitxa tècnica completa i disponibilitat.</p>
+              <h2 class="titulo-fija">{{ $t('instrumentacion.prestamos') }}</h2>
+              <p class="txt-p">{{ $t('instrumentacion.ayuda') }}</p>
               <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
-              <h3 class="titulo-mini">Com funciona?</h3>
+              <h3 class="titulo-mini">{{ $t('instrumentacion.comoFunciona') }}</h3>
               <ol style="color: #666; font-size: 0.9rem; line-height: 1.6; padding-left: 20px;">
-                <li>Selecciona un instrument de la llista.</li>
-                <li>Fes clic als dies del calendari que necessitis.</li>
-                <li>Escriu el teu nom i prem el botó: s'obrirà el teu correu amb la sol·licitud preparada.</li>
-                <li>Envia el correu i el SIO et respondrà per confirmar la reserva.</li>
+                <li v-for="(paso, i) in $tm('instrumentacion.pasos')" :key="i">{{ $rt(paso) }}</li>
               </ol>
             </div>
 
@@ -285,6 +292,7 @@ const enviarSolicitud = () => {
 .punto-azul { color: #0056b3; margin-right: 8px; font-size: 1.2rem; line-height: 0; }
 .enlace-wiki { color: #0056b3; font-weight: 500; cursor: pointer; text-decoration: none; font-size: 1.05rem; }
 .enlace-wiki:hover { text-decoration: underline; }
+.btn-enlace { background: none; border: none; padding: 0; font-family: inherit; text-align: left; }
 .marca-wiki { color: #666; font-size: 0.9rem; margin-left: 5px; }
 .caja-gris-wiki { background-color: #f1f3f4; border-radius: 6px; padding: 10px 15px; margin-left: 15px; margin-bottom: 20px; font-family: 'Consolas', 'Courier New', Courier, monospace; font-size: 0.85rem; color: #202124; line-height: 1.6; }
 

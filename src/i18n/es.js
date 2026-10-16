@@ -141,5 +141,51 @@ export default {
       texto: 'Diseño CAD avanzado y producción de componentes mecánicos complejos empleando impresión 3D técnica en materiales de alta resistencia.',
       items: ['Modelado 3D y diseño paramétrico.', 'Impresión técnica FDM y resina.', 'Desarrollo de carcasas submarinas y adaptadores.']
     }
+  },
+
+  instrumentacion: {
+    titulo: 'Instrumentación Oceanográfica',
+    subtitulo: 'Catálogo técnico, calibraciones y gestión de préstamos del SIO.',
+    cargando: 'Conectando con la base de datos del SIO...',
+    errorCarga: 'Error de conexión. No se ha podido cargar el catálogo de instrumentos.',
+    sinInstrumentos: 'No hay instrumentos catalogados en esta sección.',
+    sinSubcategoria: 'Sin subcategoría',
+    sinDescripcion: 'No hay descripción disponible.',
+    sinParametros: 'No hay parámetros técnicos.',
+    verFicha: 'Ver ficha y reservar',
+    ultimaCalibracion: 'Última calibración',
+    verInfo: 'Ver información técnica y manuales',
+    ocultarInfo: 'Ocultar información técnica',
+    descripcion: 'Descripción general',
+    especificaciones: 'Especificaciones técnicas / Manuales',
+    paso1: 'Paso 1: Selecciona los días de reserva',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes siguiente',
+    leyenda: '* Gris: Disponible | Azul: Ocupado | Verde: Tu selección',
+    paso2: 'Paso 2: Envía la solicitud',
+    explicacion: 'Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a',
+    explicacionFin: 'El SIO te responderá para confirmar la reserva.',
+    nombre: 'Nombre y apellidos',
+    nombrePh: 'Ej.: Eve Galimany Sanromà',
+    institucion: 'Institución (opcional)',
+    institucionPh: 'Ej.: ICATMAR',
+    preparar: 'Preparar correo de solicitud',
+    cerrar: 'Cerrar detalles',
+    prestamos: 'Préstamos SIO',
+    ayuda: 'Haz clic en el nombre de cualquier instrumento de la izquierda para ver su ficha técnica completa y su disponibilidad.',
+    comoFunciona: '¿Cómo funciona?',
+    pasos: ['Selecciona un instrumento de la lista.', 'Haz clic en los días del calendario que necesites.', 'Escribe tu nombre y pulsa el botón: se abrirá tu correo con la solicitud preparada.', 'Envía el correo y el SIO te responderá para confirmar la reserva.'],
+    faltanDatos: 'Selecciona al menos un día y escribe tu nombre.',
+    correo: {
+      asunto: 'Solicitud de préstamo SIO: {instrumento}',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Me gustaría solicitar el préstamo de este instrumento:',
+      instrumento: 'Instrumento',
+      dias: 'Días',
+      diasValor: '{dias} ({mes})',
+      nombre: 'Nombre',
+      institucion: 'Institución',
+      despedida: 'Quedo a la espera de vuestra confirmación.\n\nUn saludo.'
+    }
   }
 }

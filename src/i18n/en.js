@@ -141,5 +141,51 @@ export default {
       texto: 'Advanced CAD design and production of complex mechanical components using technical 3D printing in high-strength materials.',
       items: ['3D modelling and parametric design.', 'Technical FDM and resin printing.', 'Development of underwater housings and adapters.']
     }
+  },
+
+  instrumentacion: {
+    titulo: 'Oceanographic Instrumentation',
+    subtitulo: 'Technical catalogue, calibrations and SIO equipment loans.',
+    cargando: 'Connecting to the SIO database...',
+    errorCarga: 'Connection error. The instrument catalogue could not be loaded.',
+    sinInstrumentos: 'There are no instruments listed in this section.',
+    sinSubcategoria: 'No subcategory',
+    sinDescripcion: 'No description available.',
+    sinParametros: 'No technical parameters.',
+    verFicha: 'View details and book',
+    ultimaCalibracion: 'Last calibration',
+    verInfo: 'View technical information and manuals',
+    ocultarInfo: 'Hide technical information',
+    descripcion: 'General description',
+    especificaciones: 'Technical specifications / Manuals',
+    paso1: 'Step 1: Select the days you need',
+    mesAnterior: 'Previous month',
+    mesSiguiente: 'Next month',
+    leyenda: '* Grey: Available | Blue: Booked | Green: Your selection',
+    paso2: 'Step 2: Send the request',
+    explicacion: 'When you press the button, your email program will open with the request ready to send to',
+    explicacionFin: 'The SIO will reply to confirm the booking.',
+    nombre: 'Full name',
+    nombrePh: 'E.g. Eve Galimany Sanromà',
+    institucion: 'Institution (optional)',
+    institucionPh: 'E.g. ICATMAR',
+    preparar: 'Prepare request email',
+    cerrar: 'Close details',
+    prestamos: 'SIO equipment loans',
+    ayuda: 'Click the name of any instrument on the left to see its full technical sheet and availability.',
+    comoFunciona: 'How does it work?',
+    pasos: ['Select an instrument from the list.', 'Click the days you need on the calendar.', 'Enter your name and press the button: your email will open with the request ready.', 'Send the email and the SIO will reply to confirm the booking.'],
+    faltanDatos: 'Select at least one day and enter your name.',
+    correo: {
+      asunto: 'SIO equipment loan request: {instrumento}',
+      saludo: 'Hello SIO team,',
+      intro: 'I would like to request the loan of this instrument:',
+      instrumento: 'Instrument',
+      dias: 'Days',
+      diasValor: '{dias} ({mes})',
+      nombre: 'Name',
+      institucion: 'Institution',
+      despedida: 'I look forward to your confirmation.\n\nBest regards.'
+    }
   }
 }

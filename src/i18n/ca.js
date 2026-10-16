@@ -141,5 +141,51 @@ export default {
       texto: "Disseny CAD avançat i producció de components mecànics complexos amb impressió 3D tècnica en materials d'alta resistència.",
       items: ['Modelatge 3D i disseny paramètric.', 'Impressió tècnica FDM i de resina.', 'Desenvolupament de carcasses submarines i adaptadors.']
     }
+  },
+
+  instrumentacion: {
+    titulo: 'Instrumentació Oceanogràfica',
+    subtitulo: 'Catàleg tècnic, calibratges i gestió de préstecs del SIO.',
+    cargando: 'Connectant amb la base de dades del SIO...',
+    errorCarga: "Error de connexió. No s'ha pogut carregar el catàleg d'instruments.",
+    sinInstrumentos: 'No hi ha instruments catalogats en aquesta secció.',
+    sinSubcategoria: 'Sense subcategoria',
+    sinDescripcion: 'No hi ha descripció disponible.',
+    sinParametros: 'No hi ha paràmetres tècnics.',
+    verFicha: 'Veure la fitxa i reservar',
+    ultimaCalibracion: 'Últim calibratge',
+    verInfo: 'Veure informació tècnica i manuals',
+    ocultarInfo: 'Amagar informació tècnica',
+    descripcion: 'Descripció general',
+    especificaciones: 'Especificacions tècniques / Manuals',
+    paso1: 'Pas 1: Selecciona els dies de reserva',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes següent',
+    leyenda: '* Gris: Disponible | Blau: Ocupat | Verd: La teva selecció',
+    paso2: 'Pas 2: Envia la sol·licitud',
+    explicacion: "En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a",
+    explicacionFin: 'El SIO et respondrà per confirmar la reserva.',
+    nombre: 'Nom i cognoms',
+    nombrePh: 'Ex.: Eve Galimany Sanromà',
+    institucion: 'Institució (opcional)',
+    institucionPh: 'Ex.: ICATMAR',
+    preparar: 'Preparar correu de sol·licitud',
+    cerrar: 'Tancar detalls',
+    prestamos: 'Préstecs SIO',
+    ayuda: "Fes clic al nom de qualsevol instrument de l'esquerra per veure'n la fitxa tècnica completa i la disponibilitat.",
+    comoFunciona: 'Com funciona?',
+    pasos: ['Selecciona un instrument de la llista.', 'Fes clic als dies del calendari que necessitis.', "Escriu el teu nom i prem el botó: s'obrirà el teu correu amb la sol·licitud preparada.", 'Envia el correu i el SIO et respondrà per confirmar la reserva.'],
+    faltanDatos: 'Selecciona almenys un dia i escriu el teu nom.',
+    correo: {
+      asunto: 'Sol·licitud de préstec SIO: {instrumento}',
+      saludo: 'Hola, equip del SIO:',
+      intro: "Voldria sol·licitar el préstec d'aquest instrument:",
+      instrumento: 'Instrument',
+      dias: 'Dies',
+      diasValor: '{dias} ({mes})',
+      nombre: 'Nom',
+      institucion: 'Institució',
+      despedida: "Quedo a l'espera de la vostra confirmació.\n\nSalutacions."
+    }
   }
 }
