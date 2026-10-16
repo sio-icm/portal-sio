@@ -187,5 +187,47 @@ export default {
       institucion: 'Institució',
       despedida: "Quedo a l'espera de la vostra confirmació.\n\nSalutacions."
     }
+  },
+
+  pelagia: {
+    titulo: 'Plataforma Pelagia',
+    subtitulo: "Informació tècnica, disponibilitat i gestió de reserves de l'embarcació del SIO.",
+    ficha: 'Fitxa tècnica',
+    descripcionTitulo: 'Descripció general',
+    descripcion: "La Pelagia és l'embarcació de treball costaner del Servei d'Enginyeria Oceanogràfica (SIO). Està dissenyada i equipada per donar suport a operacions de busseig científic, desplegament i recuperació d'instrumentació oceanogràfica i mostrejos costaners.",
+    especificaciones: 'Especificacions principals',
+    equipamiento: 'Equipament a bord',
+    navegacion: 'Navegació',
+    navegacionTexto: 'GPS / Sonda plotter integrada.',
+    comunicacion: 'Comunicació',
+    comunicacionTexto: 'Emissora VHF fixa.',
+    maniobra: 'Maniobra',
+    maniobraTexto: 'Pescant / Maquineta per a perfiladors lleugers (CTD, roseta petita).',
+    seguridad: 'Seguretat',
+    seguridadTexto: 'Material de seguretat complet.',
+    normativaTitulo: "Normativa d'ús",
+    normativa: "Per utilitzar l'embarcació Pelagia és estrictament obligatori comptar amb l'aprovació del SIO. La plataforma Pelagia està capitanejada per Brian Nicolás, professional amb àmplia experiència demostrable en navegació costanera i suport a operacions oceanogràfiques. El seu lideratge a bord garanteix la seguretat de la tripulació i la correcta execució dels protocols de treball marítim. El seu perfil resolutiu i la seva actitud col·laborativa faciliten enormement la coordinació de les activitats científiques durant les campanyes.",
+    solicitud: "Sol·licitud d'ús",
+    operativa: 'Operativa',
+    paso1: 'Pas 1: Descarrega les normes i el pla de campanya.',
+    descargar: 'Descarregar el Pla de Campanya',
+    paso2: 'Pas 2: Selecciona els dies de sortida',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes següent',
+    leyenda: '* Gris: Disponible | Blau: Ocupat/Manteniment | Verd: La teva selecció',
+    paso3: 'Pas 3: Envia el teu pla',
+    explicacion: "En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a",
+    adjunta: 'Adjunta el Pla de Campanya signat',
+    explicacionFin: "abans d'enviar-lo.",
+    preparar: 'Preparar correu de sol·licitud',
+    seleccionaDia: 'Selecciona almenys un dia',
+    avisoDias: 'Selecciona almenys un dia al calendari de dalt per poder enviar.',
+    correo: {
+      asunto: 'Sol·licitud de sortida: Embarcació Pelagia',
+      saludo: 'Hola, equip del SIO:',
+      intro: "Voldria sol·licitar l'embarcació Pelagia per a aquests dies:",
+      adjunto: 'Adjunto el Pla de Campanya signat.',
+      despedida: "Quedo a l'espera de la vostra confirmació.\n\nSalutacions."
+    }
   }
 }

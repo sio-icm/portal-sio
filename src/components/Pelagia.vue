@@ -1,60 +1,59 @@
 <script setup>
-import { ref } from 'vue'
-// Importamos tu imagen de fondo
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import fondoPelagia from '../assets/Pelagia.jpg'
 
-// --- LÓGICA DEL CALENDARIO (7 MESES A PARTIR DEL ACTUAL) ---
+const { t, locale } = useI18n()
+
+// --- CALENDARIO (7 MESES A PARTIR DEL ACTUAL) ---
 const hoy = new Date()
-const meses = Array.from({ length: 7 }, (_, i) => {
-  const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1)
-  return {
-    nombre: new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(fecha),
-    dias: new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()
-  }
-})
+const meses = Array.from({ length: 7 }, (_, i) => new Date(hoy.getFullYear(), hoy.getMonth() + i, 1))
+const diasDelMes = (fecha) => new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()
 
 const mesActualIndex = ref(0)
+const mesVisible = computed(() => meses[mesActualIndex.value])
+const nombreMes = computed(() => {
+  const texto = new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(mesVisible.value)
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+})
 
 const mesAnterior = () => { if (mesActualIndex.value > 0) mesActualIndex.value-- }
 const mesSiguiente = () => { if (mesActualIndex.value < meses.length - 1) mesActualIndex.value++ }
 
+// Días elegidos como 'AAAA-M-D', para poder ordenarlos y escribirlos en cualquier idioma
 const diasSeleccionados = ref([])
+const claveDia = (dia) => `${mesVisible.value.getFullYear()}-${mesVisible.value.getMonth()}-${dia}`
 
 // Días ocupados: todavía no hay un calendario real de la embarcación.
 // Cuando lo haya, se consultará aquí; mientras tanto no se marca ninguno.
 const esOcupado = () => false
 
-// Seleccionar un día, guardando también el mes para el correo
 const toggleDia = (dia) => {
-  if (esOcupado(dia, mesActualIndex.value)) return
-
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value].nombre}`
-  const index = diasSeleccionados.value.indexOf(fechaStr)
-
-  if (index === -1) {
-    diasSeleccionados.value.push(fechaStr) 
-  } else {
-    diasSeleccionados.value.splice(index, 1) 
-  }
+  if (esOcupado(dia)) return
+  const clave = claveDia(dia)
+  const index = diasSeleccionados.value.indexOf(clave)
+  if (index === -1) diasSeleccionados.value.push(clave)
+  else diasSeleccionados.value.splice(index, 1)
 }
 
-// Comprueba si un día de este mes está en la lista de seleccionados
-const estaSeleccionado = (dia) => {
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value].nombre}`
-  return diasSeleccionados.value.includes(fechaStr)
-}
+const estaSeleccionado = (dia) => diasSeleccionados.value.includes(claveDia(dia))
 
 // Abre el correo del usuario con la solicitud preparada (sin servicios externos)
 const enviarSolicitud = () => {
   if (diasSeleccionados.value.length === 0) return
+  const formato = new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'long', year: 'numeric' })
+  const fechas = diasSeleccionados.value
+    .map((clave) => { const [a, m, d] = clave.split('-').map(Number); return new Date(a, m, d) })
+    .sort((x, y) => x - y)
+    .map((fecha) => formato.format(fecha))
   const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent("Solicitud de salida: Embarcación Pelagia")
+  const asunto = encodeURIComponent(t('pelagia.correo.asunto'))
   const cuerpo = encodeURIComponent(
-    `Hola equipo del SIO,\n\n` +
-    `Me gustaría solicitar la embarcación Pelagia para estos días:\n` +
-    `- ${diasSeleccionados.value.join('\n- ')}\n\n` +
-    `Adjunto el Plan de Campaña firmado.\n\n` +
-    `Quedo a la espera de vuestra confirmación.\n\nUn saludo.`
+    `${t('pelagia.correo.saludo')}\n\n` +
+    `${t('pelagia.correo.intro')}\n` +
+    `- ${fechas.join('\n- ')}\n\n` +
+    `${t('pelagia.correo.adjunto')}\n\n` +
+    `${t('pelagia.correo.despedida')}`
   )
   window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
 }
@@ -65,102 +64,92 @@ const enviarSolicitud = () => {
     <div class="fondo-servicios" :style="{ backgroundImage: `linear-gradient(rgba(1, 33, 105, 0.75), rgba(1, 33, 105, 0.9)), url(${fondoPelagia})` }"></div>
 
     <div class="contenido-hub">
-      <h1 class="titulo-seccion">Plataforma Pelagia</h1>
-      <p class="subtitulo">Información técnica, disponibilidad y gestión de reservas de la embarcación del SIO.</p>
+      <h1 class="titulo-seccion">{{ $t('pelagia.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('pelagia.subtitulo') }}</p>
 
       <div class="grid-layout">
         
         <div class="seccion-bloque ficha-wiki">
-          <h2 class="titulo-fija">Ficha Técnica</h2>
+          <h2 class="titulo-fija">{{ $t('pelagia.ficha') }}</h2>
           
           <div class="bloque-subcat">
-            <h3 class="titulo-subcat">Descripción General</h3>
-            <p class="texto-descripcion">
-              La Pelagia es la embarcación de trabajo costero del Servicio de Ingeniería Oceanográfica (SIO). 
-              Está diseñada y equipada para dar soporte a operaciones de buceo científico, despliegue y recuperación 
-              de instrumentación oceanográfica, y muestreos costeros.
-            </p>
+            <h3 class="titulo-subcat">{{ $t('pelagia.descripcionTitulo') }}</h3>
+            <p class="texto-descripcion">{{ $t('pelagia.descripcion') }}</p>
           </div>
 
           <div class="bloque-subcat">
-            <h3 class="titulo-subcat">Especificaciones Principales</h3>
+            <h3 class="titulo-subcat">{{ $t('pelagia.especificaciones') }}</h3>
             <ul class="lista-wiki">
               <!-- Características básicas (eslora, manga, motorización, capacidad):
                    pendientes de los datos reales de la embarcación -->
               <li>
                 <div class="item-header">
                   <span class="punto-azul">•</span>
-                  <span class="enlace-wiki">Equipamiento a bordo</span>
+                  <span class="enlace-wiki">{{ $t('pelagia.equipamiento') }}</span>
                 </div>
                 <div class="caja-gris-wiki">
-                  <strong>- Navegación:</strong> GPS / Sonda plotter integrado.<br>
-                  <strong>- Comunicación:</strong> Emisora VHF fija.<br>
-                  <strong>- Maniobra:</strong> Pescante / Maquinilla para perfiladores ligeros (CTD, roseta pequeña).<br>
-                  <strong>- Seguridad:</strong> Material de seguridad completo.
+                  <strong>- {{ $t('pelagia.navegacion') }}:</strong> {{ $t('pelagia.navegacionTexto') }}<br>
+                  <strong>- {{ $t('pelagia.comunicacion') }}:</strong> {{ $t('pelagia.comunicacionTexto') }}<br>
+                  <strong>- {{ $t('pelagia.maniobra') }}:</strong> {{ $t('pelagia.maniobraTexto') }}<br>
+                  <strong>- {{ $t('pelagia.seguridad') }}:</strong> {{ $t('pelagia.seguridadTexto') }}
                 </div>
               </li>
             </ul>
           </div>
 
           <div class="bloque-subcat">
-            <h3 class="titulo-subcat">Normativa de Uso</h3>
+            <h3 class="titulo-subcat">{{ $t('pelagia.normativaTitulo') }}</h3>
             <div class="caja-desc">
-              <p>
-                Para el uso de la embarcación Pelagia es estrictamente obligatorio contar con la aprobación del SIO. 
-                La plataforma Pelagia está capitaneada por Brian Nicolás, profesional con amplia experiencia demostrable 
-                en navegación costera y soporte a operaciones oceanográficas. Su liderazgo a bordo garantiza la seguridad 
-                de la tripulación y la correcta ejecución de los protocolos de trabajo marítimo. Su perfil resolutivo y 
-                su actitud colaborativa facilitan enormemente la coordinación de las actividades científicas durante las campañas.  
-              </p>
+              <p>{{ $t('pelagia.normativa') }}</p>
             </div>
           </div>
         </div>
 
         <div class="seccion-bloque ficha-gestion">
           <div class="cabecera-estado">
-            <h2 class="titulo-fija">Solicitud de Uso</h2>
-            <span class="badge-grande disponible">Operativa</span>
+            <h2 class="titulo-fija">{{ $t('pelagia.solicitud') }}</h2>
+            <span class="badge-grande disponible">{{ $t('pelagia.operativa') }}</span>
           </div>
           
-          <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">Paso 1: Descarga las normas y plan de campaña.</p>
+          <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">{{ $t('pelagia.paso1') }}</p>
           <div class="descarga-box-pequena">
           <a href="/Plan_Campana_Pelagia.docx" download="Plan_Campana_Pelagia.docx" class="link-dl-mini">
-           ⬇ Descargar Plan de Campaña
+           ⬇ {{ $t('pelagia.descargar') }}
           </a>
           </div>
 
           <div class="calendario-mini">
-            <h3 class="titulo-mini">Paso 2: Selecciona los días de salida</h3>
+            <h3 class="titulo-mini">{{ $t('pelagia.paso2') }}</h3>
             
             <div class="cabecera-mes">
-              <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': mesActualIndex === 0 }">❮</button>
-              <span class="mes-actual">{{ meses[mesActualIndex].nombre }}</span>
-              <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': mesActualIndex === meses.length - 1 }">❯</button>
+              <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': mesActualIndex === 0 }" :aria-label="$t('pelagia.mesAnterior')">❮</button>
+              <span class="mes-actual">{{ nombreMes }}</span>
+              <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': mesActualIndex === meses.length - 1 }" :aria-label="$t('pelagia.mesSiguiente')">❯</button>
             </div>
 
             <div class="grid-dias">
               <div 
-                v-for="dia in meses[mesActualIndex].dias" 
+                v-for="dia in diasDelMes(mesVisible)" 
                 :key="dia" 
                 @click="toggleDia(dia)" 
                 :class="['dia', { 
-                  ocupado: esOcupado(dia, mesActualIndex), 
+                  ocupado: esOcupado(dia), 
                   seleccionado: estaSeleccionado(dia), 
-                  disponible: !esOcupado(dia, mesActualIndex) 
+                  disponible: !esOcupado(dia) 
                 }]"
               >
                 {{ dia }}
               </div>
             </div>
-            <p class="leyenda">* Gris: Disponible | Azul: Ocupado/Mantenimiento | Verde: Tu selección</p>
+            <p class="leyenda">{{ $t('pelagia.leyenda') }}</p>
           </div>
 
           <div class="formulario-reserva">
-            <h3 class="titulo-mini" style="margin-top: 20px;">Paso 3: Envía tu Plan</h3>
+            <h3 class="titulo-mini" style="margin-top: 20px;">{{ $t('pelagia.paso3') }}</h3>
             <p style="font-size: 0.85rem; color: #666; margin: 0 0 10px;">
-              Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a
+              {{ $t('pelagia.explicacion') }}
               <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.
-              <strong>Adjunta el Plan de Campaña firmado</strong> antes de enviarlo.
+              <strong>{{ $t('pelagia.adjunta') }}</strong> {{ $t('pelagia.explicacionFin') }}
             </p>
 
             <button 
@@ -168,11 +157,11 @@ const enviarSolicitud = () => {
               @click="enviarSolicitud"
               :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
               :disabled="diasSeleccionados.length === 0"
-              :title="diasSeleccionados.length === 0 ? 'Selecciona al menos un día' : ''"
+              :title="diasSeleccionados.length === 0 ? $t('pelagia.seleccionaDia') : ''"
             >
-              📧 Preparar correo de solicitud
+              📧 {{ $t('pelagia.preparar') }}
             </button>
-            <p v-if="diasSeleccionados.length === 0" class="aviso-dias">Selecciona al menos un día en el calendario superior para poder enviar.</p>
+            <p v-if="diasSeleccionados.length === 0" class="aviso-dias">{{ $t('pelagia.avisoDias') }}</p>
           </div>
 
         </div>

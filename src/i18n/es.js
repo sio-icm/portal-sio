@@ -187,5 +187,47 @@ export default {
       institucion: 'Institución',
       despedida: 'Quedo a la espera de vuestra confirmación.\n\nUn saludo.'
     }
+  },
+
+  pelagia: {
+    titulo: 'Plataforma Pelagia',
+    subtitulo: 'Información técnica, disponibilidad y gestión de reservas de la embarcación del SIO.',
+    ficha: 'Ficha Técnica',
+    descripcionTitulo: 'Descripción General',
+    descripcion: 'La Pelagia es la embarcación de trabajo costero del Servicio de Ingeniería Oceanográfica (SIO). Está diseñada y equipada para dar soporte a operaciones de buceo científico, despliegue y recuperación de instrumentación oceanográfica, y muestreos costeros.',
+    especificaciones: 'Especificaciones Principales',
+    equipamiento: 'Equipamiento a bordo',
+    navegacion: 'Navegación',
+    navegacionTexto: 'GPS / Sonda plotter integrado.',
+    comunicacion: 'Comunicación',
+    comunicacionTexto: 'Emisora VHF fija.',
+    maniobra: 'Maniobra',
+    maniobraTexto: 'Pescante / Maquinilla para perfiladores ligeros (CTD, roseta pequeña).',
+    seguridad: 'Seguridad',
+    seguridadTexto: 'Material de seguridad completo.',
+    normativaTitulo: 'Normativa de Uso',
+    normativa: 'Para el uso de la embarcación Pelagia es estrictamente obligatorio contar con la aprobación del SIO. La plataforma Pelagia está capitaneada por Brian Nicolás, profesional con amplia experiencia demostrable en navegación costera y soporte a operaciones oceanográficas. Su liderazgo a bordo garantiza la seguridad de la tripulación y la correcta ejecución de los protocolos de trabajo marítimo. Su perfil resolutivo y su actitud colaborativa facilitan enormemente la coordinación de las actividades científicas durante las campañas.',
+    solicitud: 'Solicitud de Uso',
+    operativa: 'Operativa',
+    paso1: 'Paso 1: Descarga las normas y plan de campaña.',
+    descargar: 'Descargar Plan de Campaña',
+    paso2: 'Paso 2: Selecciona los días de salida',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes siguiente',
+    leyenda: '* Gris: Disponible | Azul: Ocupado/Mantenimiento | Verde: Tu selección',
+    paso3: 'Paso 3: Envía tu Plan',
+    explicacion: 'Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a',
+    adjunta: 'Adjunta el Plan de Campaña firmado',
+    explicacionFin: 'antes de enviarlo.',
+    preparar: 'Preparar correo de solicitud',
+    seleccionaDia: 'Selecciona al menos un día',
+    avisoDias: 'Selecciona al menos un día en el calendario superior para poder enviar.',
+    correo: {
+      asunto: 'Solicitud de salida: Embarcación Pelagia',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Me gustaría solicitar la embarcación Pelagia para estos días:',
+      adjunto: 'Adjunto el Plan de Campaña firmado.',
+      despedida: 'Quedo a la espera de vuestra confirmación.\n\nUn saludo.'
+    }
   }
 }

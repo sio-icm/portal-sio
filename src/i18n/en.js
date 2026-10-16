@@ -187,5 +187,47 @@ export default {
       institucion: 'Institution',
       despedida: 'I look forward to your confirmation.\n\nBest regards.'
     }
+  },
+
+  pelagia: {
+    titulo: 'Pelagia Platform',
+    subtitulo: 'Technical information, availability and booking of the SIO vessel.',
+    ficha: 'Technical Sheet',
+    descripcionTitulo: 'General Description',
+    descripcion: 'Pelagia is the coastal work vessel of the Oceanographic Engineering Service (SIO). It is designed and equipped to support scientific diving, the deployment and recovery of oceanographic instruments, and coastal sampling.',
+    especificaciones: 'Main Specifications',
+    equipamiento: 'On-board equipment',
+    navegacion: 'Navigation',
+    navegacionTexto: 'GPS / integrated chart plotter and sounder.',
+    comunicacion: 'Communication',
+    comunicacionTexto: 'Fixed VHF radio.',
+    maniobra: 'Handling',
+    maniobraTexto: 'Davit / winch for light profilers (CTD, small rosette).',
+    seguridad: 'Safety',
+    seguridadTexto: 'Full safety equipment.',
+    normativaTitulo: 'Rules of Use',
+    normativa: 'Use of the Pelagia vessel strictly requires approval from the SIO. Pelagia is captained by Brian Nicolás, a professional with extensive, proven experience in coastal navigation and in supporting oceanographic operations. His leadership on board ensures the safety of the crew and the correct execution of maritime work protocols. His problem-solving approach and collaborative attitude greatly ease the coordination of scientific activities during campaigns.',
+    solicitud: 'Booking Request',
+    operativa: 'Operational',
+    paso1: 'Step 1: Download the rules and campaign plan.',
+    descargar: 'Download Campaign Plan',
+    paso2: 'Step 2: Select the days you want to go out',
+    mesAnterior: 'Previous month',
+    mesSiguiente: 'Next month',
+    leyenda: '* Grey: Available | Blue: Booked/Maintenance | Green: Your selection',
+    paso3: 'Step 3: Send your plan',
+    explicacion: 'When you press the button, your email program will open with the request ready to send to',
+    adjunta: 'Attach the signed Campaign Plan',
+    explicacionFin: 'before sending it.',
+    preparar: 'Prepare request email',
+    seleccionaDia: 'Select at least one day',
+    avisoDias: 'Select at least one day in the calendar above to be able to send.',
+    correo: {
+      asunto: 'Trip request: Pelagia vessel',
+      saludo: 'Hello SIO team,',
+      intro: 'I would like to request the Pelagia vessel for these days:',
+      adjunto: 'Please find the signed Campaign Plan attached.',
+      despedida: 'I look forward to your confirmation.\n\nBest regards.'
+    }
   }
 }
