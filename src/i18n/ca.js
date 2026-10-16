@@ -405,5 +405,39 @@ export default {
       divulgacion: 'Divulgació científica',
       otro: 'Altres'
     }
+  },
+
+  idi: {
+    titulo: 'R+D+I',
+    subtitulo: 'Impulsant la innovació tecnològica marina i la transferència de coneixement del SIO.',
+    oficina: 'Oficina R+D+I',
+    oficinaTexto: 'Suport integral a la recerca: des de la gestió de convocatòries fins a la protecció de resultats i la transferència tecnològica.',
+    items: ['Gestió de projectes i assessorament tècnic especialitzat.', 'Propietat intel·lectual i valorització de la tecnologia desenvolupada.', 'Foment de la col·laboració amb empreses i centres del sector marí.'],
+    invitacion: 'Al SIO creiem en la cocreació. Si tens una necessitat tècnica per a les teves campanyes, una idea per a un nou sensor o vols adaptar robòtica a un entorn extrem,',
+    invitacionDestacado: 'volem escoltar-te',
+    nombre: 'Nom i cognoms',
+    nombrePh: 'Ex.: Dra. Elena Martínez',
+    departamento: 'Institució / Departament',
+    departamentoPh: "Ex.: Dept. d'Oceanografia Física",
+    reto: "Quin és el repte oceanogràfic o la idea?",
+    retoPh: 'Descriu breument què necessites mesurar, quin problema tècnic tens o quina tecnologia t’agradaria explorar.',
+    entorno: "Entorn d'aplicació previst",
+    entornos: {
+      costa: 'Zona costanera / Aigües somes',
+      pelagico: 'Alta mar / Plataforma continental',
+      profundo: 'Aigües profundes / Bentos',
+      laboratorio: 'Proves de laboratori / Tanc',
+      otro: 'Altres'
+    },
+    avisoCorreo: "En prémer el botó s'obrirà el teu programa de correu amb la proposta preparada per enviar a",
+    enviar: 'Preparar correu amb la proposta',
+    correo: {
+      asunto: "Proposta d'R+D+I: {nombre}",
+      saludo: 'Hola, equip del SIO:',
+      nombre: 'Nom',
+      departamento: 'Institució / Departament',
+      entorno: "Entorn d'aplicació",
+      despedida: 'Salutacions.'
+    }
   }
 }

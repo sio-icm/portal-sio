@@ -405,5 +405,39 @@ export default {
       divulgacion: 'Science outreach',
       otro: 'Other'
     }
+  },
+
+  idi: {
+    titulo: 'R&D&I',
+    subtitulo: 'Driving marine technological innovation and knowledge transfer at the SIO.',
+    oficina: 'R&D&I Office',
+    oficinaTexto: 'Comprehensive research support: from managing funding calls to protecting results and technology transfer.',
+    items: ['Project management and specialised technical advice.', 'Intellectual property and valorisation of the technology we develop.', 'Promoting collaboration with companies and centres in the marine sector.'],
+    invitacion: 'At the SIO we believe in co-creation. If you have a technical need for your campaigns, an idea for a new sensor, or want to adapt robotics to an extreme environment,',
+    invitacionDestacado: 'we want to hear from you',
+    nombre: 'Full name',
+    nombrePh: 'E.g. Dr Elena Martínez',
+    departamento: 'Institution / Department',
+    departamentoPh: 'E.g. Dept. of Physical Oceanography',
+    reto: 'What is the oceanographic challenge or idea?',
+    retoPh: 'Briefly describe what you need to measure, the technical problem you have, or the technology you would like to explore.',
+    entorno: 'Intended application environment',
+    entornos: {
+      costa: 'Coastal zone / Shallow waters',
+      pelagico: 'Open sea / Continental shelf',
+      profundo: 'Deep waters / Benthos',
+      laboratorio: 'Laboratory tests / Tank',
+      otro: 'Other'
+    },
+    avisoCorreo: 'When you press the button, your email program will open with the proposal ready to send to',
+    enviar: 'Prepare proposal email',
+    correo: {
+      asunto: 'R&D&I proposal: {nombre}',
+      saludo: 'Hello SIO team,',
+      nombre: 'Name',
+      departamento: 'Institution / Department',
+      entorno: 'Application environment',
+      despedida: 'Best regards.'
+    }
   }
 }

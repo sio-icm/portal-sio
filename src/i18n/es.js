@@ -405,5 +405,39 @@ export default {
       divulgacion: 'Divulgación científica',
       otro: 'Otro'
     }
+  },
+
+  idi: {
+    titulo: 'I+D+I',
+    subtitulo: 'Impulsando la innovación tecnológica marina y la transferencia de conocimiento del SIO.',
+    oficina: 'Oficina I+D+I',
+    oficinaTexto: 'Soporte integral a la investigación: desde la gestión de convocatorias hasta la protección de resultados y transferencia tecnológica.',
+    items: ['Gestión de proyectos y asesoramiento técnico especializado.', 'Propiedad intelectual y valorización de la tecnología desarrollada.', 'Fomento de la colaboración con empresas y centros del sector marino.'],
+    invitacion: 'En el SIO creemos en la co-creación. Si tienes una necesidad técnica para tus campañas, una idea para un nuevo sensor, o buscas adaptar robótica a un entorno extremo,',
+    invitacionDestacado: 'queremos escucharte',
+    nombre: 'Nombre y Apellidos',
+    nombrePh: 'Ej.: Dra. Elena Martínez',
+    departamento: 'Institución / Departamento',
+    departamentoPh: 'Ej.: Dept. Oceanografía Física',
+    reto: '¿Cuál es el reto oceanográfico o la idea?',
+    retoPh: 'Describe brevemente qué necesitas medir, qué problema técnico tienes o qué tecnología te gustaría explorar.',
+    entorno: 'Entorno de aplicación previsto',
+    entornos: {
+      costa: 'Zona Costera / Aguas Someras',
+      pelagico: 'Alta Mar / Plataforma Continental',
+      profundo: 'Aguas Profundas / Bentos',
+      laboratorio: 'Pruebas de Laboratorio / Tanque',
+      otro: 'Otro'
+    },
+    avisoCorreo: 'Al pulsar el botón se abrirá tu programa de correo con la propuesta preparada para enviar a',
+    enviar: 'Preparar correo con la propuesta',
+    correo: {
+      asunto: 'Propuesta de I+D+I: {nombre}',
+      saludo: 'Hola, equipo del SIO:',
+      nombre: 'Nombre',
+      departamento: 'Institución / Departamento',
+      entorno: 'Entorno de aplicación',
+      despedida: 'Un saludo.'
+    }
   }
 }

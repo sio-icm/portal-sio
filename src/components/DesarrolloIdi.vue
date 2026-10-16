@@ -1,26 +1,23 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Propuesta de colaboración: abre el correo del usuario con los datos preparados
+const ENTORNOS = ['costa', 'pelagico', 'profundo', 'laboratorio', 'otro']
 const propuesta = ref({ nombre: '', departamento: '', reto: '', entorno: 'costa' })
-const ENTORNOS = {
-  costa: 'Zona Costera / Aguas Someras',
-  pelagico: 'Alta Mar / Plataforma Continental',
-  profundo: 'Aguas Profundas / Bentos',
-  laboratorio: 'Pruebas de Laboratorio / Tanque',
-  otro: 'Otro'
-}
 
 const enviarPropuesta = () => {
   const { nombre, departamento, reto, entorno } = propuesta.value
-  const asunto = encodeURIComponent(`Propuesta de I+D+I: ${nombre}`)
+  const asunto = encodeURIComponent(t('idi.correo.asunto', { nombre }))
   const cuerpo = encodeURIComponent(
-    `Hola, equipo del SIO:\n\n` +
-    `Nombre: ${nombre}\n` +
-    `Institución / Departamento: ${departamento}\n` +
-    `Entorno de aplicación: ${ENTORNOS[entorno]}\n\n` +
+    `${t('idi.correo.saludo')}\n\n` +
+    `${t('idi.correo.nombre')}: ${nombre}\n` +
+    `${t('idi.correo.departamento')}: ${departamento}\n` +
+    `${t('idi.correo.entorno')}: ${t(`idi.entornos.${entorno}`)}\n\n` +
     `${reto}\n\n` +
-    `Un saludo.`
+    `${t('idi.correo.despedida')}`
   )
   window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
 }
@@ -32,66 +29,54 @@ const enviarPropuesta = () => {
 
     <div class="contenedor-ancho contenido-hub">
       
-      <h1 class="titulo-seccion">I+D+I</h1>
-      <p class="subtitulo">Impulsando la innovación tecnológica marina y la transferencia de conocimiento del SIO.</p>
+      <h1 class="titulo-seccion">{{ $t('idi.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('idi.subtitulo') }}</p>
 
       <div class="contenido-oficina">
-        <h2 class="titulo-oficina">Oficina I+D+I</h2>
-        <p class="texto-oficina">Soporte integral a la investigación: desde la gestión de convocatorias hasta la protección de resultados y transferencia tecnológica.</p>
+        <h2 class="titulo-oficina">{{ $t('idi.oficina') }}</h2>
+        <p class="texto-oficina">{{ $t('idi.oficinaTexto') }}</p>
 
         <div class="lista-items">
-          <div class="item-idi">
-            <span class="punto-azul">●</span>
-            <div>Gestión de proyectos y asesoramiento técnico especializado.</div>
-          </div>
-          <div class="item-idi">
-            <span class="punto-azul">●</span>
-            <div>Propiedad intelectual y valorización de la tecnología desarrollada.</div>
-          </div>
-          <div class="item-idi">
-            <span class="punto-azul">●</span>
-            <div>Fomento de la colaboración con empresas y centros del sector marino.</div>
+          <div v-for="(item, i) in $tm('idi.items')" :key="i" class="item-idi">
+            <span class="punto-azul" aria-hidden="true">●</span>
+            <div>{{ $rt(item) }}</div>
           </div>
         </div>
         
         <!-- 👇 FORMULARIO TRANSPARENTE 👇 -->
         <div class="seccion-idi-innovacion" style="margin-top: 30px; padding: 15px; background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; text-align: left; max-width: 700px; backdrop-filter: blur(3px);">          <p style="font-size: 1.05rem; color: #e0e6ed; line-height: 1.6; margin-bottom: 30px;">
-            En el SIO creemos en la co-creación. Si tienes una necesidad técnica para tus campañas, una idea para un nuevo sensor, o buscas adaptar robótica a un entorno extremo, <strong>queremos escucharte</strong>.
+            {{ $t('idi.invitacion') }} <strong>{{ $t('idi.invitacionDestacado') }}</strong>.
           </p>
 
           <form @submit.prevent="enviarPropuesta">
             
             <div style="margin-bottom: 10px;">
-              <label for="nombre" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Nombre y Apellidos</label>
-              <input type="text" id="nombre" name="nombre" v-model="propuesta.nombre" placeholder="Ej: Dra. Elena Martínez" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
+              <label for="nombre" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.nombre') }}</label>
+              <input type="text" id="nombre" name="nombre" v-model="propuesta.nombre" :placeholder="$t('idi.nombrePh')" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
 
             <div style="margin-bottom: 20px;">
-              <label for="departamento" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Institución / Departamento</label>
-              <input type="text" id="departamento" name="departamento" v-model="propuesta.departamento" placeholder="Ej: Dept. Oceanografía Física" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
+              <label for="departamento" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.departamento') }}</label>
+              <input type="text" id="departamento" name="departamento" v-model="propuesta.departamento" :placeholder="$t('idi.departamentoPh')" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
             </div>
 
             <div style="margin-bottom: 20px;">
-              <label for="reto" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">¿Cuál es el reto oceanográfico o la idea?</label>
-              <textarea id="reto" name="reto" v-model="propuesta.reto" rows="4" placeholder="Describe brevemente qué necesitas medir, qué problema técnico tienes o qué tecnología te gustaría explorar." style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; resize: vertical; background-color: rgba(255, 255, 255, 0.9);" required></textarea>
+              <label for="reto" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.reto') }}</label>
+              <textarea id="reto" name="reto" v-model="propuesta.reto" rows="4" :placeholder="$t('idi.retoPh')" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; resize: vertical; background-color: rgba(255, 255, 255, 0.9);" required></textarea>
             </div>
 
             <div style="margin-bottom: 25px;">
-              <label for="entorno" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Entorno de aplicación previsto</label>
+              <label for="entorno" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.entorno') }}</label>
               <select id="entorno" name="entorno" v-model="propuesta.entorno" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);">
-                <option value="costa">Zona Costera / Aguas Someras</option>
-                <option value="pelagico">Alta Mar / Plataforma Continental</option>
-                <option value="profundo">Aguas Profundas / Bentos</option>
-                <option value="laboratorio">Pruebas de Laboratorio / Tanque</option>
-                <option value="otro">Otro</option>
+                <option v-for="entorno in ENTORNOS" :key="entorno" :value="entorno">{{ $t(`idi.entornos.${entorno}`) }}</option>
               </select>
             </div>
 
-            <p style="font-size: 0.85rem; color: #e0e6ed; margin: 0 0 15px;">Al pulsar el botón se abrirá tu programa de correo con la propuesta preparada para enviar a <a href="mailto:sio@icm.csic.es" style="color: white;">sio@icm.csic.es</a>.</p>
+            <p style="font-size: 0.85rem; color: #e0e6ed; margin: 0 0 15px;">{{ $t('idi.avisoCorreo') }} <a href="mailto:sio@icm.csic.es" style="color: white;">sio@icm.csic.es</a>.</p>
 
             <div style="text-align: center;">
               <button type="submit" style="background-color: #8cc63f; color: #003366; border: none; padding: 12px 30px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 100%; max-width: 300px;">
-                🚀 Enviar Propuesta
+                🚀 {{ $t('idi.enviar') }}
               </button>
             </div>
             
