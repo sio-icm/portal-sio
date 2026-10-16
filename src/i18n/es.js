@@ -439,5 +439,42 @@ export default {
       entorno: 'Entorno de aplicación',
       despedida: 'Un saludo.'
     }
+  },
+
+  bluelab: {
+    lema: 'Pioneros en el futuro de la observación marina',
+    lineasTitulo: 'Líneas de Innovación',
+    lineas: [
+      { titulo: 'Plataformas Autónomas', texto: 'Muestreo adaptativo y coordinación de flotas usando AUVs, ASVs y Gliders. Operamos como nodos de comunicación en tiempo real para cartografía costera y oceánica.' },
+      { titulo: 'Robótica Bioinspirada', texto: 'Diseño de vehículos bentónicos con patas (crawlers) para interactuar con el lecho marino minimizando la perturbación ambiental y la huella acústica.' },
+      { titulo: 'Biologging', texto: 'Uso de megafauna marina (aves, tortugas, tiburones) equipada con sensores avanzados como plataformas de observación in situ en áreas altamente dinámicas.' },
+      { titulo: 'Machine Learning e IA', texto: 'Algoritmos de aprendizaje por refuerzo multiagente (MARL), edge-computing para clasificación de imágenes in situ y automatización del procesamiento de big data.' }
+    ],
+    flotaTitulo: 'Nuestra Flota e Infraestructura',
+    flota: [
+      {
+        titulo: 'Vehículos de Superficie (ASVs)',
+        items: [
+          { nombre: 'ASV Costeros (~1 m)', texto: 'Dos unidades tipo SEABOTS SB100 PRO. Equipados con ecosondas NORBIT y CTD, ideales para batimetrías ultracosteras y despliegues rápidos.' },
+          { nombre: 'ASV Oceánicos (long-range)', texto: 'Plataformas de gran autonomía propulsadas por energía solar y oleaje, con comunicación satelital y módems acústicos para misiones en mar abierto.' }
+        ]
+      },
+      {
+        titulo: 'Taller de Fabricación y Pruebas',
+        items: [
+          { nombre: 'Fabricación Rápida', texto: 'Parque de impresión 3D avanzado, incluyendo sistemas de gran formato y resina (Creality K2 Plus Combo), fresadora y herramientas de precisión para el desarrollo y personalización de componentes robóticos y carcasas submarinas.' }
+        ]
+      }
+    ],
+    proyectosTitulo: 'Proyectos Destacados',
+    proyectos: [
+      { nombre: 'DIGI4ECO', texto: 'Iniciativa pionera a nivel europeo para la creación de un Gemelo Digital del Océano (Digital Twin).' },
+      { nombre: 'TECTUGA', texto: 'Acoplamiento de dispositivos en tortugas marinas y coordinación con ASVs para el estudio de su comportamiento.' },
+      { nombre: 'AVALON & MERLIN', texto: 'Comunicaciones ópticas submarinas y avances en robótica marina cooperativa.' }
+    ],
+    equipoTitulo: 'El Equipo Humano',
+    liderazgo: 'Liderazgo Científico',
+    equipoSio: 'Equipo SIO',
+    predoctorales: 'Investigadores Predoctorales'
   }
 }

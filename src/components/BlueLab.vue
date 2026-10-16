@@ -1,68 +1,48 @@
 <script setup>
 import { computed } from 'vue'
 import portadabluelab from '../assets/portadabluelab.png'
-defineEmits(['cambiar-pagina'])
+import logoBlanco from '../assets/logobluelabblanco.png'
 
-// Això crea l'string del fons de forma segura
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.7), rgba(1, 33, 105, 0.9)), url('${portadabluelab}')`
 })
+
+// Icono de cada línea de innovación (los textos están en bluelab.lineas)
+const iconosLineas = ['🚤', '🦀', '🐢', '🧠']
 </script>
 
 <template>
   <div class="bluelab-page">
-<section class="hero-bluelab" :style="{ backgroundImage: 'linear-gradient(rgba(1, 33, 105, 0.7), rgba(1, 33, 105, 0.9)), url(' + portadabluelab + ')' }">
-  <div class="contenedor-ancho hero-flex">
-    <h1 class="solo-lectores">BLUE Lab</h1>
-    <img src="../assets/logobluelabblanco.png" alt="" class="logo-hero">
-    <div class="hero-text-group">
-      <p class="subtitle-hero">Pioneering the future of marine observation</p>
-    </div>
-  </div>
-</section>
+    <section class="hero-bluelab" :style="{ backgroundImage: backgroundStyle }">
+      <div class="contenedor-ancho hero-flex">
+        <h1 class="solo-lectores">BLUE Lab</h1>
+        <img :src="logoBlanco" alt="" class="logo-hero">
+        <div class="hero-text-group">
+          <p class="subtitle-hero">{{ $t('bluelab.lema') }}</p>
+        </div>
+      </div>
+    </section>
     <div class="contenedor-ancho">
       <!-- 2. LAS 4 ÁREAS DE INVESTIGACIÓN -->
       <section class="seccion-bloque">
-        <h2 class="titulo-seccion">Líneas de Innovación</h2>
+        <h2 class="titulo-seccion">{{ $t('bluelab.lineasTitulo') }}</h2>
         <div class="grid-4-cols">
-          <div class="card-area">
-            <div class="icon-area">🚤</div>
-            <h3>Plataformas Autónomas</h3>
-            <p>Muestreo adaptativo y coordinación de flotas usando AUVs, ASVs y Gliders. Operamos como nodos de comunicación en tiempo real para cartografía costera y oceánica.</p>
-          </div>
-          <div class="card-area">
-            <div class="icon-area">🦀</div>
-            <h3>Robótica Bioinspirada</h3>
-            <p>Diseño de vehículos bentónicos con patas (crawlers) para interactuar con el lecho marino minimizando la perturbación ambiental y la huella acústica.</p>
-          </div>
-          <div class="card-area">
-            <div class="icon-area">🐢</div>
-            <h3>Biologging</h3>
-            <p>Uso de megafauna marina (aves, tortugas, tiburones) equipada con sensores avanzados como plataformas de observación in situ en áreas altamente dinámicas.</p>
-          </div>
-          <div class="card-area">
-            <div class="icon-area">🧠</div>
-            <h3>Machine Learning & IA</h3>
-            <p>Algoritmos de aprendizaje por refuerzo multiagente (MARL), edge-computing para clasificación de imágenes in situ y automatización del procesamiento de big data.</p>
+          <div v-for="(linea, i) in $tm('bluelab.lineas')" :key="i" class="card-area">
+            <div class="icon-area" aria-hidden="true">{{ iconosLineas[i] }}</div>
+            <h3>{{ $rt(linea.titulo) }}</h3>
+            <p>{{ $rt(linea.texto) }}</p>
           </div>
         </div>
       </section>
 
       <!-- 3. LA FLOTA Y EL GARAJE (Equipamiento) -->
       <section class="seccion-bloque bg-ligero">
-        <h2 class="titulo-seccion">Nuestra Flota e Infraestructura</h2>
+        <h2 class="titulo-seccion">{{ $t('bluelab.flotaTitulo') }}</h2>
         <div class="grid-2-cols">
-          <div class="card-equipo">
-            <h4>Vehículos de Superficie (ASVs)</h4>
+          <div v-for="(grupo, i) in $tm('bluelab.flota')" :key="i" class="card-equipo">
+            <h4>{{ $rt(grupo.titulo) }}</h4>
             <ul>
-              <li><strong>ASV Costeros (~1m):</strong> Dos unidades tipo SEABOTS SB100 PRO. Equipados con ecosondas NORBIT y CTD, ideales para batimetrías ultra-costeras y despliegues rápidos.</li>
-              <li><strong>ASV Oceánicos (Long-range):</strong> Plataformas de gran autonomía propulsadas por energía solar y oleaje, con comunicación satelital y módems acústicos para misiones en mar abierto.</li>
-            </ul>
-          </div>
-          <div class="card-equipo">
-            <h4>Taller de Fabricación y Pruebas</h4>
-            <ul>
-              <li><strong>Fabricación Rápida:</strong> Parque de impresión 3D avanzado, incluyendo sistemas de gran formato y resina (Creality K2 Plus Combo), fresadora y herramientas de precisión para el desarrollo y personalización de componentes robóticos y carcasas submarinas.</li>
+              <li v-for="(item, j) in grupo.items" :key="j"><strong>{{ $rt(item.nombre) }}:</strong> {{ $rt(item.texto) }}</li>
             </ul>
           </div>
         </div>
@@ -70,37 +50,29 @@ const backgroundStyle = computed(() => {
 
       <!-- 4. CASOS DE ÉXITO -->
       <section class="seccion-bloque">
-        <h2 class="titulo-seccion">Proyectos Destacados</h2>
+        <h2 class="titulo-seccion">{{ $t('bluelab.proyectosTitulo') }}</h2>
         <div class="grid-3-cols">
-          <div class="card-proyecto">
-            <h4>DIGI4ECO</h4>
-            <p>Iniciativa pionera a nivel europeo para la creación de un Gemelo Digital del Océano (Digital Twin).</p>
-          </div>
-          <div class="card-proyecto">
-            <h4>TECTUGA</h4>
-            <p>Acoplamiento de dispositivos en tortugas marinas y coordinación con ASVs para el estudio de su comportamiento.</p>
-          </div>
-          <div class="card-proyecto">
-            <h4>AVALON & MERLIN</h4>
-            <p>Comunicaciones ópticas submarinas y avances en robótica marina cooperativa.</p>
+          <div v-for="(proyecto, i) in $tm('bluelab.proyectos')" :key="i" class="card-proyecto">
+            <h4>{{ $rt(proyecto.nombre) }}</h4>
+            <p>{{ $rt(proyecto.texto) }}</p>
           </div>
         </div>
       </section>
 
       <!-- 5. EL EQUIPO -->
       <section class="seccion-bloque">
-        <h2 class="titulo-seccion">El Equipo Humano</h2>
+        <h2 class="titulo-seccion">{{ $t('bluelab.equipoTitulo') }}</h2>
         <div class="equipo-container">
           <div class="equipo-grupo">
-            <h4>Liderazgo Científico</h4>
+            <h4>{{ $t('bluelab.liderazgo') }}</h4>
             <p>Raül Bardají (SIO), Ivan Masmitja (DOFT), Giacomo Picardi (REC), Isabel Afán (REC), Ruth Durán (GEO).</p>
           </div>
           <div class="equipo-grupo border-left">
-            <h4>Equipo SIO</h4>
+            <h4>{{ $t('bluelab.equipoSio') }}</h4>
             <p>Raül Ferrando, Nina Hoareau, Brian Nicolás.</p>
           </div>
           <div class="equipo-grupo border-left">
-            <h4>Investigadores Predoctorales</h4>
+            <h4>{{ $t('bluelab.predoctorales') }}</h4>
             <p>M. Gallici, G. Batet, P. Agundez, J. Aguirregomezcorta, M. Ferrari, M. González, A. Sánchez-Márquez, A. Idiondo-Molina.</p>
           </div>
         </div>

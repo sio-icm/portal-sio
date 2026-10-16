@@ -439,5 +439,42 @@ export default {
       entorno: "Entorn d'aplicació",
       despedida: 'Salutacions.'
     }
+  },
+
+  bluelab: {
+    lema: "Pioners en el futur de l'observació marina",
+    lineasTitulo: "Línies d'innovació",
+    lineas: [
+      { titulo: 'Plataformes autònomes', texto: "Mostreig adaptatiu i coordinació de flotes amb AUV, ASV i gliders. Operem com a nodes de comunicació en temps real per a la cartografia costanera i oceànica." },
+      { titulo: 'Robòtica bioinspirada', texto: "Disseny de vehicles bentònics amb potes (crawlers) per interactuar amb el fons marí minimitzant la pertorbació ambiental i la petjada acústica." },
+      { titulo: 'Biologging', texto: "Ús de megafauna marina (aus, tortugues, taurons) equipada amb sensors avançats com a plataformes d'observació in situ en zones molt dinàmiques." },
+      { titulo: 'Machine learning i IA', texto: "Algorismes d'aprenentatge per reforç multiagent (MARL), edge computing per classificar imatges in situ i automatització del processament de big data." }
+    ],
+    flotaTitulo: 'La nostra flota i infraestructura',
+    flota: [
+      {
+        titulo: 'Vehicles de superfície (ASV)',
+        items: [
+          { nombre: 'ASV costaners (~1 m)', texto: "Dues unitats tipus SEABOTS SB100 PRO. Equipats amb ecosondes NORBIT i CTD, ideals per a batimetries ultracostaneres i desplegaments ràpids." },
+          { nombre: 'ASV oceànics (llarg abast)', texto: "Plataformes de gran autonomia propulsades per energia solar i de les onades, amb comunicació per satèl·lit i mòdems acústics per a missions en mar obert." }
+        ]
+      },
+      {
+        titulo: 'Taller de fabricació i proves',
+        items: [
+          { nombre: 'Fabricació ràpida', texto: "Parc d'impressió 3D avançat, amb sistemes de gran format i de resina (Creality K2 Plus Combo), fresadora i eines de precisió per al desenvolupament i la personalització de components robòtics i carcasses submarines." }
+        ]
+      }
+    ],
+    proyectosTitulo: 'Projectes destacats',
+    proyectos: [
+      { nombre: 'DIGI4ECO', texto: "Iniciativa pionera a escala europea per crear un bessó digital de l'oceà (Digital Twin)." },
+      { nombre: 'TECTUGA', texto: "Acoblament de dispositius a tortugues marines i coordinació amb ASV per estudiar-ne el comportament." },
+      { nombre: 'AVALON & MERLIN', texto: 'Comunicacions òptiques submarines i avenços en robòtica marina cooperativa.' }
+    ],
+    equipoTitulo: "L'equip humà",
+    liderazgo: 'Lideratge científic',
+    equipoSio: 'Equip SIO',
+    predoctorales: 'Investigadors predoctorals'
   }
 }

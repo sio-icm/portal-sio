@@ -439,5 +439,42 @@ export default {
       entorno: 'Application environment',
       despedida: 'Best regards.'
     }
+  },
+
+  bluelab: {
+    lema: 'Pioneering the future of marine observation',
+    lineasTitulo: 'Innovation Lines',
+    lineas: [
+      { titulo: 'Autonomous Platforms', texto: 'Adaptive sampling and fleet coordination using AUVs, ASVs and gliders. We operate as real-time communication nodes for coastal and ocean mapping.' },
+      { titulo: 'Bio-inspired Robotics', texto: 'Design of legged benthic vehicles (crawlers) that interact with the seabed while minimising environmental disturbance and acoustic footprint.' },
+      { titulo: 'Biologging', texto: 'Using marine megafauna (birds, turtles, sharks) fitted with advanced sensors as in situ observation platforms in highly dynamic areas.' },
+      { titulo: 'Machine Learning & AI', texto: 'Multi-agent reinforcement learning (MARL) algorithms, edge computing for in situ image classification, and automated big data processing.' }
+    ],
+    flotaTitulo: 'Our Fleet and Infrastructure',
+    flota: [
+      {
+        titulo: 'Surface Vehicles (ASVs)',
+        items: [
+          { nombre: 'Coastal ASVs (~1 m)', texto: 'Two SEABOTS SB100 PRO units. Equipped with NORBIT echo sounders and CTD, ideal for very shallow coastal bathymetry and rapid deployments.' },
+          { nombre: 'Ocean ASVs (long-range)', texto: 'Long-endurance platforms powered by solar and wave energy, with satellite communication and acoustic modems for open-sea missions.' }
+        ]
+      },
+      {
+        titulo: 'Manufacturing and Test Workshop',
+        items: [
+          { nombre: 'Rapid Manufacturing', texto: 'Advanced 3D printing facility, including large-format and resin systems (Creality K2 Plus Combo), a milling machine and precision tools for developing and customising robotic components and underwater housings.' }
+        ]
+      }
+    ],
+    proyectosTitulo: 'Featured Projects',
+    proyectos: [
+      { nombre: 'DIGI4ECO', texto: 'Pioneering European initiative to create a Digital Twin of the Ocean.' },
+      { nombre: 'TECTUGA', texto: 'Attaching devices to sea turtles and coordinating with ASVs to study their behaviour.' },
+      { nombre: 'AVALON & MERLIN', texto: 'Underwater optical communications and advances in cooperative marine robotics.' }
+    ],
+    equipoTitulo: 'The Team',
+    liderazgo: 'Scientific Leadership',
+    equipoSio: 'SIO Team',
+    predoctorales: 'Predoctoral Researchers'
   }
 }
