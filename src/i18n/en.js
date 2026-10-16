@@ -106,5 +106,40 @@ export default {
     titulo: 'Page not found',
     texto: 'The address you are looking for does not exist or has changed.',
     volver: 'Back to home'
+  },
+
+  servicios: {
+    titulo: 'Our Services',
+    subtitulo: 'Infrastructure and technological solutions for the marine science community.',
+    pelagia: {
+      titulo: 'Pelagia vessel',
+      texto: 'Multipurpose platform for coastal oceanography, equipped for deploying instruments and sampling.',
+      items: ['Deployment and recovery of equipment.', 'Biological, geological and physico-chemical sampling campaigns.', 'Logistics management and specialised crew.']
+    },
+    instrumentacion: {
+      titulo: 'Instrumentation',
+      texto: 'Access to a wide range of oceanographic instruments and technical support for their configuration.',
+      items: ['Development and customisation of bespoke equipment.', 'Underwater communication and telemetry systems.', 'Preventive and corrective sensor maintenance.']
+    },
+    tanques: {
+      titulo: 'Test Tanks',
+      texto: 'Rental of experimental areas for validating and calibrating instruments in controlled environments.',
+      items: ['Watertightness and buoyancy tests for robotics.', 'Calibration of acoustic and optical sensors.', 'Specialised engineering support during tests.']
+    },
+    salinidad: {
+      titulo: 'Salinity Analysis',
+      texto: 'Precise salinity determination in seawater samples and calibration with a salinometer.',
+      items: ['Precision readings with Standard Seawater.', 'Strict sample acclimatisation protocol.', 'Validation of CTD conductivity data.']
+    },
+    fondeos: {
+      titulo: 'Mooring Design and Installation',
+      texto: 'Technical planning, sensor integration and at-sea deployment of fixed moorings and oceanographic tripods.',
+      items: ['Design and configuration of bespoke anchoring systems.', 'Instrument integration and calibration.', 'Deployment operations and continuous monitoring.']
+    },
+    prototipado: {
+      titulo: 'Rapid Prototyping and Manufacturing',
+      texto: 'Advanced CAD design and production of complex mechanical components using technical 3D printing in high-strength materials.',
+      items: ['3D modelling and parametric design.', 'Technical FDM and resin printing.', 'Development of underwater housings and adapters.']
+    }
   }
 }

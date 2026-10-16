@@ -1,85 +1,35 @@
+<script setup>
+// Textos de cada tarjeta: servicios.<clave> en src/i18n
+const tarjetas = [
+  { clave: 'pelagia', punto: 'punto-azul' },
+  { clave: 'instrumentacion', punto: 'punto-verde' },
+  { clave: 'tanques', punto: 'punto-azul' },
+  { clave: 'salinidad', punto: 'punto-verde' },
+  { clave: 'fondeos', punto: 'punto-azul' },
+  { clave: 'prototipado', punto: 'punto-verde' }
+]
+</script>
+
 <template>
   <div class="servicios-hub">
     <div class="fondo-servicios"></div>
     <div class="contenedor-ancho contenido-hub">
-      <h1 class="titulo-seccion">Nuestros Servicios</h1>
-      <p class="subtitulo">Infraestructuras y soluciones tecnológicas para la comunidad científica marina.</p>
+      <h1 class="titulo-seccion">{{ $t('servicios.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('servicios.subtitulo') }}</p>
 
       <div class="grid-servicios">
-        
-        <RouterLink :to="{ name: 'pelagia' }" class="seccion-bloque">
+        <RouterLink v-for="tarjeta in tarjetas" :key="tarjeta.clave" :to="{ name: tarjeta.clave }" class="seccion-bloque">
           <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Embarcación Pelagia</h2>
-            <p>Plataforma polivalente para trabajos de oceanografía costera, equipada para el despliegue de instrumentación y muestreo.</p>
+            <h2 class="titulo-fija">{{ $t(`servicios.${tarjeta.clave}.titulo`) }}</h2>
+            <p>{{ $t(`servicios.${tarjeta.clave}.texto`) }}</p>
           </div>
           <div class="lista-items">
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Operaciones de despliegue y recuperación de equipos.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Campañas de muestreo biológico, geológico y físico-químico.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Gestión logística y tripulación especializada.</div></div>
+            <div v-for="(item, i) in $tm(`servicios.${tarjeta.clave}.items`)" :key="i" class="item-servicio">
+              <span :class="tarjeta.punto" aria-hidden="true">●</span><div>{{ $rt(item) }}</div>
+            </div>
           </div>
         </RouterLink>
-
-        <RouterLink :to="{ name: 'instrumentacion' }" class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Instrumentación</h2>
-            <p>Acceso a una amplia gama de instrumentación oceanográfica y soporte técnico para su configuración.</p>
-          </div>
-          <div class="lista-items">
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Desarrollo y personalización de equipos a medida.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Sistemas de comunicaciones y telemetría submarina.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Mantenimiento preventivo y correctivo de sensores.</div></div>
-          </div>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'tanques' }" class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Tanques de Pruebas</h2>
-            <p>Alquiler de áreas experimentales para la validación y calibración de instrumentación en entornos controlados.</p>
-          </div>
-          <div class="lista-items">
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Ensayos de estanqueidad y flotabilidad para robótica.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Calibración de sensores acústicos y ópticos.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Soporte de ingeniería especializado durante los ensayos.</div></div>
-          </div>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'salinidad' }" class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Análisis de Salinidad</h2>
-            <p>Servicio de determinación precisa de salinidad en muestras de agua de mar y calibración mediante salinómetro.</p>
-          </div>
-          <div class="lista-items">
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Lectura de precisión con Standard Seawater.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Protocolo estricto de aclimatación de muestras.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Validación de datos de conductividad CTD.</div></div>
-          </div>
-        </RouterLink>
-        
-        <RouterLink :to="{ name: 'fondeos' }" class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Diseño e Instalación de Fondeos</h2>
-            <p>Planificación técnica, integración de sensores y despliegue en el mar de fondeos fijos y trípodes oceanográficos.</p>
-          </div>
-          <div class="lista-items">
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Diseño y configuración de anclajes a medida.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Integración y calibración de instrumentos.</div></div>
-            <div class="item-servicio"><span class="punto-azul">●</span><div>Operaciones de despliegue y seguimiento continuo.</div></div>
-          </div>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'prototipado' }" class="seccion-bloque">
-          <div class="cabecera-bloque">
-            <h2 class="titulo-fija">Prototipado Rápido y Fabricación</h2>
-            <p>Diseño CAD avanzado y producción de componentes mecánicos complejos empleando impresión 3D técnica en materiales de alta resistencia.</p>
-          </div>
-          <div class="lista-items">
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Modelado 3D y diseño paramétrico.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Impresión técnica FDM y resina.</div></div>
-            <div class="item-servicio"><span class="punto-verde">●</span><div>Desarrollo de carcasas submarinas y adaptadores.</div></div>
-          </div>
-        </RouterLink>
-
-      </div> 
+      </div>
     </div>
   </div>
 </template>

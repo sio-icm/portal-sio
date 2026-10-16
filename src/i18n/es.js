@@ -106,5 +106,40 @@ export default {
     titulo: 'Página no encontrada',
     texto: 'La dirección que buscas no existe o ha cambiado.',
     volver: 'Volver al inicio'
+  },
+
+  servicios: {
+    titulo: 'Nuestros Servicios',
+    subtitulo: 'Infraestructuras y soluciones tecnológicas para la comunidad científica marina.',
+    pelagia: {
+      titulo: 'Embarcación Pelagia',
+      texto: 'Plataforma polivalente para trabajos de oceanografía costera, equipada para el despliegue de instrumentación y muestreo.',
+      items: ['Operaciones de despliegue y recuperación de equipos.', 'Campañas de muestreo biológico, geológico y físico-químico.', 'Gestión logística y tripulación especializada.']
+    },
+    instrumentacion: {
+      titulo: 'Instrumentación',
+      texto: 'Acceso a una amplia gama de instrumentación oceanográfica y soporte técnico para su configuración.',
+      items: ['Desarrollo y personalización de equipos a medida.', 'Sistemas de comunicaciones y telemetría submarina.', 'Mantenimiento preventivo y correctivo de sensores.']
+    },
+    tanques: {
+      titulo: 'Tanques de Pruebas',
+      texto: 'Alquiler de áreas experimentales para la validación y calibración de instrumentación en entornos controlados.',
+      items: ['Ensayos de estanqueidad y flotabilidad para robótica.', 'Calibración de sensores acústicos y ópticos.', 'Soporte de ingeniería especializado durante los ensayos.']
+    },
+    salinidad: {
+      titulo: 'Análisis de Salinidad',
+      texto: 'Servicio de determinación precisa de salinidad en muestras de agua de mar y calibración mediante salinómetro.',
+      items: ['Lectura de precisión con Standard Seawater.', 'Protocolo estricto de aclimatación de muestras.', 'Validación de datos de conductividad CTD.']
+    },
+    fondeos: {
+      titulo: 'Diseño e Instalación de Fondeos',
+      texto: 'Planificación técnica, integración de sensores y despliegue en el mar de fondeos fijos y trípodes oceanográficos.',
+      items: ['Diseño y configuración de anclajes a medida.', 'Integración y calibración de instrumentos.', 'Operaciones de despliegue y seguimiento continuo.']
+    },
+    prototipado: {
+      titulo: 'Prototipado Rápido y Fabricación',
+      texto: 'Diseño CAD avanzado y producción de componentes mecánicos complejos empleando impresión 3D técnica en materiales de alta resistencia.',
+      items: ['Modelado 3D y diseño paramétrico.', 'Impresión técnica FDM y resina.', 'Desarrollo de carcasas submarinas y adaptadores.']
+    }
   }
 }

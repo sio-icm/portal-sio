@@ -106,5 +106,40 @@ export default {
     titulo: 'Pàgina no trobada',
     texto: "L'adreça que busques no existeix o ha canviat.",
     volver: "Tornar a l'inici"
+  },
+
+  servicios: {
+    titulo: 'Els nostres serveis',
+    subtitulo: 'Infraestructures i solucions tecnològiques per a la comunitat científica marina.',
+    pelagia: {
+      titulo: 'Embarcació Pelagia',
+      texto: "Plataforma polivalent per a treballs d'oceanografia costanera, equipada per al desplegament d'instrumentació i mostreig.",
+      items: ["Operacions de desplegament i recuperació d'equips.", 'Campanyes de mostreig biològic, geològic i fisicoquímic.', 'Gestió logística i tripulació especialitzada.']
+    },
+    instrumentacion: {
+      titulo: 'Instrumentació',
+      texto: "Accés a una àmplia gamma d'instrumentació oceanogràfica i suport tècnic per a la seva configuració.",
+      items: ["Desenvolupament i personalització d'equips a mida.", 'Sistemes de comunicacions i telemetria submarina.', 'Manteniment preventiu i correctiu de sensors.']
+    },
+    tanques: {
+      titulo: 'Tancs de proves',
+      texto: "Lloguer d'àrees experimentals per a la validació i el calibratge d'instrumentació en entorns controlats.",
+      items: ["Assajos d'estanquitat i flotabilitat per a robòtica.", 'Calibratge de sensors acústics i òptics.', "Suport d'enginyeria especialitzat durant els assajos."]
+    },
+    salinidad: {
+      titulo: 'Anàlisi de salinitat',
+      texto: "Servei de determinació precisa de la salinitat en mostres d'aigua de mar i calibratge amb salinòmetre.",
+      items: ['Lectura de precisió amb Standard Seawater.', "Protocol estricte d'aclimatació de mostres.", 'Validació de dades de conductivitat CTD.']
+    },
+    fondeos: {
+      titulo: 'Disseny i instal·lació de fondejos',
+      texto: 'Planificació tècnica, integració de sensors i desplegament al mar de fondejos fixos i trípodes oceanogràfics.',
+      items: ["Disseny i configuració d'ancoratges a mida.", "Integració i calibratge d'instruments.", 'Operacions de desplegament i seguiment continu.']
+    },
+    prototipado: {
+      titulo: 'Prototipatge ràpid i fabricació',
+      texto: "Disseny CAD avançat i producció de components mecànics complexos amb impressió 3D tècnica en materials d'alta resistència.",
+      items: ['Modelatge 3D i disseny paramètric.', 'Impressió tècnica FDM i de resina.', 'Desenvolupament de carcasses submarines i adaptadors.']
+    }
   }
 }
