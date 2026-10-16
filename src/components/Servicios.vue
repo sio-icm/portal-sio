@@ -1,7 +1,3 @@
-<script setup>
-const emit = defineEmits(['cambiar-pagina'])
-</script>
-
 <template>
   <div class="servicios-hub">
     <div class="fondo-servicios"></div>
@@ -11,7 +7,7 @@ const emit = defineEmits(['cambiar-pagina'])
 
       <div class="grid-servicios">
         
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'pelagia')">
+        <RouterLink :to="{ name: 'pelagia' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Embarcación Pelagia</h2>
             <p>Plataforma polivalente para trabajos de oceanografía costera, equipada para el despliegue de instrumentación y muestreo.</p>
@@ -21,9 +17,9 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-azul">●</span><div>Campañas de muestreo biológico, geológico y físico-químico.</div></div>
             <div class="item-servicio"><span class="punto-azul">●</span><div>Gestión logística y tripulación especializada.</div></div>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'instrumentacion')">
+        <RouterLink :to="{ name: 'instrumentacion' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Instrumentación</h2>
             <p>Acceso a una amplia gama de instrumentación oceanográfica y soporte técnico para su configuración.</p>
@@ -33,9 +29,9 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-verde">●</span><div>Sistemas de comunicaciones y telemetría submarina.</div></div>
             <div class="item-servicio"><span class="punto-verde">●</span><div>Mantenimiento preventivo y correctivo de sensores.</div></div>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'tanques')">
+        <RouterLink :to="{ name: 'tanques' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Tanques de Pruebas</h2>
             <p>Alquiler de áreas experimentales para la validación y calibración de instrumentación en entornos controlados.</p>
@@ -45,9 +41,9 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-azul">●</span><div>Calibración de sensores acústicos y ópticos.</div></div>
             <div class="item-servicio"><span class="punto-azul">●</span><div>Soporte de ingeniería especializado durante los ensayos.</div></div>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'salinidad')">
+        <RouterLink :to="{ name: 'salinidad' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Análisis de Salinidad</h2>
             <p>Servicio de determinación precisa de salinidad en muestras de agua de mar y calibración mediante salinómetro.</p>
@@ -57,9 +53,9 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-verde">●</span><div>Protocolo estricto de aclimatación de muestras.</div></div>
             <div class="item-servicio"><span class="punto-verde">●</span><div>Validación de datos de conductividad CTD.</div></div>
           </div>
-        </div>
+        </RouterLink>
         
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'fondeos')">
+        <RouterLink :to="{ name: 'fondeos' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Diseño e Instalación de Fondeos</h2>
             <p>Planificación técnica, integración de sensores y despliegue en el mar de fondeos fijos y trípodes oceanográficos.</p>
@@ -69,9 +65,9 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-azul">●</span><div>Integración y calibración de instrumentos.</div></div>
             <div class="item-servicio"><span class="punto-azul">●</span><div>Operaciones de despliegue y seguimiento continuo.</div></div>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="seccion-bloque" @click="$emit('cambiar-pagina', 'prototipado')">
+        <RouterLink :to="{ name: 'prototipado' }" class="seccion-bloque">
           <div class="cabecera-bloque">
             <h2 class="titulo-fija">Prototipado Rápido y Fabricación</h2>
             <p>Diseño CAD avanzado y producción de componentes mecánicos complejos empleando impresión 3D técnica en materiales de alta resistencia.</p>
@@ -81,7 +77,7 @@ const emit = defineEmits(['cambiar-pagina'])
             <div class="item-servicio"><span class="punto-verde">●</span><div>Impresión técnica FDM y resina.</div></div>
             <div class="item-servicio"><span class="punto-verde">●</span><div>Desarrollo de carcasas submarinas y adaptadores.</div></div>
           </div>
-        </div>
+        </RouterLink>
 
       </div> 
     </div>
@@ -101,6 +97,8 @@ const emit = defineEmits(['cambiar-pagina'])
 
 .seccion-bloque { background: white; border-radius: 12px; padding: 35px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; cursor: pointer; transition: transform 0.3s; }
 .seccion-bloque:hover { transform: translateY(-5px); }
+a.seccion-bloque { color: inherit; text-decoration: none; }
+.seccion-bloque:focus-visible { outline: 3px solid #0086c0; outline-offset: 4px; }
 .titulo-fija { color: #012169; margin-top: 0; font-size: 1.6rem; margin-bottom: 10px; }
 .cabecera-bloque p { color: #666; font-size: 0.95rem; line-height: 1.3; margin-bottom: 15px; }
 .lista-items { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }

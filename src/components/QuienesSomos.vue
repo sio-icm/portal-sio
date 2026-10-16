@@ -14,30 +14,27 @@ import logoBlueLab from '../assets/logobluelab.png'
     <div class="contenedor-ancho">
       <div class="fichas-grid">
 
-        <div class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgRoig})` }"
-          @click="$emit('cambiar-pagina', 'memoria')">
+        <RouterLink :to="{ name: 'memoria' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgRoig})` }">
           <div class="contenido">
             <h3>Memoria anual</h3>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgVerd})` }"
-          @click="$emit('cambiar-pagina', 'noticias')">
+        <RouterLink :to="{ name: 'noticias' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgVerd})` }">
           <div class="contenido">
             <h3>Noticias</h3>
           </div>
-        </div>
+        </RouterLink>
 
-        <div class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgGroc})` }"
-          @click="$emit('cambiar-pagina', 'equipo')">
+        <RouterLink :to="{ name: 'equipo' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgGroc})` }">
           <div class="contenido">
             <h3>Equipo SIO</h3>
           </div>
-        </div>
+        </RouterLink>
 
-<div class="ficha-sio" style="background-image: none; padding: 0; display: flex; justify-content: center; align-items: center; background-color: #02097c;" @click="$emit('cambiar-pagina', 'bluelab')">
-<img :src="logoBlueLab" alt="Logo BLUE Lab" style="max-width: 100%; max-height: 110%; object-fit: cover;">
-</div>
+        <RouterLink :to="{ name: 'bluelab' }" class="ficha-sio" style="background-image: none; padding: 0; display: flex; justify-content: center; align-items: center; background-color: #02097c;">
+          <img :src="logoBlueLab" alt="BLUE Lab" style="max-width: 100%; max-height: 110%; object-fit: cover;">
+        </RouterLink>
 
       </div>
     </div>
@@ -61,6 +58,8 @@ import logoBlueLab from '../assets/logobluelab.png'
 }
 
 .ficha-sio {
+  display: block;
+  text-decoration: none;
   width: 250px;
   height: 120px;
   border-radius: 8px;
@@ -88,6 +87,11 @@ import logoBlueLab from '../assets/logobluelab.png'
   /* Al quitar el color de fondo, la atenuación desaparece */
   background-blend-mode: normal;
   background-color: transparent;
+}
+
+.ficha-sio:focus-visible {
+  outline: 3px solid #0086c0;
+  outline-offset: 3px;
 }
 
 /* ✍️ AJUSTES DE TEXTO */

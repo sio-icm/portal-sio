@@ -1,21 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import logoSio from './assets/sioblanco2baix.png'
 import logoCsic from './assets/csic.png'
 import logoIcm from './assets/icm.png'
 import logoSevero from './assets/severo.png'
 
 const route = useRoute()
-const router = useRouter()
 const idiomaActual = ref('es') // Controla qué botón de idioma está activo
 
 const mostrarCabecera = computed(() => !route.meta.sinCabecera)
 const cabeceraSolida = computed(() => Boolean(route.meta.cabeceraSolida))
-
-// Los componentes emiten 'cambiar-pagina' con el nombre de la ruta
-const cambiarVista = (nuevaVista) => { router.push({ name: nuevaVista }) }
-const volverAInicio = () => { router.push({ name: 'inicio' }) }
 
 // --- FUNCIÓN PARA CAMBIAR DE IDIOMA CON GOOGLE ---
 const cambiarIdioma = (lang) => {
@@ -103,9 +98,7 @@ const cambiarIdioma = (lang) => {
     </header>
 
     <main class="main-content">
-      <RouterView v-slot="{ Component }">
-        <component :is="Component" @cambiar-pagina="cambiarVista" @volver="volverAInicio" />
-      </RouterView>
+      <RouterView />
     </main>
 
     <footer class="footer-icm">

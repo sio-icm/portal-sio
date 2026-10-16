@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Inicio from './components/Inicio.vue'
 
-// Cada sección tiene su propia dirección. El nombre de la ruta es el que
-// usan los componentes al emitir 'cambiar-pagina'.
+// Cada sección tiene su propia dirección. Los enlaces usan el nombre de la
+// ruta: <RouterLink :to="{ name: 'pelagia' }">
 // cabeceraSolida: la cabecera no va encima de una imagen de fondo.
 const routes = [
   { path: '/', name: 'inicio', component: Inicio, meta: { titulo: '' } },
