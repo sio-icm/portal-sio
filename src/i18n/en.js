@@ -381,5 +381,29 @@ export default {
       pieza: 'Part or component',
       despedida: 'I look forward to hearing from you.\n\nBest regards.'
     }
+  },
+
+  proyectos: {
+    titulo: 'Projects and Campaigns',
+    subtitulo: 'See the current status of the service’s technical projects and ongoing requests.',
+    cargando: 'Loading projects...',
+    errorCarga: 'The projects could not be loaded.',
+    vacio: 'There are no projects at this stage.',
+    detalle: 'Show details',
+    ocultarDetalle: 'Hide details',
+    grupos: {
+      enCurso: { titulo: 'In Progress', texto: 'Activities and campaigns currently being carried out.' },
+      aprobados: { titulo: 'Approved', texto: 'Confirmed projects awaiting technical start.' },
+      solicitados: { titulo: 'Requested', texto: 'Proposals under evaluation.' },
+      finalizados: { titulo: 'Completed', texto: 'Archive of completed campaigns and projects.' }
+    },
+    categorias: {
+      infraestructura: 'Infrastructure',
+      contrato: 'Contract',
+      planNacional: 'National Plan',
+      idi: 'R&D&I',
+      divulgacion: 'Science outreach',
+      otro: 'Other'
+    }
   }
 }

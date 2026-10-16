@@ -1,22 +1,39 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-const proyectos = ref([]) 
+const proyectos = ref([])
+const cargando = ref(true)
+const errorCarga = ref(false)
 const descripcionesVisibles = ref({})
 
-// Filtres dinàmics
-const enCurso = computed(() => proyectos.value.filter(p => p.estado === 'En Curs'));
-const solicitados = computed(() => proyectos.value.filter(p => p.estado === 'Sol·licitat'));
-const aprovados = computed(() => proyectos.value.filter(p => p.estado === 'Aprovat'));
-const finalizados = computed(() => proyectos.value.filter(p => p.estado === 'Finalitzat'));
+// Estado guardado en la base de datos -> grupo de la página
+const GRUPO_POR_ESTADO = {
+  'En Curs': 'enCurso',
+  'Aprovat': 'aprobados',
+  'Sol·licitat': 'solicitados',
+  'Finalitzat': 'finalizados'
+}
+const proyectosDe = (grupo) => proyectos.value.filter(p => GRUPO_POR_ESTADO[p.estado] === grupo)
 
-// Funció per carregar els projectes reals de la BD
+const enCurso = computed(() => proyectosDe('enCurso'))
+// Columna derecha: solo los grupos que tienen algún proyecto
+const gruposDerecha = computed(() =>
+  ['aprobados', 'solicitados', 'finalizados']
+    .map(grupo => ({ grupo, lista: proyectosDe(grupo) }))
+    .filter(g => g.lista.length > 0)
+)
+
+// Carga los proyectos reales de la base de datos
 const cargarProyectos = async () => {
   try {
     const res = await fetch('/api/proyectos')
+    if (!res.ok) throw new Error(res.status)
     proyectos.value = await res.json()
   } catch (error) {
-    console.error("Error carregant projectes:", error)
+    console.error("Error cargando proyectos:", error)
+    errorCarga.value = true
+  } finally {
+    cargando.value = false
   }
 }
 
@@ -26,16 +43,17 @@ const toggleDesc = (id) => {
   descripcionesVisibles.value[id] = !descripcionesVisibles.value[id]
 }
 
-const clasePorTipo = (tipo) => {
-  switch (tipo) {
-    case 'Infraestructura': return 'badge-verde';
-    case 'Contrato': return 'badge-turquesa';
-    case 'Plan Nacional': return 'badge-amarillo';
-    case 'Otro': return 'badge-naranja';
-    case 'Divulgación científica': return 'badge-morado';
-    default: return 'badge-gris';
-  }
+// Categoría guardada en la base de datos -> clave de traducción y color
+const CATEGORIAS = {
+  'Infraestructura': { clave: 'infraestructura', clase: 'badge-verde' },
+  'Contrato': { clave: 'contrato', clase: 'badge-turquesa' },
+  'Plan Nacional': { clave: 'planNacional', clase: 'badge-amarillo' },
+  'I+D+I': { clave: 'idi', clase: 'badge-gris' },
+  'Divulgació científica': { clave: 'divulgacion', clase: 'badge-morado' },
+  'Divulgación científica': { clave: 'divulgacion', clase: 'badge-morado' },
+  'Otro': { clave: 'otro', clase: 'badge-naranja' }
 }
+const clasePorTipo = (categoria) => CATEGORIAS[categoria]?.clase || 'badge-gris'
 </script>
 
 <template>
@@ -43,31 +61,32 @@ const clasePorTipo = (tipo) => {
     <div class="fondo-proyectos"></div>
 
     <div class="contenedor-ancho contenido-hub">
-      <h1 class="titulo-seccion">Proyectos y Campañas</h1>
-      <p class="subtitulo">Visualiza el estado actual de los proyectos técnicos y las solicitudes en curso del servicio.</p>
+      <h1 class="titulo-seccion">{{ $t('proyectos.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('proyectos.subtitulo') }}</p>
 
       <div class="grid-horizontal">
 
         <div class="columna-esquerra">
           <div class="seccion-bloque">
             <div class="cabecera-bloque">
-              <h2 class="titulo-fija">En Curso</h2>
-              <p>Actividades y campañas en fase de ejecución técnica actualmente.</p>
+              <h2 class="titulo-fija">{{ $t('proyectos.grupos.enCurso.titulo') }}</h2>
+              <p>{{ $t('proyectos.grupos.enCurso.texto') }}</p>
             </div>
+            <p v-if="cargando" class="aviso-lista">{{ $t('proyectos.cargando') }}</p>
+            <p v-else-if="errorCarga" class="aviso-lista">{{ $t('proyectos.errorCarga') }}</p>
+            <p v-else-if="enCurso.length === 0" class="aviso-lista">{{ $t('proyectos.vacio') }}</p>
             <div class="contenedor-proyectos">
               <div v-for="p in enCurso" :key="p.id" class="mini-tarjeta">
                 <div class="header-mini">
-                  <span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ p.categoria }}</span>
+                  <span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ CATEGORIAS[p.categoria] ? $t(`proyectos.categorias.${CATEGORIAS[p.categoria].clave}`) : p.categoria }}</span>
                 </div>
                 <h3>{{ p.titulo }}</h3>
                 <p class="desc-corta">{{ p.descripcion_corta }}</p>
-                
-                <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">
-                  ▼ Detall
-                </button>
+
+                <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ {{ $t('proyectos.detalle') }}</button>
                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
                   <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
-                  <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ Amagar detall</button>
+                  <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ {{ $t('proyectos.ocultarDetalle') }}</button>
                 </div>
               </div>
             </div>
@@ -75,77 +94,36 @@ const clasePorTipo = (tipo) => {
         </div>
 
         <div class="columna-dreta" style="display: flex; flex-direction: column; gap: 30px;">
-          
-          <div class="seccion-bloque" v-if="aprovados.length > 0">
+          <div v-for="{ grupo, lista } in gruposDerecha" :key="grupo" class="seccion-bloque">
             <div class="cabecera-bloque">
-              <h2 class="titulo-fija">Aprobados</h2>
-              <p>Proyectos confirmados a la espera de inicio técnico.</p>
+              <h2 class="titulo-fija">{{ $t(`proyectos.grupos.${grupo}.titulo`) }}</h2>
+              <p>{{ $t(`proyectos.grupos.${grupo}.texto`) }}</p>
             </div>
             <div class="contenedor-proyectos">
-              <div v-for="p in aprovados" :key="p.id" class="mini-tarjeta">
+              <div v-for="p in lista" :key="p.id" class="mini-tarjeta">
                 <div class="header-mini">
-                  <span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ p.categoria }}</span>
+                  <span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ CATEGORIAS[p.categoria] ? $t(`proyectos.categorias.${CATEGORIAS[p.categoria].clave}`) : p.categoria }}</span>
                 </div>
                 <h3>{{ p.titulo }}</h3>
                 <p class="desc-corta">{{ p.descripcion_corta }}</p>
-                
-                <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ Detall</button>
+
+                <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ {{ $t('proyectos.detalle') }}</button>
                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
                   <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
-                  <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ Amagar detall</button>
+                  <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ {{ $t('proyectos.ocultarDetalle') }}</button>
                 </div>
               </div>
             </div>
           </div>
-
-          <div class="seccion-bloque" v-if="solicitados.length > 0">
-            <div class="cabecera-bloque">
-              <h2 class="titulo-fija">Solicitados</h2>
-              <p>Propuestas en evaluación.</p>
-            </div>
-            <div class="contenedor-proyectos">
-              <div v-for="p in solicitados" :key="p.id" class="mini-tarjeta">
-                 <div class="header-mini"><span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ p.categoria }}</span></div>
-                 <h3>{{ p.titulo }}</h3>
-                 <p class="desc-corta">{{ p.descripcion_corta }}</p>
-                 
-                 <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ Detall</button>
-                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
-                   <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
-                   <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ Amagar detall</button>
-                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="seccion-bloque" v-if="finalizados.length > 0">
-            <div class="cabecera-bloque">
-              <h2 class="titulo-fija">Finalizados</h2>
-              <p>Histórico de campañas y proyectos concluidos.</p>
-            </div>
-            <div class="contenedor-proyectos">
-              <div v-for="p in finalizados" :key="p.id" class="mini-tarjeta">
-                 <div class="header-mini"><span :class="['badge-tipo', clasePorTipo(p.categoria)]">{{ p.categoria }}</span></div>
-                 <h3>{{ p.titulo }}</h3>
-                 <p class="desc-corta">{{ p.descripcion_corta }}</p>
-                 
-                 <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ Detall</button>
-                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
-                   <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
-                   <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ Amagar detall</button>
-                 </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-      </div> 
-    </div> 
-  </div> 
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.aviso-lista { color: #666; font-style: italic; margin: 10px 0; }
 .proyectos-hub { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-proyectos { position: absolute; top: 0; left: 0; width: 100%; height: 550px; background-image: linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('/pecesaguasalada.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 0; }
 .contenido-hub { position: relative; z-index: 10; padding-top: 120px; }

@@ -381,5 +381,29 @@ export default {
       pieza: 'Peça o component',
       despedida: "Quedo a l'espera de la vostra resposta.\n\nSalutacions."
     }
+  },
+
+  proyectos: {
+    titulo: 'Projectes i campanyes',
+    subtitulo: 'Consulta l’estat actual dels projectes tècnics i de les sol·licituds en curs del servei.',
+    cargando: 'Carregant projectes...',
+    errorCarga: "No s'han pogut carregar els projectes.",
+    vacio: 'No hi ha projectes en aquesta fase.',
+    detalle: 'Veure el detall',
+    ocultarDetalle: 'Amagar el detall',
+    grupos: {
+      enCurso: { titulo: 'En curs', texto: "Activitats i campanyes en fase d'execució tècnica actualment." },
+      aprobados: { titulo: 'Aprovats', texto: "Projectes confirmats a l'espera de l'inici tècnic." },
+      solicitados: { titulo: 'Sol·licitats', texto: 'Propostes en avaluació.' },
+      finalizados: { titulo: 'Finalitzats', texto: 'Històric de campanyes i projectes conclosos.' }
+    },
+    categorias: {
+      infraestructura: 'Infraestructura',
+      contrato: 'Contracte',
+      planNacional: 'Pla Nacional',
+      idi: 'R+D+I',
+      divulgacion: 'Divulgació científica',
+      otro: 'Altres'
+    }
   }
 }

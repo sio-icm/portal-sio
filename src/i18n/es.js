@@ -381,5 +381,29 @@ export default {
       pieza: 'Pieza o componente',
       despedida: 'Quedo a la espera de vuestra respuesta.\n\nUn saludo.'
     }
+  },
+
+  proyectos: {
+    titulo: 'Proyectos y Campañas',
+    subtitulo: 'Visualiza el estado actual de los proyectos técnicos y las solicitudes en curso del servicio.',
+    cargando: 'Cargando proyectos...',
+    errorCarga: 'No se han podido cargar los proyectos.',
+    vacio: 'No hay proyectos en esta fase.',
+    detalle: 'Ver detalle',
+    ocultarDetalle: 'Ocultar detalle',
+    grupos: {
+      enCurso: { titulo: 'En Curso', texto: 'Actividades y campañas en fase de ejecución técnica actualmente.' },
+      aprobados: { titulo: 'Aprobados', texto: 'Proyectos confirmados a la espera de inicio técnico.' },
+      solicitados: { titulo: 'Solicitados', texto: 'Propuestas en evaluación.' },
+      finalizados: { titulo: 'Finalizados', texto: 'Histórico de campañas y proyectos concluidos.' }
+    },
+    categorias: {
+      infraestructura: 'Infraestructura',
+      contrato: 'Contrato',
+      planNacional: 'Plan Nacional',
+      idi: 'I+D+I',
+      divulgacion: 'Divulgación científica',
+      otro: 'Otro'
+    }
   }
 }
