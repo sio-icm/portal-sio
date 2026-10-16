@@ -53,11 +53,6 @@ const cambiarIdioma = (lang) => {
             <span class="lang-link" :class="{ active: idiomaActual === 'es' }" @click="cambiarIdioma('es')">ES</span> | 
             <span class="lang-link" :class="{ active: idiomaActual === 'en' }" @click="cambiarIdioma('en')">EN</span>
           </div>
-
-          <div class="top-item border-left search-block">
-            <span class="search-label">BUSCAR</span>
-            <svg class="lupa-svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          </div>
         </div>
       </div>
     </div>
@@ -149,9 +144,6 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .lang-link:hover::after { width: 100%; }
 .lang-link.active { color: white; }
 .lang-link.active::after { width: 100%; background-color: white; }
-.search-block { background: var(--icm-blue); padding: 0 15px; cursor: pointer; transition: background 0.3s; gap: 8px; }
-.search-block:hover { background: #00a4eb; }
-.lupa-svg { height: 16px; width: 16px; fill: white; }
 
 .header-transparente { 
   position: absolute; 
@@ -233,7 +225,6 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
   .nav-item { font-size: 12px; }
   .contacto-unacolumna { padding: 0 10px; }
   .top-item { padding: 0 8px; font-size: 10px; }
-  .search-label { display: none; }
   .idiomas-container { gap: 4px; }
 }
 
