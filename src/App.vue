@@ -1,87 +1,21 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import QuienesSomos from './components/QuienesSomos.vue'
-import Proyectos from './components/Proyectos.vue'
-import Servicios from './components/Servicios.vue'
-import DesarrolloIdi from './components/DesarrolloIdi.vue'
-import BlueLab from './components/BlueLab.vue'
-import IntranetPanel from './components/IntranetPanel.vue'
-import CarruselComponente from './components/CarruselComponente.vue'
-import Instrumentacion from './components/Instrumentacion.vue'
-import Pelagia from './components/Pelagia.vue'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import logoSio from './assets/sioblanco2baix.png'
 import logoCsic from './assets/csic.png'
 import logoIcm from './assets/icm.png'
 import logoSevero from './assets/severo.png'
-import TanquesPruebas from './components/TanquesPruebas.vue'
-import AnalisisSalinidad from './components/AnalisisSalinidad.vue'
-import EquipoSio from './components/EquipoSio.vue'
-import Fondeos from './components/Fondeos.vue' 
-import NoticiasSio from './components/NoticiasSio.vue'
-import MemoriaAnual from './components/MemoriaAnual.vue'
-import Prototipado from './components/Prototipado.vue'
 
-const vistaActual = ref('inicio')
+const route = useRoute()
+const router = useRouter()
 const idiomaActual = ref('es') // Controla qué botón de idioma está activo
 
-const cambiarVista = (nuevaVista) => { 
-  vistaActual.value = nuevaVista
-  window.history.pushState({ vista: nuevaVista }, '', `#${nuevaVista}`)
-  window.scrollTo(0, 0)
-}
+const mostrarCabecera = computed(() => !route.meta.sinCabecera)
+const cabeceraSolida = computed(() => Boolean(route.meta.cabeceraSolida))
 
-const irAContacto = () => { cambiarVista('contacto') }
-
-// --- FORMULARIO DE CONTACTO (se envía al backend del SIO) ---
-const contacto = ref({ nombre: '', email: '', mensaje: '', web: '' })
-const estadoContacto = ref('') // '', 'enviando', 'enviado', 'error'
-const errorContacto = ref('')
-
-const enviarContacto = async () => {
-  estadoContacto.value = 'enviando'
-  errorContacto.value = ''
-  try {
-    const respuesta = await fetch('/api/contacto', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contacto.value)
-    })
-    if (respuesta.ok) {
-      estadoContacto.value = 'enviado'
-      contacto.value = { nombre: '', email: '', mensaje: '', web: '' }
-      return
-    }
-    const datos = await respuesta.json().catch(() => ({}))
-    errorContacto.value = datos.error || 'No se ha podido enviar la consulta'
-  } catch (error) {
-    console.error('Error enviando la consulta:', error)
-    errorContacto.value = 'No se ha podido conectar con el servidor'
-  }
-  estadoContacto.value = 'error'
-}
-const volverAInicio = () => { cambiarVista('inicio') }
-
-// --- MAGIA PARA LA FLECHA "ATRÁS" DEL NAVEGADOR ---
-const manejarFlechaAtras = (evento) => {
-  if (evento.state && evento.state.vista) {
-    vistaActual.value = evento.state.vista
-  } else {
-    vistaActual.value = 'inicio'
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('popstate', manejarFlechaAtras)
-  window.history.replaceState({ vista: 'inicio' }, '', '')
-})
-
-onUnmounted(() => {
-  window.removeEventListener('popstate', manejarFlechaAtras)
-})
-
-const manejarClicIntranet = () => {
-  cambiarVista('intranet') 
-}
+// Los componentes emiten 'cambiar-pagina' con el nombre de la ruta
+const cambiarVista = (nuevaVista) => { router.push({ name: nuevaVista }) }
+const volverAInicio = () => { router.push({ name: 'inicio' }) }
 
 // --- FUNCIÓN PARA CAMBIAR DE IDIOMA CON GOOGLE ---
 const cambiarIdioma = (lang) => {
@@ -116,8 +50,8 @@ const cambiarIdioma = (lang) => {
       <div class="contenedor-ancho top-bar-inner">
         <div class="spacer"></div>
         <div class="top-nav-group">
-          <a href="#" class="top-item border-left underline-item" @click.prevent="irAContacto">CONTACTO</a>
-          <button class="top-item border-left btn-reset underline-item" @click="manejarClicIntranet">INTRANET</button>
+          <RouterLink :to="{ name: 'contacto' }" class="top-item border-left underline-item">CONTACTO</RouterLink>
+          <RouterLink :to="{ name: 'intranet' }" class="top-item border-left underline-item">INTRANET</RouterLink>
           
           <div class="top-item border-left idiomas-container">
             <span class="lang-link" :class="{ active: idiomaActual === 'ca' }" @click="cambiarIdioma('ca')">CAT</span> | 
@@ -133,11 +67,13 @@ const cambiarIdioma = (lang) => {
       </div>
     </div>
     
-    <header v-if="vistaActual !== 'intranet'" class="main-header header-transparente" :class="{ 'header-solido-contacto': vistaActual === 'contacto' }">
+    <header v-if="mostrarCabecera" class="main-header header-transparente" :class="{ 'header-solido-contacto': cabeceraSolida }">
       <div class="contenedor-ancho header-inner">
         
         <div class="header-left">
-          <img :src="logoSio" alt="SIO" class="logo-principal" @click="volverAInicio">
+          <RouterLink to="/" aria-label="Inicio">
+            <img :src="logoSio" alt="SIO" class="logo-principal">
+          </RouterLink>
           
           <div class="divider"></div>
           
@@ -157,102 +93,19 @@ const cambiarIdioma = (lang) => {
         </div>
 
         <nav class="nav-menu">
-          <a href="#" @click.prevent="cambiarVista('inicio')" class="nav-item">EL SIO</a>
-          <a href="#" @click.prevent="cambiarVista('servicios')" class="nav-item">SERVICIOS</a>
-          <a href="#" @click.prevent="cambiarVista('proyectos')" class="nav-item">PROYECTOS</a>
-          <a href="#" @click.prevent="cambiarVista('idi')" class="nav-item">I+D+I</a>
+          <RouterLink :to="{ name: 'inicio' }" class="nav-item">EL SIO</RouterLink>
+          <RouterLink :to="{ name: 'servicios' }" class="nav-item">SERVICIOS</RouterLink>
+          <RouterLink :to="{ name: 'proyectos' }" class="nav-item">PROYECTOS</RouterLink>
+          <RouterLink :to="{ name: 'idi' }" class="nav-item">I+D+I</RouterLink>
         </nav>
         
       </div>
     </header>
 
     <main class="main-content">
-      
-      <div v-if="vistaActual === 'inicio'" class="inicio-container">
-        <CarruselComponente />
-        <QuienesSomos @cambiar-pagina="cambiarVista" />
-      </div>
-      
-      <Servicios v-else-if="vistaActual === 'servicios'" @cambiar-pagina="cambiarVista" />
-      <Instrumentacion v-else-if="vistaActual === 'instrumentacion'" @cambiar-pagina="cambiarVista" />
-      <Pelagia v-else-if="vistaActual === 'pelagia'" @cambiar-pagina="cambiarVista" />
-      <TanquesPruebas v-else-if="vistaActual === 'tanques'" @cambiar-pagina="cambiarVista" />
-      <AnalisisSalinidad v-else-if="vistaActual === 'salinidad'" @cambiar-pagina="cambiarVista" />
-      <Prototipado v-else-if="vistaActual === 'prototipado'" @cambiar-pagina="cambiarVista" />
-
-      <div v-else-if="vistaActual === 'proyectos'"><Proyectos @volver="volverAInicio" /></div>
-      <div v-else-if="vistaActual === 'idi'"><DesarrolloIdi @volver="volverAInicio" @cambiar-pagina="cambiarVista" /></div>
-      <div v-else-if="vistaActual === 'bluelab'"><BlueLab @volver="vistaActual = 'idi'" /></div>
-      <div v-else-if="vistaActual === 'intranet'"><IntranetPanel @volver="volverAInicio" /></div>
-
-      <EquipoSio v-else-if="vistaActual === 'equipo'" @cambiar-pagina="cambiarVista" />
-      <Fondeos v-else-if="vistaActual === 'fondeos'" @cambiar-pagina="cambiarVista" />
-      <NoticiasSio v-else-if="vistaActual === 'noticias'" @cambiar-pagina="cambiarVista" />
-      <MemoriaAnual v-else-if="vistaActual === 'memoria'" @cambiar-pagina="cambiarVista" /> 
-      
-      <div v-else-if="vistaActual === 'contacto'" class="pagina-contacto">
-        <div class="contenedor-ancho">
-          <h2 class="titulo-seccion">CONTACTO Y UBICACIÓN</h2>
-          
-          <div class="contacto-unacolumna">
-            <div class="tarjeta-dato datos-unificados">
-              <h3>Información del SIO</h3>
-              <p><strong>Dirección:</strong> Passeig Marítim de la Barceloneta, 37-49, 08003 Barcelona</p>
-              <p><strong>Teléfono:</strong> +34 93 230 95 00</p>
-              <p><strong>Email:</strong> <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a></p>
-            </div>
-
-            <div class="mapa-container">
-              <iframe 
-                src="https://maps.google.com/maps?q=Passeig%20Mar%C3%ADtim%20de%20la%20Barceloneta,%2037-49,%2008003%20Barcelona&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-                width="100%" 
-                height="400" 
-                style="border:0;" 
-                allowfullscreen="" 
-                loading="lazy" 
-                referrerpolicy="no-referrer-when-downgrade">
-              </iframe>
-            </div>
-            
-            <div class="tarjeta-dato formulario-amplio">
-              <h3>Envíanos tu consulta</h3>
-              <form @submit.prevent="enviarContacto">
-                <div class="grupo-input">
-                  <label for="nombre">Nombre</label>
-                  <input type="text" id="nombre" name="nombre" v-model="contacto.nombre" placeholder="Tu nombre" maxlength="200" required>
-                </div>
-                <div class="grupo-input">
-                  <label for="email">Email</label>
-                  <input type="email" id="email" name="email" v-model="contacto.email" placeholder="tu@email.com" maxlength="254" required>
-                </div>
-                <div class="grupo-input">
-                  <label for="mensaje">Mensaje</label>
-                  <textarea id="mensaje" name="mensaje" v-model="contacto.mensaje" rows="6" placeholder="¿En qué podemos ayudarte?" maxlength="5000" required></textarea>
-                </div>
-                <!-- Campo trampa para bots: oculto a las personas -->
-                <div class="campo-trampa" aria-hidden="true">
-                  <label for="web">No rellenar</label>
-                  <input type="text" id="web" name="web" v-model="contacto.web" tabindex="-1" autocomplete="off">
-                </div>
-                <p class="aviso-privacidad">
-                  Los datos de este formulario se usan solo para responder a tu consulta y no se ceden a terceros.
-                  Responsable: Institut de Ciències del Mar (ICM-CSIC).
-                </p>
-                <button type="submit" class="btn-enviar" :disabled="estadoContacto === 'enviando'">
-                  {{ estadoContacto === 'enviando' ? 'ENVIANDO…' : 'ENVIAR CONSULTA' }}
-                </button>
-                <p v-if="estadoContacto === 'enviado'" class="estado-contacto ok" role="status">
-                  Consulta enviada. Te responderemos lo antes posible.
-                </p>
-                <p v-else-if="estadoContacto === 'error'" class="estado-contacto error" role="alert">
-                  {{ errorContacto }}. Puedes escribirnos directamente a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.
-                </p>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+      <RouterView v-slot="{ Component }">
+        <component :is="Component" @cambiar-pagina="cambiarVista" @volver="volverAInicio" />
+      </RouterView>
     </main>
 
     <footer class="footer-icm">

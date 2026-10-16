@@ -17,7 +17,7 @@ const equipo = ref([
     tagClase: 'lider',
     tagTexto: 'Liderazgo',
     descripcion: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.',
-    fotoSrc: 'equipo/rbardaji.jpg'
+    fotoSrc: '/fotos/equipo/rbardaji.jpg'
   },
   {
     id: 'rferrando',
@@ -26,7 +26,7 @@ const equipo = ref([
     tagClase: 'tecnico',
     tagTexto: 'Ingeniería & Soporte',
     descripcion: 'Diseño industrial, desarrollo de sistemas embebidos, prototipado rápido (Mecanizado/Impresión 3D) y mantenimiento de la flota autónoma.',
-    fotoSrc: 'equipo/rferrando.jpg'
+    fotoSrc: '/fotos/equipo/rferrando.jpg'
   },
   {
     id: 'nhoareau',
@@ -35,7 +35,7 @@ const equipo = ref([
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
     descripcion: 'Calibración de sensores oceanográficos, análisis físico-químico de muestras de agua (Salinidad) y asistencia técnica en campañas.',
-    fotoSrc: 'equipo/nhoareau.jpg'
+    fotoSrc: '/fotos/equipo/nhoareau.jpg'
   },
   {
     id: 'bnicolas',
@@ -44,7 +44,7 @@ const equipo = ref([
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
     descripcion: 'Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.',
-    fotoSrc: 'equipo/bnicolas.jpg'
+    fotoSrc: '/fotos/equipo/bnicolas.jpg'
   },
   {
     id: 'ksalvador',
@@ -53,7 +53,7 @@ const equipo = ref([
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
     descripcion: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Kintxo dentro del Servicio de Ingeniería Oceanográfica.',
-    fotoSrc: 'equipo/ksalvador.jpg'
+    fotoSrc: '/fotos/equipo/ksalvador.jpg'
   },
   {
     id: 'mlloret',
@@ -62,7 +62,7 @@ const equipo = ref([
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
     descripcion: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Maribel dentro del Servicio de Ingeniería Oceanográfica.',
-    fotoSrc: 'equipo/mlloret.jpg'
+    fotoSrc: '/fotos/equipo/mlloret.jpg'
   }
 ])
 </script>
