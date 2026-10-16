@@ -119,7 +119,7 @@ const enviarSolicitud = () => {
             <div class="caja-desc">
               <p>
                 Para el uso de la embarcación Pelagia es estrictamente obligatorio contar con la aprobación del SIO. 
-                La plataforma Pelagia está capitaneada por Bryan Nicolas, profesional con amplia experiencia demostrable 
+                La plataforma Pelagia está capitaneada por Brian Nicolás, profesional con amplia experiencia demostrable 
                 en navegación costera y soporte a operaciones oceanográficas. Su liderazgo a bordo garantiza la seguridad 
                 de la tripulación y la correcta ejecución de los protocolos de trabajo marítimo. Su perfil resolutivo y 
                 su actitud colaborativa facilitan enormemente la coordinación de las actividades científicas durante las campañas.  

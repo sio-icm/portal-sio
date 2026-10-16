@@ -6,7 +6,7 @@ const equip = ref([
   { 
     id: 1, 
     nom: 'Raül Bardají', 
-    carrec: 'Responsable Técnico del SIO', 
+    carrec: 'Responsable del Servicio de Ingeniería y Oceanografía', 
     email: 'rbardaji@icm.csic.es', // Puedes actualizar el email real luego
     bio: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.', 
     foto: '/fotos/equipo/perfil-default.svg' 
@@ -29,7 +29,7 @@ const equip = ref([
   },
   { 
     id: 4, 
-    nom: 'Bryan Nicolás', 
+    nom: 'Brian Nicolás', 
     carrec: 'Técnico en Electrónica y Sistemas', 
     email: 'bnicolas@icm.csic.es', 
     bio: 'Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.', 
@@ -40,7 +40,7 @@ const equip = ref([
     nom: 'Kintxo Salvador', 
     carrec: 'Técnico de Soporte', 
     email: 'ksalvador@icm.csic.es', 
-    bio: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Kintxo dentro del Servicio de Ingeniería.', 
+    bio: '', 
     foto: '/fotos/equipo/perfil-default.svg' 
   },
   { 
@@ -48,7 +48,7 @@ const equip = ref([
     nom: 'Maribel Lloret', 
     carrec: 'Técnica de Soporte', 
     email: 'mlloret@icm.csic.es', 
-    bio: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Maribel dentro del Servicio de Ingeniería.', 
+    bio: '', 
     foto: '/fotos/equipo/perfil-default.svg' 
   }
 ])

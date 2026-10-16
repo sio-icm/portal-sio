@@ -13,7 +13,7 @@ const equipo = ref([
   {
     id: 'rbardaji',
     nombre: 'Raül Bardají',
-    cargo: 'Responsable Técnico del SIO',
+    cargo: 'Responsable del Servicio de Ingeniería y Oceanografía',
     tagClase: 'lider',
     tagTexto: 'Liderazgo',
     descripcion: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.',
@@ -39,7 +39,7 @@ const equipo = ref([
   },
   {
     id: 'bnicolas',
-    nombre: 'Bryan Nicolás',
+    nombre: 'Brian Nicolás',
     cargo: 'Técnico en Electrónica y Sistemas',
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
@@ -52,7 +52,7 @@ const equipo = ref([
     cargo: 'Técnico de Soporte',
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
-    descripcion: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Kintxo dentro del Servicio de Ingeniería Oceanográfica.',
+    descripcion: '',
     fotoSrc: '/fotos/equipo/ksalvador.jpg'
   },
   {
@@ -61,7 +61,7 @@ const equipo = ref([
     cargo: 'Técnica de Soporte',
     tagClase: 'tecnico',
     tagTexto: 'Soporte Técnico',
-    descripcion: 'Escribe aquí la descripción de las tareas, especialidades y soporte que ofrece Maribel dentro del Servicio de Ingeniería Oceanográfica.',
+    descripcion: '',
     fotoSrc: '/fotos/equipo/mlloret.jpg'
   }
 ])
@@ -88,7 +88,7 @@ const equipo = ref([
           <div :class="['rol-tag', persona.tagClase]">{{ persona.tagTexto }}</div>
           <h3>{{ persona.nombre }}</h3>
           <p class="cargo">{{ persona.cargo }}</p>
-          <div class="descripcion-personal">
+          <div v-if="persona.descripcion" class="descripcion-personal">
             {{ persona.descripcion }}
           </div>
         </div>

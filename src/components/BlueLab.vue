@@ -97,7 +97,7 @@ const backgroundStyle = computed(() => {
           </div>
           <div class="equipo-grupo border-left">
             <h4>Equipo SIO</h4>
-            <p>Raül Ferrando, Nina Hoareau, Bryan Nicolás.</p>
+            <p>Raül Ferrando, Nina Hoareau, Brian Nicolás.</p>
           </div>
           <div class="equipo-grupo border-left">
             <h4>Investigadores Predoctorales</h4>
