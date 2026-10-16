@@ -3,11 +3,15 @@ import { ref } from 'vue'
 // Importamos tu imagen de fondo
 import fondoPelagia from '../assets/Pelagia.jpg'
 
-// --- LÓGICA DEL CALENDARIO (6 MESES VISTA) ---
-const meses = [
-  'Mayo 2026', 'Junio 2026', 'Julio 2026', 'Agosto 2026',
-  'Septiembre 2026', 'Octubre 2026', 'Noviembre 2026'
-]
+// --- LÓGICA DEL CALENDARIO (7 MESES A PARTIR DEL ACTUAL) ---
+const hoy = new Date()
+const meses = Array.from({ length: 7 }, (_, i) => {
+  const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1)
+  return {
+    nombre: new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(fecha),
+    dias: new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()
+  }
+})
 
 const mesActualIndex = ref(0)
 
@@ -16,21 +20,15 @@ const mesSiguiente = () => { if (mesActualIndex.value < meses.length - 1) mesAct
 
 const diasSeleccionados = ref([])
 
-// Simulador de días ocupados (distribuidos por meses)
-const esOcupado = (dia, mesIndex) => {
-  if (mesIndex === 0 && [12, 13, 14].includes(dia)) return true // Mayo
-  if (mesIndex === 1 && [2, 5, 14, 15, 22].includes(dia)) return true // Junio
-  if (mesIndex === 2 && [10, 11, 12, 28, 29].includes(dia)) return true // Julio
-  if (mesIndex === 3 && [1, 2, 3, 20, 21].includes(dia)) return true // Agosto
-  if (mesIndex === 4 && [15, 16, 17].includes(dia)) return true // Septiembre
-  return false
-}
+// Días ocupados: todavía no hay un calendario real de la embarcación.
+// Cuando lo haya, se consultará aquí; mientras tanto no se marca ninguno.
+const esOcupado = () => false
 
 // Seleccionar un día, guardando también el mes para el correo
 const toggleDia = (dia) => {
   if (esOcupado(dia, mesActualIndex.value)) return
 
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value]}`
+  const fechaStr = `${dia} de ${meses[mesActualIndex.value].nombre}`
   const index = diasSeleccionados.value.indexOf(fechaStr)
 
   if (index === -1) {
@@ -42,7 +40,7 @@ const toggleDia = (dia) => {
 
 // Comprueba si un día de este mes está en la lista de seleccionados
 const estaSeleccionado = (dia) => {
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value]}`
+  const fechaStr = `${dia} de ${meses[mesActualIndex.value].nombre}`
   return diasSeleccionados.value.includes(fechaStr)
 }
 
@@ -87,18 +85,8 @@ const enviarSolicitud = () => {
           <div class="bloque-subcat">
             <h3 class="titulo-subcat">Especificaciones Principales</h3>
             <ul class="lista-wiki">
-              <li>
-                <div class="item-header">
-                  <span class="punto-azul">•</span>
-                  <span class="enlace-wiki">Características Básicas</span>
-                </div>
-                <div class="caja-gris-wiki">
-                  <strong>- Eslora:</strong> [Añadir metros] m<br>
-                  <strong>- Manga:</strong> [Añadir metros] m<br>
-                  <strong>- Motorización:</strong> [Añadir CV/Marca]<br>
-                  <strong>- Capacidad máxima:</strong> [Añadir pax] personas (incluyendo patrón)
-                </div>
-              </li>
+              <!-- Características básicas (eslora, manga, motorización, capacidad):
+                   pendientes de los datos reales de la embarcación -->
               <li>
                 <div class="item-header">
                   <span class="punto-azul">•</span>
@@ -108,7 +96,7 @@ const enviarSolicitud = () => {
                   <strong>- Navegación:</strong> GPS / Sonda plotter integrado.<br>
                   <strong>- Comunicación:</strong> Emisora VHF fija.<br>
                   <strong>- Maniobra:</strong> Pescante / Maquinilla para perfiladores ligeros (CTD, roseta pequeña).<br>
-                  <strong>- Seguridad:</strong> Material de seguridad completo zona [X].
+                  <strong>- Seguridad:</strong> Material de seguridad completo.
                 </div>
               </li>
             </ul>
@@ -146,13 +134,13 @@ const enviarSolicitud = () => {
             
             <div class="cabecera-mes">
               <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': mesActualIndex === 0 }">❮</button>
-              <span class="mes-actual">{{ meses[mesActualIndex] }}</span>
+              <span class="mes-actual">{{ meses[mesActualIndex].nombre }}</span>
               <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': mesActualIndex === meses.length - 1 }">❯</button>
             </div>
 
             <div class="grid-dias">
               <div 
-                v-for="dia in 31" 
+                v-for="dia in meses[mesActualIndex].dias" 
                 :key="dia" 
                 @click="toggleDia(dia)" 
                 :class="['dia', { 
