@@ -2,17 +2,9 @@
 import { computed } from 'vue'
 import fondoNoticias from '../assets/instrumentacion.jpg'
 
-defineEmits(['cambiar-pagina'])
-
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoNoticias}')`
 })
-
-const noticias = [
-  { id: 1, fecha: '15 Mayo 2026', titulo: 'Nueva campaña de calibración en la plataforma costera', resumen: 'El equipo del SIO ha completado con éxito la última campaña de mantenimiento y calibración de los perfiladores Doppler en la zona de Blanes.' },
-  { id: 2, fecha: '02 Abril 2026', titulo: 'Ampliación del parque de impresión 3D', resumen: 'Incorporamos nueva maquinaria de prototipado rápido en resina y filamento técnico para el desarrollo de carcasas submarinas a medida.' },
-  { id: 3, fecha: '18 Marzo 2026', titulo: 'Participación en el proyecto DIGI4ECO', resumen: 'El SIO colaborará aportando soporte técnico en el despliegue de vehículos autónomos para la creación del Gemelo Digital del Océano.' }
-]
 </script>
 
 <template>
@@ -28,7 +20,7 @@ const noticias = [
         <!-- Noticia 1 -->
         <div class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
-            <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80" alt="Campaña oceanográfica">
+            <img src="/fotos/noticias/vehiculos-superficie.webp" alt="Embarcación con técnicos junto a una boya oceanográfica" loading="lazy">
           </div>
           <div class="fecha-noticia">19 AGOSTO 2026</div>
           <h3>Nueva misión autónoma con vehículos de superficie en la Costa Brava</h3>
@@ -40,7 +32,7 @@ const noticias = [
 <!-- Noticia 2 (Corregida) -->
         <div class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
-            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=80" alt="Laboratorio e impresión 3D">
+            <img src="/fotos/noticias/impresion-3d.webp" alt="Impresora 3D del taller fabricando piezas" loading="lazy">
           </div>
           <div class="fecha-noticia">10 JULIO 2026</div>
           <h3>Avances en el diseño y fabricación de nuevos sensores submarinos</h3>
@@ -52,7 +44,7 @@ const noticias = [
         <!-- Noticia 3 -->
         <div class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
-            <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80" alt="Sinergias y cooperación marina">
+            <img src="/fotos/noticias/boya-fondeo.webp" alt="Fondeo oceanográfico con boyas e instrumentos" loading="lazy">
           </div>
           <div class="fecha-noticia">28 JUNIO 2026</div>
           <h3>Nuevas sinergias estratégicas para la observación costera</h3>
