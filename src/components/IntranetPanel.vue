@@ -7,15 +7,15 @@ import GestionAlbaranes from './GestionAlbaranes.vue'
 import BibliotecaDocs from './BibliotecaDocs.vue'
 import GestionEquipo from './GestionEquipo.vue'
 
-const apiBase = 'http://localhost:5000/api'
+const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
 const apiUrlProyectos = `${apiBase}/proyectos`
 
 const estaLogueado = ref(false)
 
-// La sessió viu en una cookie del backend: cal enviar-la a cada petició
+// La sessió viu en una cookie del backend (mateix domini, el navegador l'envia sola)
 const peticionApi = async (url, opciones = {}) => {
-  const respuesta = await fetch(url, { credentials: 'include', ...opciones })
+  const respuesta = await fetch(url, opciones)
   if (respuesta.status === 401 && estaLogueado.value) {
     estaLogueado.value = false
     alert("La sessió ha caducat. Torna a entrar.")

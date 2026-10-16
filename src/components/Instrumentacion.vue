@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-const apiUrl = 'http://localhost:5000/api/instrumentos'
+const apiUrl = '/api/instrumentos'
 const emit = defineEmits(['volver'])
 
 // --- ESTATS I DADES ---

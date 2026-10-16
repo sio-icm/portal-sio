@@ -13,7 +13,7 @@ const finalizados = computed(() => proyectos.value.filter(p => p.estado === 'Fin
 // Funció per carregar els projectes reals de la BD
 const cargarProyectos = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/proyectos')
+    const res = await fetch('/api/proyectos')
     proyectos.value = await res.json()
   } catch (error) {
     console.error("Error carregant projectes:", error)

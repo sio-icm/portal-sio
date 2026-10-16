@@ -5,7 +5,6 @@ from datetime import timedelta
 from functools import wraps
 
 from flask import Flask, jsonify, request, session
-from flask_cors import CORS
 from werkzeug.security import check_password_hash
 
 # Configuración por variables de entorno (no hay credenciales en el código):
@@ -13,7 +12,6 @@ from werkzeug.security import check_password_hash
 #   SIO_ADMIN_USER           usuario de la intranet
 #   SIO_ADMIN_PASSWORD_HASH  hash de la contraseña, generado con:
 #       python -c "from werkzeug.security import generate_password_hash as g; print(g('LA_CONTRASEÑA'))"
-#   SIO_CORS_ORIGINS         orígenes permitidos separados por comas (solo desarrollo)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
 app.config.update(
@@ -25,9 +23,8 @@ app.config.update(
 ADMIN_USER = os.environ.get('SIO_ADMIN_USER')
 ADMIN_PASSWORD_HASH = os.environ.get('SIO_ADMIN_PASSWORD_HASH')
 
-# En producción la web y la API van por el mismo dominio y no hace falta CORS
-origenes_cors = os.environ.get('SIO_CORS_ORIGINS', 'http://localhost:5173')
-CORS(app, origins=[o.strip() for o in origenes_cors.split(',') if o.strip()], supports_credentials=True)
+# Sin CORS: la web y la API van por el mismo dominio (Nginx en producción,
+# proxy de Vite en desarrollo)
 
 
 def login_configurado():
