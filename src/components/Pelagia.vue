@@ -1,57 +1,23 @@
 <script setup>
-import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useCalendarioReservas } from '../composables/useCalendarioReservas'
 import fondoPelagia from '../assets/Pelagia.jpg'
 
-const { t, locale } = useI18n()
-
-// --- CALENDARIO (7 MESES A PARTIR DEL ACTUAL) ---
-const hoy = new Date()
-const meses = Array.from({ length: 7 }, (_, i) => new Date(hoy.getFullYear(), hoy.getMonth() + i, 1))
-const diasDelMes = (fecha) => new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()
-
-const mesActualIndex = ref(0)
-const mesVisible = computed(() => meses[mesActualIndex.value])
-const nombreMes = computed(() => {
-  const texto = new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(mesVisible.value)
-  return texto.charAt(0).toUpperCase() + texto.slice(1)
-})
-
-const mesAnterior = () => { if (mesActualIndex.value > 0) mesActualIndex.value-- }
-const mesSiguiente = () => { if (mesActualIndex.value < meses.length - 1) mesActualIndex.value++ }
-
-// Días elegidos como 'AAAA-M-D', para poder ordenarlos y escribirlos en cualquier idioma
-const diasSeleccionados = ref([])
-const claveDia = (dia) => `${mesVisible.value.getFullYear()}-${mesVisible.value.getMonth()}-${dia}`
-
-// Días ocupados: todavía no hay un calendario real de la embarcación.
-// Cuando lo haya, se consultará aquí; mientras tanto no se marca ninguno.
-const esOcupado = () => false
-
-const toggleDia = (dia) => {
-  if (esOcupado(dia)) return
-  const clave = claveDia(dia)
-  const index = diasSeleccionados.value.indexOf(clave)
-  if (index === -1) diasSeleccionados.value.push(clave)
-  else diasSeleccionados.value.splice(index, 1)
-}
-
-const estaSeleccionado = (dia) => diasSeleccionados.value.includes(claveDia(dia))
+const { t } = useI18n()
+const {
+  nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
+  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
+} = useCalendarioReservas()
 
 // Abre el correo del usuario con la solicitud preparada (sin servicios externos)
 const enviarSolicitud = () => {
   if (diasSeleccionados.value.length === 0) return
-  const formato = new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'long', year: 'numeric' })
-  const fechas = diasSeleccionados.value
-    .map((clave) => { const [a, m, d] = clave.split('-').map(Number); return new Date(a, m, d) })
-    .sort((x, y) => x - y)
-    .map((fecha) => formato.format(fecha))
   const destinatario = "sio@icm.csic.es"
   const asunto = encodeURIComponent(t('pelagia.correo.asunto'))
   const cuerpo = encodeURIComponent(
     `${t('pelagia.correo.saludo')}\n\n` +
     `${t('pelagia.correo.intro')}\n` +
-    `- ${fechas.join('\n- ')}\n\n` +
+    `- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
     `${t('pelagia.correo.adjunto')}\n\n` +
     `${t('pelagia.correo.despedida')}`
   )
@@ -122,14 +88,14 @@ const enviarSolicitud = () => {
             <h3 class="titulo-mini">{{ $t('pelagia.paso2') }}</h3>
             
             <div class="cabecera-mes">
-              <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': mesActualIndex === 0 }" :aria-label="$t('pelagia.mesAnterior')">❮</button>
+              <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': !hayMesAnterior }" :aria-label="$t('pelagia.mesAnterior')">❮</button>
               <span class="mes-actual">{{ nombreMes }}</span>
-              <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': mesActualIndex === meses.length - 1 }" :aria-label="$t('pelagia.mesSiguiente')">❯</button>
+              <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': !hayMesSiguiente }" :aria-label="$t('pelagia.mesSiguiente')">❯</button>
             </div>
 
             <div class="grid-dias">
               <div 
-                v-for="dia in diasDelMes(mesVisible)" 
+                v-for="dia in diasMesVisible" 
                 :key="dia" 
                 @click="toggleDia(dia)" 
                 :class="['dia', { 

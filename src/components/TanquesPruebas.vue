@@ -1,55 +1,16 @@
 <script setup>
 import { ref } from 'vue'
-// Importamos tu imagen de fondo
+import { useCalendarioReservas } from '../composables/useCalendarioReservas'
 import fondoTanques from '../assets/tanques.jpg'
 
-const emit = defineEmits(['cambiar-pagina'])
+const {
+  nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
+  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
+} = useCalendarioReservas()
 
-// --- LÓGICA DEL CALENDARIO (6 MESES VISTA) ---
-const meses = [
-  'Mayo 2026', 'Junio 2026', 'Julio 2026', 'Agosto 2026',
-  'Septiembre 2026', 'Octubre 2026', 'Noviembre 2026'
-]
-
-const mesActualIndex = ref(0)
-
-const mesAnterior = () => { if (mesActualIndex.value > 0) mesActualIndex.value-- }
-const mesSiguiente = () => { if (mesActualIndex.value < meses.length - 1) mesActualIndex.value++ }
-
-// Días ocupados simulados
-const esOcupado = (dia, mesIndex) => {
-  if (mesIndex === 0 && [12, 13, 14].includes(dia)) return true
-  if (mesIndex === 1 && [2, 5, 14, 15, 22].includes(dia)) return true
-  if (mesIndex === 2 && [10, 11, 12, 28, 29].includes(dia)) return true
-  if (mesIndex === 3 && [1, 2, 3, 20, 21].includes(dia)) return true
-  if (mesIndex === 4 && [15, 16, 17].includes(dia)) return true
-  return false
-}
-
-// --- LÓGICA DEL FORMULARIO Y SELECCIÓN ---
-const diasSeleccionados = ref([])
+// --- FORMULARIO ---
 const proposito = ref('')
 const necesitaGrua = ref('No')
-
-// Seleccionar o deseleccionar un día
-const toggleDia = (dia) => {
-  if (esOcupado(dia, mesActualIndex.value)) return // Si está ocupado, no hace nada
-
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value]}`
-  const index = diasSeleccionados.value.indexOf(fechaStr)
-
-  if (index === -1) {
-    diasSeleccionados.value.push(fechaStr) // Añadir si no está
-  } else {
-    diasSeleccionados.value.splice(index, 1) // Quitar si ya estaba
-  }
-}
-
-// Comprobar si un día concreto está seleccionado para pintarlo de azul
-const estaSeleccionado = (dia) => {
-  const fechaStr = `${dia} de ${meses[mesActualIndex.value]}`
-  return diasSeleccionados.value.includes(fechaStr)
-}
 
 // Enviar el correo
 const enviarSolicitud = () => {
@@ -65,7 +26,7 @@ const enviarSolicitud = () => {
   const cuerpo = encodeURIComponent(
     `Hola equipo del SIO,\n\n` +
     `Me gustaría solicitar el uso de los Tanques de Pruebas.\n\n` +
-    `📅 DÍAS SOLICITADOS:\n- ${diasSeleccionados.value.join('\n- ')}\n\n` +
+    `📅 DÍAS SOLICITADOS:\n- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
     `📋 PROPÓSITO DE LAS PRUEBAS:\n${proposito.value}\n\n` +
     `🏗️ USO DE GRÚA DE CARGA:\n${necesitaGrua.value}\n\n` +
     `Quedo a la espera de vuestra confirmación para coordinarnos.\n\nUn saludo.`
@@ -100,8 +61,7 @@ const enviarSolicitud = () => {
           <div class="bloque-info">
             <h3>Especificaciones Principales</h3>
             <ul class="lista-especificaciones">
-              <li><strong>Volumen total:</strong> [Añadir litros/m3]</li>
-              <li><strong>Control de Temperatura:</strong> Rango de [X] °C a [Y] °C</li>
+              <!-- Volumen total y rango de temperatura: pendientes de los datos reales -->
               <li><strong>Control de Salinidad:</strong> Sistema automatizado</li>
               <li><strong>Iluminación:</strong> Espectro regulable para fotosíntesis</li>
               <li><strong>Filtración:</strong> Filtros UV y biológicos integrados</li>
@@ -122,16 +82,16 @@ const enviarSolicitud = () => {
               
               <div class="calendario-placeholder mt-3">
                 <div class="cabecera-mes">
-                  <button class="btn-mes" @click="mesAnterior" :class="{ 'oculto': mesActualIndex === 0 }">❮</button>
-                  <span class="mes-actual">{{ meses[mesActualIndex] }}</span>
-                  <button class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': mesActualIndex === meses.length - 1 }">❯</button>
+                  <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': !hayMesAnterior }">❮</button>
+                  <span class="mes-actual">{{ nombreMes }}</span>
+                  <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': !hayMesSiguiente }">❯</button>
                 </div>
 
                 <div class="grid-calendario">
-                   <div v-for="dia in 30" :key="dia" 
+                   <div v-for="dia in diasMesVisible" :key="dia" 
                         class="dia" 
                         :class="{ 
-                          'ocupado': esOcupado(dia, mesActualIndex), 
+                          'ocupado': esOcupado(dia), 
                           'seleccionado': estaSeleccionado(dia) 
                         }"
                         @click="toggleDia(dia)">
@@ -149,7 +109,7 @@ const enviarSolicitud = () => {
                 <div class="grupo-input">
                   <label>Días marcados:</label>
                   <div class="contenedor-tags">
-                    <span v-for="dia in diasSeleccionados" :key="dia" class="tag-dia">{{ dia }}</span>
+                    <span v-for="fecha in fechasSeleccionadas" :key="fecha" class="tag-dia">{{ fecha }}</span>
                   </div>
                 </div>
 
