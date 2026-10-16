@@ -476,5 +476,61 @@ export default {
     liderazgo: 'Scientific Leadership',
     equipoSio: 'SIO Team',
     predoctorales: 'Predoctoral Researchers'
+  },
+
+  equipo: {
+    titulo: 'SIO Team',
+    subtitulo: 'The technical and research staff supporting the marine sciences.',
+    etiquetas: {
+      liderazgo: 'Leadership',
+      ingenieria: 'Engineering & Support',
+      soporte: 'Technical Support'
+    },
+    personas: {
+      rbardaji: { cargo: 'Head of the Engineering and Oceanography Service', descripcion: 'Overall coordination of infrastructure, management of oceanographic campaigns and leadership of technological support at ICM-CSIC.' },
+      rferrando: { cargo: 'Research Technical Staff (PIT)', descripcion: 'Industrial design, embedded systems development, rapid prototyping (machining/3D printing) and maintenance of the autonomous fleet.' },
+      nhoareau: { cargo: 'Instrumentation Specialist', descripcion: 'Calibration of oceanographic sensors, physico-chemical analysis of water samples (salinity) and technical assistance during campaigns.' },
+      bnicolas: { cargo: 'Electronics and Systems Technician', descripcion: 'Preventive and corrective maintenance of telemetry systems, underwater communications and analogue/digital electronics.' },
+      ksalvador: { cargo: 'Support Technician', descripcion: '' },
+      mlloret: { cargo: 'Support Technician', descripcion: '' }
+    }
+  },
+
+  noticias: {
+    titulo: 'News and Updates',
+    subtitulo: 'The latest news, campaigns and technological advances from the Oceanographic Engineering Service.',
+    lista: [
+      {
+        titulo: 'New autonomous mission with surface vehicles on the Costa Brava',
+        texto: 'Our team has successfully deployed the new fleet of autonomous vehicles to monitor surface currents and physico-chemical parameters in real time. This pilot test allows us to validate the adaptive navigation algorithms before moving on to long-duration missions in the open sea.',
+        alt: 'Boat with technicians next to an oceanographic buoy'
+      },
+      {
+        titulo: 'Progress in the design and manufacture of new underwater sensors',
+        texto: 'By combining our precision milling machines with the new 3D printing facility, we have prototyped ultralight watertight housings and custom mounts for extreme oceanographic instrumentation. This drastically reduces development costs and speeds up our laboratory tests.',
+        alt: 'Workshop 3D printer making parts'
+      },
+      {
+        titulo: 'New strategic synergies for coastal observation',
+        texto: 'We are establishing new lines of collaboration with institutions and organisations in the sector to share nautical resources and optimise the deployment of buoy networks and HF radars. One more step towards an integrated, highly efficient marine observation system on the Catalan coast.',
+        alt: 'Oceanographic mooring with buoys and instruments'
+      }
+    ]
+  },
+
+  memoria: {
+    titulo: 'Annual Report',
+    subtitulo: 'Transparency, metrics and impact of our scientific and technical activity over the last year.',
+    resumen: 'Activity Summary {anio}',
+    intro: 'The Oceanographic Engineering Service has continued to support marine research, expanding its operational and rapid prototyping capabilities. The key indicators for the year are highlighted below.',
+    metricas: {
+      campanas: 'Campaigns Supported',
+      sensores: 'Sensors Calibrated',
+      fondeos: 'Moorings Installed',
+      proyectos: 'R&D&I Projects'
+    },
+    completa: 'Full SIO Annual Report {anio}',
+    completaTexto: 'Detailed document with the annual review, list of projects and service metrics (PDF).',
+    descargar: 'Download PDF'
   }
 }

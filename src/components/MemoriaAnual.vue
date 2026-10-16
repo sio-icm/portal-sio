@@ -2,11 +2,18 @@
 import { computed } from 'vue'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
 
-defineEmits(['cambiar-pagina'])
-
 // Ruta del PDF de la memoria (dentro de public/). Mientras esté vacía no se
 // muestra el recuadro de descarga. Ejemplo: '/memorias/Memoria_SIO_2025.pdf'
 const pdfMemoria = ''
+
+// Año de la memoria y cifras (pendientes de verificar)
+const anioMemoria = 2025
+const metricas = [
+  { valor: '24', clave: 'campanas' },
+  { valor: '150+', clave: 'sensores' },
+  { valor: '12', clave: 'fondeos' },
+  { valor: '8', clave: 'proyectos' }
+]
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
@@ -18,39 +25,27 @@ const backgroundStyle = computed(() => {
     <div class="fondo-cabecera" :style="{ backgroundImage: backgroundStyle }"></div>
     
     <div class="contenedor-ancho contenido-pagina">
-      <h1 class="titulo-seccion">Memoria Anual</h1>
-      <p class="subtitulo">Transparencia, métricas e impacto de nuestra actividad científica y técnica durante el último ejercicio.</p>
+      <h1 class="titulo-seccion">{{ $t('memoria.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('memoria.subtitulo') }}</p>
 
       <div class="bloque-blanco">
-        <h2>Resumen de Actividad 2025</h2>
-        <p class="intro-memoria">El Servicio de Ingeniería Oceanográfica ha continuado su labor de soporte a la investigación marina, ampliando sus capacidades operativas y de prototipado rápido. A continuación, se destacan los indicadores clave del año.</p>
+        <h2>{{ $t('memoria.resumen', { anio: anioMemoria }) }}</h2>
+        <p class="intro-memoria">{{ $t('memoria.intro') }}</p>
         
         <div class="grid-metricas">
-          <div class="tarjeta-metrica">
-            <span class="numero">24</span>
-            <span class="etiqueta">Campañas Soportadas</span>
-          </div>
-          <div class="tarjeta-metrica">
-            <span class="numero">150+</span>
-            <span class="etiqueta">Sensores Calibrados</span>
-          </div>
-          <div class="tarjeta-metrica">
-            <span class="numero">12</span>
-            <span class="etiqueta">Fondeos Instalados</span>
-          </div>
-          <div class="tarjeta-metrica">
-            <span class="numero">8</span>
-            <span class="etiqueta">Proyectos I+D+I</span>
+          <div v-for="m in metricas" :key="m.clave" class="tarjeta-metrica">
+            <span class="numero">{{ m.valor }}</span>
+            <span class="etiqueta">{{ $t(`memoria.metricas.${m.clave}`) }}</span>
           </div>
         </div>
 
         <div v-if="pdfMemoria" class="caja-descarga">
           <div class="icono-doc">📄</div>
           <div>
-            <h3>Memoria Completa SIO 2025</h3>
-            <p>Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF).</p>
+            <h3>{{ $t('memoria.completa', { anio: anioMemoria }) }}</h3>
+            <p>{{ $t('memoria.completaTexto') }}</p>
           </div>
-          <a :href="pdfMemoria" class="btn-descarga" download>Descargar PDF</a>
+          <a :href="pdfMemoria" class="btn-descarga" download>{{ $t('memoria.descargar') }}</a>
         </div>
       </div>
     </div>

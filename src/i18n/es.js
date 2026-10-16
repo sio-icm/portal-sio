@@ -476,5 +476,61 @@ export default {
     liderazgo: 'Liderazgo Científico',
     equipoSio: 'Equipo SIO',
     predoctorales: 'Investigadores Predoctorales'
+  },
+
+  equipo: {
+    titulo: 'Equipo SIO',
+    subtitulo: 'El personal técnico e investigador que da soporte a las ciencias del mar.',
+    etiquetas: {
+      liderazgo: 'Liderazgo',
+      ingenieria: 'Ingeniería & Soporte',
+      soporte: 'Soporte Técnico'
+    },
+    personas: {
+      rbardaji: { cargo: 'Responsable del Servicio de Ingeniería y Oceanografía', descripcion: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.' },
+      rferrando: { cargo: 'Personal Técnico de Investigación (PIT)', descripcion: 'Diseño industrial, desarrollo de sistemas embebidos, prototipado rápido (mecanizado/impresión 3D) y mantenimiento de la flota autónoma.' },
+      nhoareau: { cargo: 'Especialista en Instrumentación', descripcion: 'Calibración de sensores oceanográficos, análisis físico-químico de muestras de agua (salinidad) y asistencia técnica en campañas.' },
+      bnicolas: { cargo: 'Técnico en Electrónica y Sistemas', descripcion: 'Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.' },
+      ksalvador: { cargo: 'Técnico de Soporte', descripcion: '' },
+      mlloret: { cargo: 'Técnica de Soporte', descripcion: '' }
+    }
+  },
+
+  noticias: {
+    titulo: 'Noticias y Actualidad',
+    subtitulo: 'Últimas novedades, campañas y avances tecnológicos del Servicio de Ingeniería Oceanográfica.',
+    lista: [
+      {
+        titulo: 'Nueva misión autónoma con vehículos de superficie en la Costa Brava',
+        texto: 'Nuestro equipo ha desplegado con éxito la nueva flota de vehículos autónomos para monitorizar corrientes superficiales y parámetros físico-químicos en tiempo real. Esta prueba piloto nos permite validar los algoritmos de navegación adaptativa antes de dar el salto a misiones de larga duración en mar abierto.',
+        alt: 'Embarcación con técnicos junto a una boya oceanográfica'
+      },
+      {
+        titulo: 'Avances en el diseño y fabricación de nuevos sensores submarinos',
+        texto: 'Gracias a la combinación de nuestras fresadoras de precisión y el nuevo parque de impresión 3D, hemos logrado prototipar carcasas estancas ultraligeras y soportes a medida para instrumentación oceanográfica extrema. Esto reduce drásticamente los costes de desarrollo y acelera nuestras pruebas en laboratorio.',
+        alt: 'Impresora 3D del taller fabricando piezas'
+      },
+      {
+        titulo: 'Nuevas sinergias estratégicas para la observación costera',
+        texto: 'Establecemos nuevas líneas de colaboración con instituciones y entidades del sector para compartir recursos náuticos y optimizar el despliegue de redes de boyas y radares HF. Un paso más hacia la consolidación de un sistema de observación marina integrado y de alta eficiencia en el litoral catalán.',
+        alt: 'Fondeo oceanográfico con boyas e instrumentos'
+      }
+    ]
+  },
+
+  memoria: {
+    titulo: 'Memoria Anual',
+    subtitulo: 'Transparencia, métricas e impacto de nuestra actividad científica y técnica durante el último ejercicio.',
+    resumen: 'Resumen de Actividad {anio}',
+    intro: 'El Servicio de Ingeniería Oceanográfica ha continuado su labor de soporte a la investigación marina, ampliando sus capacidades operativas y de prototipado rápido. A continuación, se destacan los indicadores clave del año.',
+    metricas: {
+      campanas: 'Campañas Soportadas',
+      sensores: 'Sensores Calibrados',
+      fondeos: 'Fondeos Instalados',
+      proyectos: 'Proyectos I+D+I'
+    },
+    completa: 'Memoria Completa SIO {anio}',
+    completaTexto: 'Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF).',
+    descargar: 'Descargar PDF'
   }
 }

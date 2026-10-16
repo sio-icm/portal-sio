@@ -476,5 +476,61 @@ export default {
     liderazgo: 'Lideratge científic',
     equipoSio: 'Equip SIO',
     predoctorales: 'Investigadors predoctorals'
+  },
+
+  equipo: {
+    titulo: 'Equip SIO',
+    subtitulo: 'El personal tècnic i investigador que dona suport a les ciències del mar.',
+    etiquetas: {
+      liderazgo: 'Lideratge',
+      ingenieria: 'Enginyeria i suport',
+      soporte: 'Suport tècnic'
+    },
+    personas: {
+      rbardaji: { cargo: "Responsable del Servei d'Enginyeria i Oceanografia", descripcion: "Coordinació general d'infraestructures, gestió de campanyes oceanogràfiques i direcció del suport tecnològic a l'ICM-CSIC." },
+      rferrando: { cargo: 'Personal tècnic de recerca (PIT)', descripcion: 'Disseny industrial, desenvolupament de sistemes encastats, prototipatge ràpid (mecanitzat/impressió 3D) i manteniment de la flota autònoma.' },
+      nhoareau: { cargo: 'Especialista en instrumentació', descripcion: "Calibratge de sensors oceanogràfics, anàlisi fisicoquímica de mostres d'aigua (salinitat) i assistència tècnica a les campanyes." },
+      bnicolas: { cargo: 'Tècnic en electrònica i sistemes', descripcion: 'Manteniment preventiu i correctiu de sistemes de telemetria, comunicacions submarines i electrònica analògica/digital.' },
+      ksalvador: { cargo: 'Tècnic de suport', descripcion: '' },
+      mlloret: { cargo: 'Tècnica de suport', descripcion: '' }
+    }
+  },
+
+  noticias: {
+    titulo: 'Notícies i actualitat',
+    subtitulo: "Últimes novetats, campanyes i avenços tecnològics del Servei d'Enginyeria Oceanogràfica.",
+    lista: [
+      {
+        titulo: 'Nova missió autònoma amb vehicles de superfície a la Costa Brava',
+        texto: "El nostre equip ha desplegat amb èxit la nova flota de vehicles autònoms per monitorar corrents superficials i paràmetres fisicoquímics en temps real. Aquesta prova pilot ens permet validar els algorismes de navegació adaptativa abans de fer el salt a missions de llarga durada en mar obert.",
+        alt: 'Embarcació amb tècnics al costat d’una boia oceanogràfica'
+      },
+      {
+        titulo: 'Avenços en el disseny i la fabricació de nous sensors submarins',
+        texto: "Gràcies a la combinació de les nostres fresadores de precisió i el nou parc d'impressió 3D, hem aconseguit prototipar carcasses estanques ultralleugeres i suports a mida per a instrumentació oceanogràfica extrema. Això redueix dràsticament els costos de desenvolupament i accelera les nostres proves al laboratori.",
+        alt: 'Impressora 3D del taller fabricant peces'
+      },
+      {
+        titulo: "Noves sinergies estratègiques per a l'observació costanera",
+        texto: "Establim noves línies de col·laboració amb institucions i entitats del sector per compartir recursos nàutics i optimitzar el desplegament de xarxes de boies i radars HF. Un pas més cap a la consolidació d'un sistema d'observació marina integrat i d'alta eficiència al litoral català.",
+        alt: 'Fondeig oceanogràfic amb boies i instruments'
+      }
+    ]
+  },
+
+  memoria: {
+    titulo: 'Memòria anual',
+    subtitulo: "Transparència, mètriques i impacte de la nostra activitat científica i tècnica durant l'últim exercici.",
+    resumen: "Resum d'activitat {anio}",
+    intro: "El Servei d'Enginyeria Oceanogràfica ha continuat la seva tasca de suport a la recerca marina i ha ampliat les seves capacitats operatives i de prototipatge ràpid. A continuació es destaquen els indicadors clau de l'any.",
+    metricas: {
+      campanas: 'Campanyes amb suport',
+      sensores: 'Sensors calibrats',
+      fondeos: 'Fondejos instal·lats',
+      proyectos: 'Projectes R+D+I'
+    },
+    completa: 'Memòria completa SIO {anio}',
+    completaTexto: "Document detallat amb el balanç anual, la llista de projectes i les mètriques del servei (PDF).",
+    descargar: 'Descarregar PDF'
   }
 }

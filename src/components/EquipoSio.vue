@@ -1,70 +1,21 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import fondoInstrumentacion from '../assets/instrumentacion.jpg'
-
-defineEmits(['cambiar-pagina'])
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
 })
 
-// 📋 DATOS DEL EQUIPO (Las fotos se leen de la carpeta public/equipo/)
-const equipo = ref([
-  {
-    id: 'rbardaji',
-    nombre: 'Raül Bardají',
-    cargo: 'Responsable del Servicio de Ingeniería y Oceanografía',
-    tagClase: 'lider',
-    tagTexto: 'Liderazgo',
-    descripcion: 'Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.',
-    fotoSrc: '/fotos/equipo/rbardaji.jpg'
-  },
-  {
-    id: 'rferrando',
-    nombre: 'Raül Ferrando',
-    cargo: 'Personal Técnico de Investigación (PIT)',
-    tagClase: 'tecnico',
-    tagTexto: 'Ingeniería & Soporte',
-    descripcion: 'Diseño industrial, desarrollo de sistemas embebidos, prototipado rápido (Mecanizado/Impresión 3D) y mantenimiento de la flota autónoma.',
-    fotoSrc: '/fotos/equipo/rferrando.jpg'
-  },
-  {
-    id: 'nhoareau',
-    nombre: 'Nina Hoareau',
-    cargo: 'Especialista en Instrumentación',
-    tagClase: 'tecnico',
-    tagTexto: 'Soporte Técnico',
-    descripcion: 'Calibración de sensores oceanográficos, análisis físico-químico de muestras de agua (Salinidad) y asistencia técnica en campañas.',
-    fotoSrc: '/fotos/equipo/nhoareau.jpg'
-  },
-  {
-    id: 'bnicolas',
-    nombre: 'Brian Nicolás',
-    cargo: 'Técnico en Electrónica y Sistemas',
-    tagClase: 'tecnico',
-    tagTexto: 'Soporte Técnico',
-    descripcion: 'Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.',
-    fotoSrc: '/fotos/equipo/bnicolas.jpg'
-  },
-  {
-    id: 'ksalvador',
-    nombre: 'Kintxo Salvador',
-    cargo: 'Técnico de Soporte',
-    tagClase: 'tecnico',
-    tagTexto: 'Soporte Técnico',
-    descripcion: '',
-    fotoSrc: '/fotos/equipo/ksalvador.jpg'
-  },
-  {
-    id: 'mlloret',
-    nombre: 'Maribel Lloret',
-    cargo: 'Técnica de Soporte',
-    tagClase: 'tecnico',
-    tagTexto: 'Soporte Técnico',
-    descripcion: '',
-    fotoSrc: '/fotos/equipo/mlloret.jpg'
-  }
-])
+// 📋 DATOS DEL EQUIPO (las fotos se leen de public/fotos/equipo/;
+// el cargo y la descripción de cada persona están en src/i18n: equipo.personas.<id>)
+const equipo = [
+  { id: 'rbardaji', nombre: 'Raül Bardají', tagClase: 'lider', etiqueta: 'liderazgo', fotoSrc: '/fotos/equipo/rbardaji.jpg' },
+  { id: 'rferrando', nombre: 'Raül Ferrando', tagClase: 'tecnico', etiqueta: 'ingenieria', fotoSrc: '/fotos/equipo/rferrando.jpg' },
+  { id: 'nhoareau', nombre: 'Nina Hoareau', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/nhoareau.jpg' },
+  { id: 'bnicolas', nombre: 'Brian Nicolás', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/bnicolas.jpg' },
+  { id: 'ksalvador', nombre: 'Kintxo Salvador', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/ksalvador.jpg' },
+  { id: 'mlloret', nombre: 'Maribel Lloret', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/mlloret.jpg' }
+]
 </script>
 
 <template>
@@ -72,8 +23,8 @@ const equipo = ref([
     <div class="fondo-equipo" :style="{ backgroundImage: backgroundStyle }"></div>
     
     <div class="contenedor-ancho contenido-equipo">
-      <h1 class="titulo-seccion">Equipo SIO</h1>
-      <p class="subtitulo">El personal técnico e investigador que da soporte a las ciencias del mar.</p>
+      <h1 class="titulo-seccion">{{ $t('equipo.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('equipo.subtitulo') }}</p>
 
       <div class="grid-personal">
         
@@ -85,11 +36,11 @@ const equipo = ref([
             <img :src="persona.fotoSrc" :alt="persona.nombre" class="foto-perfil" onerror="this.onerror=null; this.src='/fotos/equipo/perfil-default.svg'">
           </div>
 
-          <div :class="['rol-tag', persona.tagClase]">{{ persona.tagTexto }}</div>
+          <div :class="['rol-tag', persona.tagClase]">{{ $t(`equipo.etiquetas.${persona.etiqueta}`) }}</div>
           <h3>{{ persona.nombre }}</h3>
-          <p class="cargo">{{ persona.cargo }}</p>
-          <div v-if="persona.descripcion" class="descripcion-personal">
-            {{ persona.descripcion }}
+          <p class="cargo">{{ $t(`equipo.personas.${persona.id}.cargo`) }}</p>
+          <div v-if="$t(`equipo.personas.${persona.id}.descripcion`)" class="descripcion-personal">
+            {{ $t(`equipo.personas.${persona.id}.descripcion`) }}
           </div>
         </div>
 

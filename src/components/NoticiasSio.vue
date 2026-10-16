@@ -1,6 +1,22 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import fondoNoticias from '../assets/instrumentacion.jpg'
+
+const { locale } = useI18n()
+
+// Fecha y foto de cada noticia (título, texto y descripción de la foto: noticias.lista en src/i18n)
+const noticias = [
+  { fecha: '2026-08-19', imagen: '/fotos/noticias/vehiculos-superficie.webp' },
+  { fecha: '2026-07-10', imagen: '/fotos/noticias/impresion-3d.webp' },
+  { fecha: '2026-06-28', imagen: '/fotos/noticias/boya-fondeo.webp' }
+]
+
+const formatoFecha = (iso) => {
+  const [a, m, d] = iso.split('-').map(Number)
+  return new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'long', year: 'numeric' })
+    .format(new Date(a, m - 1, d)).toUpperCase()
+}
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoNoticias}')`
@@ -12,47 +28,18 @@ const backgroundStyle = computed(() => {
     <div class="fondo-noticias"></div>
 
     <div class="contenedor-ancho contenido-noticias">
-      <h1 class="titulo-seccion">Noticias y Actualidad</h1>
-      <p class="subtitulo">Últimas novedades, campañas y avances tecnológicos del Servicio de Ingeniería Oceanográfica.</p>
+      <h1 class="titulo-seccion">{{ $t('noticias.titulo') }}</h1>
+      <p class="subtitulo">{{ $t('noticias.subtitulo') }}</p>
 
       <div class="grid-noticias">
-        
-        <!-- Noticia 1 -->
-        <div class="tarjeta-noticia">
+        <div v-for="(noticia, i) in noticias" :key="noticia.fecha" class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
-            <img src="/fotos/noticias/vehiculos-superficie.webp" alt="Embarcación con técnicos junto a una boya oceanográfica" loading="lazy">
+            <img :src="noticia.imagen" :alt="$t(`noticias.lista[${i}].alt`)" loading="lazy">
           </div>
-          <div class="fecha-noticia">19 AGOSTO 2026</div>
-          <h3>Nueva misión autónoma con vehículos de superficie en la Costa Brava</h3>
-          <p class="texto-noticia">
-            Nuestro equipo ha desplegado con éxito la nueva flota de vehículos autónomos para monitorizar corrientes superficiales y parámetros físico-químicos en tiempo real. Esta prueba piloto nos permite validar los algoritmos de navegación adaptativa antes de dar el salto a misiones de larga duración en mar abierto.
-          </p>
+          <div class="fecha-noticia"><time :datetime="noticia.fecha">{{ formatoFecha(noticia.fecha) }}</time></div>
+          <h3>{{ $t(`noticias.lista[${i}].titulo`) }}</h3>
+          <p class="texto-noticia">{{ $t(`noticias.lista[${i}].texto`) }}</p>
         </div>
-
-<!-- Noticia 2 (Corregida) -->
-        <div class="tarjeta-noticia">
-          <div class="contenedor-imagen-noticia">
-            <img src="/fotos/noticias/impresion-3d.webp" alt="Impresora 3D del taller fabricando piezas" loading="lazy">
-          </div>
-          <div class="fecha-noticia">10 JULIO 2026</div>
-          <h3>Avances en el diseño y fabricación de nuevos sensores submarinos</h3>
-          <p class="texto-noticia">
-            Gracias a la combinación de nuestras fresadoras de precisión y el nuevo parque de impresión 3D, hemos logrado prototipar carcasas estancas ultraligeras y soportes a medida para instrumentación oceanográfica extrema. Esto reduce drásticamente los costes de desarrollo y acelera nuestras pruebas en laboratorio.
-          </p>
-        </div>
-
-        <!-- Noticia 3 -->
-        <div class="tarjeta-noticia">
-          <div class="contenedor-imagen-noticia">
-            <img src="/fotos/noticias/boya-fondeo.webp" alt="Fondeo oceanográfico con boyas e instrumentos" loading="lazy">
-          </div>
-          <div class="fecha-noticia">28 JUNIO 2026</div>
-          <h3>Nuevas sinergias estratégicas para la observación costera</h3>
-          <p class="texto-noticia">
-            Establecemos nuevas líneas de colaboración con instituciones y entidades del sector para compartir recursos náuticos y optimizar el despliegue de redes de boyas y radares HF. Un paso más hacia la consolidación de un sistema de observación marina integrado y de alta eficiencia en el litoral catalán.
-          </p>
-        </div>
-
       </div>
     </div>
   </div>
