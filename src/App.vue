@@ -22,14 +22,7 @@ import MemoriaAnual from './components/MemoriaAnual.vue'
 import Prototipado from './components/Prototipado.vue'
 
 const vistaActual = ref('inicio')
-const usuarioLogueadoSio = ref(false)
 const idiomaActual = ref('es') // Controla qué botón de idioma está activo
-
-onMounted(() => {
-  if (sessionStorage.getItem('sio_auth') === 'true') {
-    usuarioLogueadoSio.value = true
-  }
-})
 
 const cambiarVista = (nuevaVista) => { 
   vistaActual.value = nuevaVista
@@ -52,10 +45,6 @@ const manejarFlechaAtras = (evento) => {
 onMounted(() => {
   window.addEventListener('popstate', manejarFlechaAtras)
   window.history.replaceState({ vista: 'inicio' }, '', '')
-  
-  if (sessionStorage.getItem('sio_auth') === 'true') {
-    usuarioLogueadoSio.value = true
-  }
 })
 
 onUnmounted(() => {

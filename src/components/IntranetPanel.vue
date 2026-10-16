@@ -7,10 +7,21 @@ import GestionAlbaranes from './GestionAlbaranes.vue'
 import BibliotecaDocs from './BibliotecaDocs.vue'
 import GestionEquipo from './GestionEquipo.vue'
 
-const apiUrl = 'http://localhost:5000/api/instrumentos'
-const apiUrlProyectos = 'http://localhost:5000/api/proyectos'
+const apiBase = 'http://localhost:5000/api'
+const apiUrl = `${apiBase}/instrumentos`
+const apiUrlProyectos = `${apiBase}/proyectos`
 
 const estaLogueado = ref(false)
+
+// La sessió viu en una cookie del backend: cal enviar-la a cada petició
+const peticionApi = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { credentials: 'include', ...opciones })
+  if (respuesta.status === 401 && estaLogueado.value) {
+    estaLogueado.value = false
+    alert("La sessió ha caducat. Torna a entrar.")
+  }
+  return respuesta
+}
 const seccionActiva = ref('dashboard') // 'dashboard', 'instrumentacion', 'proyecto', 'tickets'
 const usuario = ref('')
 const password = ref('')
@@ -56,47 +67,61 @@ const toggleDashboard = (seccion) => {
 // ==============================
 const cargarInstrumentos = async () => {
   try {
-    const respuesta = await fetch(apiUrl)
+    const respuesta = await peticionApi(apiUrl)
     instrumentos.value = await respuesta.json()
   } catch (error) { console.error("Error carregant instruments:", error) }
 }
 
 const cargarProyectos = async () => {
   try {
-    const respuesta = await fetch(apiUrlProyectos)
+    const respuesta = await peticionApi(apiUrlProyectos)
     proyectos.value = await respuesta.json()
   } catch (error) { console.error("Error carregant projectes:", error) }
 }
 
-onMounted(() => {
-  if (sessionStorage.getItem('sio_auth') === 'true' || localStorage.getItem('sio_auth') === 'true') {
-    estaLogueado.value = true
-    cargarInstrumentos()
-    cargarProyectos()
-  }
+onMounted(async () => {
+  // Neteja de l'antic login fals, que guardava 'sio_auth' al navegador
+  sessionStorage.removeItem('sio_auth')
+  localStorage.removeItem('sio_auth')
+  try {
+    const respuesta = await peticionApi(`${apiBase}/sesion`)
+    const datos = await respuesta.json()
+    if (datos.autenticado) {
+      estaLogueado.value = true
+      cargarInstrumentos()
+      cargarProyectos()
+    }
+  } catch (error) { console.error("Error comprovant la sessió:", error) }
 })
 
 // ==============================
 // AUTENTICACIÓ
 // ==============================
-const iniciarSesion = () => {
-  if (usuario.value === 'sio' && password.value === 'admin') {
-    if (recordarSesion.value) {
-      localStorage.setItem('sio_auth', 'true')
+const iniciarSesion = async () => {
+  try {
+    const respuesta = await peticionApi(`${apiBase}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: usuario.value, password: password.value, recordar: recordarSesion.value })
+    })
+    password.value = ''
+    if (respuesta.ok) {
+      estaLogueado.value = true
+      cargarInstrumentos()
+      cargarProyectos()
+    } else if (respuesta.status === 401) {
+      alert("Usuari o contrasenya incorrectes")
     } else {
-      sessionStorage.setItem('sio_auth', 'true')
+      alert("No s'ha pogut iniciar sessió. Contacta amb l'administrador.")
     }
-    estaLogueado.value = true
-    cargarInstrumentos()
-    cargarProyectos()
-  } else {
-    alert("Usuari o contrasenya incorrectes")
+  } catch (error) {
+    console.error("Error iniciant sessió:", error)
+    alert("No s'ha pogut connectar amb el servidor.")
   }
 }
 
-const cerrarSesion = () => {
-  sessionStorage.removeItem('sio_auth')
-  localStorage.removeItem('sio_auth')
+const cerrarSesion = async () => {
+  try { await peticionApi(`${apiBase}/logout`, { method: 'POST' }) } catch (error) { console.error(error) }
   estaLogueado.value = false
 }
 
@@ -126,7 +151,7 @@ const guardarInstrumento = async () => {
   try {
     const metodo = editandoId.value ? 'PUT' : 'POST'
     const url = editandoId.value ? `${apiUrl}/${editandoId.value}` : apiUrl
-    const respuesta = await fetch(url, {
+    const respuesta = await peticionApi(url, {
       method: metodo,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(nuevoEquipo.value)
@@ -142,7 +167,7 @@ const guardarInstrumento = async () => {
 const eliminarInstrumento = async (id) => {
   if (!confirm("Segur que vols esborrar aquest instrument?")) return
   try {
-    const respuesta = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+    const respuesta = await peticionApi(`${apiUrl}/${id}`, { method: 'DELETE' })
     if (respuesta.ok) {
       alert("🗑️ Instrument eliminat")
       cargarInstrumentos()
@@ -181,7 +206,7 @@ const guardarProyecto = async () => {
     pit: nuevoProyecto.value.pit 
   };
   try {
-    const res = await fetch(url, {
+    const res = await peticionApi(url, {
       method: metodo,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosAEnviar)
@@ -202,7 +227,7 @@ const guardarProyecto = async () => {
 const eliminarProyecto = async (id) => {
   if (!confirm("Segur que vols esborrar aquest projecte/campanya?")) return
   try {
-    const respuesta = await fetch(`${apiUrlProyectos}/${id}`, { method: 'DELETE' })
+    const respuesta = await peticionApi(`${apiUrlProyectos}/${id}`, { method: 'DELETE' })
     if (respuesta.ok) {
       alert("🗑️ Projecte eliminat")
       cargarProyectos()

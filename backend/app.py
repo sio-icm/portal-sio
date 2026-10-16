@@ -1,10 +1,77 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+import hmac
+import os
 import sqlite3
+from datetime import timedelta
+from functools import wraps
 
+from flask import Flask, jsonify, request, session
+from flask_cors import CORS
+from werkzeug.security import check_password_hash
+
+# Configuración por variables de entorno (no hay credenciales en el código):
+#   SIO_SECRET_KEY           clave para firmar la cookie de sesión
+#   SIO_ADMIN_USER           usuario de la intranet
+#   SIO_ADMIN_PASSWORD_HASH  hash de la contraseña, generado con:
+#       python -c "from werkzeug.security import generate_password_hash as g; print(g('LA_CONTRASEÑA'))"
+#   SIO_CORS_ORIGINS         orígenes permitidos separados por comas (solo desarrollo)
+#   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
-# Esto permite que tu web en Vue se conecte sin problemas de seguridad
-CORS(app)
+app.config.update(
+    SECRET_KEY=os.environ.get('SIO_SECRET_KEY'),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7),
+)
+ADMIN_USER = os.environ.get('SIO_ADMIN_USER')
+ADMIN_PASSWORD_HASH = os.environ.get('SIO_ADMIN_PASSWORD_HASH')
+
+# En producción la web y la API van por el mismo dominio y no hace falta CORS
+origenes_cors = os.environ.get('SIO_CORS_ORIGINS', 'http://localhost:5173')
+CORS(app, origins=[o.strip() for o in origenes_cors.split(',') if o.strip()], supports_credentials=True)
+
+
+def login_configurado():
+    return bool(app.config['SECRET_KEY'] and ADMIN_USER and ADMIN_PASSWORD_HASH)
+
+
+def requiere_login(vista):
+    @wraps(vista)
+    def envoltorio(*args, **kwargs):
+        if not session.get('autenticado'):
+            return jsonify({"error": "No autorizado"}), 401
+        return vista(*args, **kwargs)
+    return envoltorio
+
+
+# =======================================================
+# SESIÓN DE LA INTRANET
+# =======================================================
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    if not login_configurado():
+        return jsonify({"error": "Login no configurado en el servidor"}), 503
+    datos = request.get_json(silent=True) or {}
+    usuario = datos.get('usuario', '')
+    password = datos.get('password', '')
+    if hmac.compare_digest(usuario, ADMIN_USER) and check_password_hash(ADMIN_PASSWORD_HASH, password):
+        session.clear()
+        session['autenticado'] = True
+        session.permanent = bool(datos.get('recordar'))
+        return jsonify({"autenticado": True})
+    return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({"autenticado": False})
+
+
+@app.route('/api/sesion', methods=['GET'])
+def estado_sesion():
+    return jsonify({"autenticado": bool(session.get('autenticado'))})
+
 
 # Función para conectarnos a la base de datos
 def conectar_bd():
@@ -29,6 +96,8 @@ def gestionar_instrumentos():
 
     # Si la web pide GUARDAR un instrumento nuevo
     if request.method == 'POST':
+        if not session.get('autenticado'):
+            return jsonify({"error": "No autorizado"}), 401
         try:
             nuevo_equipo = request.json
             
@@ -61,12 +130,9 @@ def gestionar_instrumentos():
 
 
 # Ruta para modificar: PUT para editar, DELETE para borrar
-@app.route('/api/instrumentos/<int:id>', methods=['PUT', 'DELETE', 'OPTIONS'])
+@app.route('/api/instrumentos/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
 def modificar_instrumento(id):
-    
-    # Si es una petición OPTIONS (Preflight de CORS), respondemos OK
-    if request.method == 'OPTIONS':
-        return '', 200
 
     # Si la web pide ELIMINAR
     if request.method == 'DELETE':
@@ -125,6 +191,8 @@ def gestionar_proyectos():
 
     # GUARDAR nuevo proyecto
     if request.method == 'POST':
+        if not session.get('autenticado'):
+            return jsonify({"error": "No autorizado"}), 401
         try:
             datos = request.json
             conexion = conectar_bd()
@@ -154,10 +222,9 @@ def gestionar_proyectos():
             return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/proyectos/<int:id>', methods=['PUT', 'DELETE', 'OPTIONS'])
+@app.route('/api/proyectos/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
 def modificar_proyecto(id):
-    if request.method == 'OPTIONS':
-        return '', 200
 
     # ELIMINAR proyecto
     if request.method == 'DELETE':
@@ -201,5 +268,7 @@ def modificar_proyecto(id):
 
 
 if __name__ == '__main__':
-    print("🚀 Arrancando el motor del SIO en http://localhost:5000 ...")
-    app.run(debug=True, port=5000)
+    if not login_configurado():
+        print("⚠️  Faltan SIO_SECRET_KEY, SIO_ADMIN_USER o SIO_ADMIN_PASSWORD_HASH: la intranet no podrá iniciar sesión")
+    print("🚀 Arrancando el motor del SIO en http://127.0.0.1:5000 ...")
+    app.run(host='127.0.0.1', port=5000, debug=os.environ.get('FLASK_DEBUG') == '1')
