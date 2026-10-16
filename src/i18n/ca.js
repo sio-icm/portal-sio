@@ -229,5 +229,46 @@ export default {
       adjunto: 'Adjunto el Pla de Campanya signat.',
       despedida: "Quedo a l'espera de la vostra confirmació.\n\nSalutacions."
     }
+  },
+
+  tanques: {
+    titulo: 'Tancs de proves',
+    subtitulo: 'Instal·lacions experimentals per a assajos controlats, calibratge i biologia.',
+    ficha: 'Fitxa tècnica',
+    descripcionTitulo: 'Descripció general',
+    descripcion: "El SIO disposa de tancs de proves d'alta capacitat dissenyats per al calibratge de sensors, assajos de fatiga de materials i simulacions de condicions marines controlades.",
+    especificaciones: 'Especificacions principals',
+    salinidad: 'Control de salinitat',
+    salinidadTexto: 'Sistema automatitzat',
+    iluminacion: 'Il·luminació',
+    iluminacionTexto: 'Espectre regulable per a la fotosíntesi',
+    filtracion: 'Filtració',
+    filtracionTexto: 'Filtres UV i biològics integrats',
+    solicitud: "Sol·licitud d'ús",
+    operativa: 'OPERATIVA',
+    paso1: 'Pas 1: Selecciona els dies',
+    paso1Texto: 'Fes clic als dies disponibles (en blanc) del calendari que necessitis reservar.',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes següent',
+    paso2: 'Pas 2: Detalls de la sol·licitud',
+    diasMarcados: 'Dies marcats',
+    proposito: 'Finalitat de les proves',
+    propositoPh: "Ex.: Calibratge de sensors d'oxigen PreSens...",
+    grua: 'Faràs servir la grua de càrrega?',
+    gruaNo: 'No, no caldrà',
+    gruaSi: 'Sí, necessitarem la grua',
+    enviar: 'PREPARAR CORREU DE SOL·LICITUD',
+    faltanDatos: 'Selecciona almenys un dia al calendari i escriu la finalitat.',
+    correo: {
+      asunto: "Sol·licitud d'ús: Tancs de proves del SIO",
+      saludo: 'Hola, equip del SIO:',
+      intro: "Voldria sol·licitar l'ús dels tancs de proves.",
+      dias: 'DIES SOL·LICITATS',
+      proposito: 'FINALITAT DE LES PROVES',
+      grua: 'ÚS DE LA GRUA DE CÀRREGA',
+      gruaSi: 'Sí',
+      gruaNo: 'No',
+      despedida: "Quedo a l'espera de la vostra confirmació per coordinar-nos.\n\nSalutacions."
+    }
   }
 }

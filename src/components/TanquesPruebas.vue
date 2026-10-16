@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useCalendarioReservas } from '../composables/useCalendarioReservas'
 import fondoTanques from '../assets/tanques.jpg'
 
+const { t } = useI18n()
 const {
   nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
   diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
@@ -10,29 +12,25 @@ const {
 
 // --- FORMULARIO ---
 const proposito = ref('')
-const necesitaGrua = ref('No')
+const necesitaGrua = ref('no')
 
-// Enviar el correo
+// Abre el correo del usuario con la solicitud preparada
 const enviarSolicitud = () => {
   if (diasSeleccionados.value.length === 0 || proposito.value.trim() === '') {
-    alert('Por favor, selecciona al menos un día en el calendario y escribe el propósito.')
+    alert(t('tanques.faltanDatos'))
     return
   }
-
   const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent("Solicitud de Uso - Tanques de Pruebas SIO")
-  
-  // Construimos el cuerpo del mensaje
+  const asunto = encodeURIComponent(t('tanques.correo.asunto'))
+  const grua = necesitaGrua.value === 'si' ? t('tanques.correo.gruaSi') : t('tanques.correo.gruaNo')
   const cuerpo = encodeURIComponent(
-    `Hola equipo del SIO,\n\n` +
-    `Me gustaría solicitar el uso de los Tanques de Pruebas.\n\n` +
-    `📅 DÍAS SOLICITADOS:\n- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
-    `📋 PROPÓSITO DE LAS PRUEBAS:\n${proposito.value}\n\n` +
-    `🏗️ USO DE GRÚA DE CARGA:\n${necesitaGrua.value}\n\n` +
-    `Quedo a la espera de vuestra confirmación para coordinarnos.\n\nUn saludo.`
+    `${t('tanques.correo.saludo')}\n\n` +
+    `${t('tanques.correo.intro')}\n\n` +
+    `📅 ${t('tanques.correo.dias')}:\n- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
+    `📋 ${t('tanques.correo.proposito')}:\n${proposito.value}\n\n` +
+    `🏗️ ${t('tanques.correo.grua')}:\n${grua}\n\n` +
+    `${t('tanques.correo.despedida')}`
   )
-
-  // Abrir el cliente de correo del usuario
   window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
 }
 </script>
@@ -42,8 +40,8 @@ const enviarSolicitud = () => {
     
     <div class="hero-detalle hero-tanques" :style="{ backgroundImage: `linear-gradient(rgba(1, 33, 105, 0.7), rgba(1, 33, 105, 0.8)), url(${fondoTanques})`, backgroundSize: 'cover', backgroundPosition: 'center' }">
       <div class="contenedor-ancho contenido-hero">
-        <h1 class="titulo-hero">Tanques de Pruebas</h1>
-        <p class="subtitulo-hero">Instalaciones experimentales para ensayos controlados, calibración y biología.</p>
+        <h1 class="titulo-hero">{{ $t('tanques.titulo') }}</h1>
+        <p class="subtitulo-hero">{{ $t('tanques.subtitulo') }}</p>
       </div>
     </div>
 
@@ -51,20 +49,20 @@ const enviarSolicitud = () => {
       <div class="grid-dos-columnas">
         
         <div class="columna-ficha">
-          <h2 class="titulo-seccion-pequeno">Ficha Técnica</h2>
+          <h2 class="titulo-seccion-pequeno">{{ $t('tanques.ficha') }}</h2>
           
           <div class="bloque-info">
-            <h3>Descripción General</h3>
-            <p>El SIO dispone de tanques de pruebas de alta capacidad diseñados para la calibración de sensores, ensayos de fatiga de materiales y simulaciones de condiciones marinas controladas.</p>
+            <h3>{{ $t('tanques.descripcionTitulo') }}</h3>
+            <p>{{ $t('tanques.descripcion') }}</p>
           </div>
 
           <div class="bloque-info">
-            <h3>Especificaciones Principales</h3>
+            <h3>{{ $t('tanques.especificaciones') }}</h3>
             <ul class="lista-especificaciones">
               <!-- Volumen total y rango de temperatura: pendientes de los datos reales -->
-              <li><strong>Control de Salinidad:</strong> Sistema automatizado</li>
-              <li><strong>Iluminación:</strong> Espectro regulable para fotosíntesis</li>
-              <li><strong>Filtración:</strong> Filtros UV y biológicos integrados</li>
+              <li><strong>{{ $t('tanques.salinidad') }}:</strong> {{ $t('tanques.salinidadTexto') }}</li>
+              <li><strong>{{ $t('tanques.iluminacion') }}:</strong> {{ $t('tanques.iluminacionTexto') }}</li>
+              <li><strong>{{ $t('tanques.filtracion') }}:</strong> {{ $t('tanques.filtracionTexto') }}</li>
             </ul>
           </div>
         </div>
@@ -72,19 +70,19 @@ const enviarSolicitud = () => {
         <div class="columna-reserva">
           <div class="tarjeta-reserva">
             <div class="cabecera-reserva">
-              <h2>Solicitud de Uso</h2>
-              <span class="badge-operativa">OPERATIVA</span>
+              <h2>{{ $t('tanques.solicitud') }}</h2>
+              <span class="badge-operativa">{{ $t('tanques.operativa') }}</span>
             </div>
             
             <div class="paso-reserva">
-              <p><strong>Paso 1: Selecciona los días</strong></p>
-              <p class="texto-explicativo">Haz clic en los días disponibles (en blanco) del calendario que necesites reservar.</p>
+              <p><strong>{{ $t('tanques.paso1') }}</strong></p>
+              <p class="texto-explicativo">{{ $t('tanques.paso1Texto') }}</p>
               
               <div class="calendario-placeholder mt-3">
                 <div class="cabecera-mes">
-                  <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': !hayMesAnterior }">❮</button>
+                  <button type="button" class="btn-mes" @click="mesAnterior" :class="{ 'oculto': !hayMesAnterior }" :aria-label="$t('tanques.mesAnterior')">❮</button>
                   <span class="mes-actual">{{ nombreMes }}</span>
-                  <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': !hayMesSiguiente }">❯</button>
+                  <button type="button" class="btn-mes" @click="mesSiguiente" :class="{ 'oculto': !hayMesSiguiente }" :aria-label="$t('tanques.mesSiguiente')">❯</button>
                 </div>
 
                 <div class="grid-calendario">
@@ -102,31 +100,31 @@ const enviarSolicitud = () => {
             </div>
 
             <div class="paso-reserva mt-4 formulario-animado" v-if="diasSeleccionados.length > 0">
-              <p><strong>Paso 2: Detalles de la solicitud</strong></p>
+              <p><strong>{{ $t('tanques.paso2') }}</strong></p>
               
               <form @submit.prevent="enviarSolicitud" class="formulario-tanques">
                 
                 <div class="grupo-input">
-                  <label>Días marcados:</label>
+                  <label>{{ $t('tanques.diasMarcados') }}:</label>
                   <div class="contenedor-tags">
                     <span v-for="fecha in fechasSeleccionadas" :key="fecha" class="tag-dia">{{ fecha }}</span>
                   </div>
                 </div>
 
                 <div class="grupo-input mt-3">
-                  <label for="proposito">Propósito de las pruebas:</label>
-                  <textarea id="proposito" v-model="proposito" rows="3" placeholder="Ej: Calibración de sensores de oxígeno PREsens..." required></textarea>
+                  <label for="proposito">{{ $t('tanques.proposito') }}:</label>
+                  <textarea id="proposito" v-model="proposito" rows="3" :placeholder="$t('tanques.propositoPh')" required></textarea>
                 </div>
 
                 <div class="grupo-input mt-3">
-                  <label for="grua">¿Vas a utilizar la grúa de carga?</label>
+                  <label for="grua">{{ $t('tanques.grua') }}</label>
                   <select id="grua" v-model="necesitaGrua">
-                    <option value="No">No, no será necesaria</option>
-                    <option value="Sí">Sí, necesitaremos la grúa</option>
+                    <option value="no">{{ $t('tanques.gruaNo') }}</option>
+                    <option value="si">{{ $t('tanques.gruaSi') }}</option>
                   </select>
                 </div>
 
-                <button type="submit" class="btn-enviar mt-4">ENVIAR SOLICITUD AL SIO</button>
+                <button type="submit" class="btn-enviar mt-4">{{ $t('tanques.enviar') }}</button>
               </form>
             </div>
 

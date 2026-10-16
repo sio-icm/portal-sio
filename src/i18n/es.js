@@ -229,5 +229,46 @@ export default {
       adjunto: 'Adjunto el Plan de Campaña firmado.',
       despedida: 'Quedo a la espera de vuestra confirmación.\n\nUn saludo.'
     }
+  },
+
+  tanques: {
+    titulo: 'Tanques de Pruebas',
+    subtitulo: 'Instalaciones experimentales para ensayos controlados, calibración y biología.',
+    ficha: 'Ficha Técnica',
+    descripcionTitulo: 'Descripción General',
+    descripcion: 'El SIO dispone de tanques de pruebas de alta capacidad diseñados para la calibración de sensores, ensayos de fatiga de materiales y simulaciones de condiciones marinas controladas.',
+    especificaciones: 'Especificaciones Principales',
+    salinidad: 'Control de Salinidad',
+    salinidadTexto: 'Sistema automatizado',
+    iluminacion: 'Iluminación',
+    iluminacionTexto: 'Espectro regulable para fotosíntesis',
+    filtracion: 'Filtración',
+    filtracionTexto: 'Filtros UV y biológicos integrados',
+    solicitud: 'Solicitud de Uso',
+    operativa: 'OPERATIVA',
+    paso1: 'Paso 1: Selecciona los días',
+    paso1Texto: 'Haz clic en los días disponibles (en blanco) del calendario que necesites reservar.',
+    mesAnterior: 'Mes anterior',
+    mesSiguiente: 'Mes siguiente',
+    paso2: 'Paso 2: Detalles de la solicitud',
+    diasMarcados: 'Días marcados',
+    proposito: 'Propósito de las pruebas',
+    propositoPh: 'Ej.: Calibración de sensores de oxígeno PreSens...',
+    grua: '¿Vas a utilizar la grúa de carga?',
+    gruaNo: 'No, no será necesaria',
+    gruaSi: 'Sí, necesitaremos la grúa',
+    enviar: 'PREPARAR CORREO DE SOLICITUD',
+    faltanDatos: 'Selecciona al menos un día en el calendario y escribe el propósito.',
+    correo: {
+      asunto: 'Solicitud de uso: Tanques de Pruebas del SIO',
+      saludo: 'Hola, equipo del SIO:',
+      intro: 'Me gustaría solicitar el uso de los Tanques de Pruebas.',
+      dias: 'DÍAS SOLICITADOS',
+      proposito: 'PROPÓSITO DE LAS PRUEBAS',
+      grua: 'USO DE LA GRÚA DE CARGA',
+      gruaSi: 'Sí',
+      gruaNo: 'No',
+      despedida: 'Quedo a la espera de vuestra confirmación para coordinarnos.\n\nUn saludo.'
+    }
   }
 }

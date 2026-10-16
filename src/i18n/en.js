@@ -229,5 +229,46 @@ export default {
       adjunto: 'Please find the signed Campaign Plan attached.',
       despedida: 'I look forward to your confirmation.\n\nBest regards.'
     }
+  },
+
+  tanques: {
+    titulo: 'Test Tanks',
+    subtitulo: 'Experimental facilities for controlled tests, calibration and biology.',
+    ficha: 'Technical Sheet',
+    descripcionTitulo: 'General Description',
+    descripcion: 'The SIO has high-capacity test tanks designed for sensor calibration, material fatigue tests and simulations of controlled marine conditions.',
+    especificaciones: 'Main Specifications',
+    salinidad: 'Salinity control',
+    salinidadTexto: 'Automated system',
+    iluminacion: 'Lighting',
+    iluminacionTexto: 'Adjustable spectrum for photosynthesis',
+    filtracion: 'Filtration',
+    filtracionTexto: 'Integrated UV and biological filters',
+    solicitud: 'Booking Request',
+    operativa: 'OPERATIONAL',
+    paso1: 'Step 1: Select the days',
+    paso1Texto: 'Click the available days (in white) that you need to book.',
+    mesAnterior: 'Previous month',
+    mesSiguiente: 'Next month',
+    paso2: 'Step 2: Request details',
+    diasMarcados: 'Selected days',
+    proposito: 'Purpose of the tests',
+    propositoPh: 'E.g. Calibration of PreSens oxygen sensors...',
+    grua: 'Will you use the loading crane?',
+    gruaNo: 'No, it will not be needed',
+    gruaSi: 'Yes, we will need the crane',
+    enviar: 'PREPARE REQUEST EMAIL',
+    faltanDatos: 'Select at least one day in the calendar and describe the purpose.',
+    correo: {
+      asunto: 'Booking request: SIO Test Tanks',
+      saludo: 'Hello SIO team,',
+      intro: 'I would like to request the use of the Test Tanks.',
+      dias: 'REQUESTED DAYS',
+      proposito: 'PURPOSE OF THE TESTS',
+      grua: 'USE OF THE LOADING CRANE',
+      gruaSi: 'Yes',
+      gruaNo: 'No',
+      despedida: 'I look forward to your confirmation so we can coordinate.\n\nBest regards.'
+    }
   }
 }
