@@ -31,6 +31,34 @@ const cambiarVista = (nuevaVista) => {
 }
 
 const irAContacto = () => { cambiarVista('contacto') }
+
+// --- FORMULARIO DE CONTACTO (se envía al backend del SIO) ---
+const contacto = ref({ nombre: '', email: '', mensaje: '', web: '' })
+const estadoContacto = ref('') // '', 'enviando', 'enviado', 'error'
+const errorContacto = ref('')
+
+const enviarContacto = async () => {
+  estadoContacto.value = 'enviando'
+  errorContacto.value = ''
+  try {
+    const respuesta = await fetch('/api/contacto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(contacto.value)
+    })
+    if (respuesta.ok) {
+      estadoContacto.value = 'enviado'
+      contacto.value = { nombre: '', email: '', mensaje: '', web: '' }
+      return
+    }
+    const datos = await respuesta.json().catch(() => ({}))
+    errorContacto.value = datos.error || 'No se ha podido enviar la consulta'
+  } catch (error) {
+    console.error('Error enviando la consulta:', error)
+    errorContacto.value = 'No se ha podido conectar con el servidor'
+  }
+  estadoContacto.value = 'error'
+}
 const volverAInicio = () => { cambiarVista('inicio') }
 
 // --- MAGIA PARA LA FLECHA "ATRÁS" DEL NAVEGADOR ---
@@ -171,7 +199,7 @@ const cambiarIdioma = (lang) => {
               <h3>Información del SIO</h3>
               <p><strong>Dirección:</strong> Passeig Marítim de la Barceloneta, 37-49, 08003 Barcelona</p>
               <p><strong>Teléfono:</strong> +34 93 230 95 00</p>
-              <p><strong>Email:</strong> <a href="mailto:sio.icm@icm.csic.es">sio.icm@icm.csic.es</a></p>
+              <p><strong>Email:</strong> <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a></p>
             </div>
 
             <div class="mapa-container">
@@ -188,20 +216,37 @@ const cambiarIdioma = (lang) => {
             
             <div class="tarjeta-dato formulario-amplio">
               <h3>Envíanos tu consulta</h3>
-              <form @submit.prevent>
+              <form @submit.prevent="enviarContacto">
                 <div class="grupo-input">
                   <label for="nombre">Nombre</label>
-                  <input type="text" id="nombre" placeholder="Tu nombre" required>
+                  <input type="text" id="nombre" name="nombre" v-model="contacto.nombre" placeholder="Tu nombre" maxlength="200" required>
                 </div>
                 <div class="grupo-input">
                   <label for="email">Email</label>
-                  <input type="email" id="email" placeholder="tu@email.com" required>
+                  <input type="email" id="email" name="email" v-model="contacto.email" placeholder="tu@email.com" maxlength="254" required>
                 </div>
                 <div class="grupo-input">
                   <label for="mensaje">Mensaje</label>
-                  <textarea id="mensaje" rows="6" placeholder="¿En qué podemos ayudarte?" required></textarea>
+                  <textarea id="mensaje" name="mensaje" v-model="contacto.mensaje" rows="6" placeholder="¿En qué podemos ayudarte?" maxlength="5000" required></textarea>
                 </div>
-                <button type="submit" class="btn-enviar">ENVIAR CONSULTA</button>
+                <!-- Campo trampa para bots: oculto a las personas -->
+                <div class="campo-trampa" aria-hidden="true">
+                  <label for="web">No rellenar</label>
+                  <input type="text" id="web" name="web" v-model="contacto.web" tabindex="-1" autocomplete="off">
+                </div>
+                <p class="aviso-privacidad">
+                  Los datos de este formulario se usan solo para responder a tu consulta y no se ceden a terceros.
+                  Responsable: Institut de Ciències del Mar (ICM-CSIC).
+                </p>
+                <button type="submit" class="btn-enviar" :disabled="estadoContacto === 'enviando'">
+                  {{ estadoContacto === 'enviando' ? 'ENVIANDO…' : 'ENVIAR CONSULTA' }}
+                </button>
+                <p v-if="estadoContacto === 'enviado'" class="estado-contacto ok" role="status">
+                  Consulta enviada. Te responderemos lo antes posible.
+                </p>
+                <p v-else-if="estadoContacto === 'error'" class="estado-contacto error" role="alert">
+                  {{ errorContacto }}. Puedes escribirnos directamente a <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.
+                </p>
               </form>
             </div>
           </div>
@@ -311,6 +356,13 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 
 .btn-enviar { width: 100%; letter-spacing: 1px; background: var(--icm-blue); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
 .btn-enviar:hover { background: var(--icm-navy); }
+.btn-enviar:disabled { opacity: 0.6; cursor: wait; }
+.campo-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.aviso-privacidad { font-size: 12px; color: #666; line-height: 1.5; margin: 0 0 15px; }
+.estado-contacto { margin: 15px 0 0; padding: 12px; border-radius: 4px; font-size: 14px; }
+.estado-contacto.ok { background: #e6f4ea; color: #1e6b34; }
+.estado-contacto.error { background: #fdecea; color: #a12622; }
+.estado-contacto a { color: inherit; font-weight: bold; }
 
 .datos-unificados p { font-size: 15px; color: #444; margin: 12px 0; line-height: 1.5; }
 .datos-unificados a { color: var(--icm-blue); text-decoration: none; font-weight: bold; }

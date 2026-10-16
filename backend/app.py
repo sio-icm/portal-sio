@@ -1,10 +1,16 @@
 import hmac
 import os
+import re
+import smtplib
 import sqlite3
+import time
+from collections import defaultdict, deque
 from datetime import timedelta
+from email.message import EmailMessage
 from functools import wraps
 
 from flask import Flask, jsonify, request, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash
 
 # Configuración por variables de entorno (no hay credenciales en el código):
@@ -12,8 +18,16 @@ from werkzeug.security import check_password_hash
 #   SIO_ADMIN_USER           usuario de la intranet
 #   SIO_ADMIN_PASSWORD_HASH  hash de la contraseña, generado con:
 #       python -c "from werkzeug.security import generate_password_hash as g; print(g('LA_CONTRASEÑA'))"
+#   SIO_SMTP_HOST            servidor de correo para el formulario de contacto
+#   SIO_SMTP_PORT            puerto (por defecto 25)
+#   SIO_SMTP_STARTTLS=1      usar STARTTLS
+#   SIO_SMTP_USER / SIO_SMTP_PASSWORD   solo si el servidor pide autenticación
+#   SIO_SMTP_FROM            remitente de los correos (por defecto el destinatario)
+#   SIO_CONTACTO_DESTINO     destinatario de las consultas (por defecto sio@icm.csic.es)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
+# Detrás de Nginx: la IP real del usuario llega en X-Forwarded-For
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 app.config.update(
     SECRET_KEY=os.environ.get('SIO_SECRET_KEY'),
     SESSION_COOKIE_HTTPONLY=True,
@@ -68,6 +82,75 @@ def logout():
 @app.route('/api/sesion', methods=['GET'])
 def estado_sesion():
     return jsonify({"autenticado": bool(session.get('autenticado'))})
+
+
+# =======================================================
+# FORMULARIO DE CONTACTO
+# =======================================================
+
+CONTACTO_DESTINO = os.environ.get('SIO_CONTACTO_DESTINO', 'sio@icm.csic.es')
+PATRON_EMAIL = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+MAX_ENVIOS_POR_HORA = 5
+envios_por_ip = defaultdict(deque)
+
+
+def demasiados_envios(ip):
+    ahora = time.time()
+    envios = envios_por_ip[ip]
+    while envios and ahora - envios[0] > 3600:
+        envios.popleft()
+    if len(envios) >= MAX_ENVIOS_POR_HORA:
+        return True
+    envios.append(ahora)
+    return False
+
+
+def enviar_correo(mensaje):
+    host = os.environ['SIO_SMTP_HOST']
+    puerto = int(os.environ.get('SIO_SMTP_PORT', '25'))
+    with smtplib.SMTP(host, puerto, timeout=15) as smtp:
+        if os.environ.get('SIO_SMTP_STARTTLS') == '1':
+            smtp.starttls()
+        if os.environ.get('SIO_SMTP_USER'):
+            smtp.login(os.environ['SIO_SMTP_USER'], os.environ.get('SIO_SMTP_PASSWORD', ''))
+        smtp.send_message(mensaje)
+
+
+@app.route('/api/contacto', methods=['POST'])
+def contacto():
+    datos = request.get_json(silent=True) or {}
+
+    # Campo trampa: los humanos no lo ven, los bots lo rellenan
+    if datos.get('web'):
+        return jsonify({"mensaje": "Consulta enviada"}), 200
+
+    nombre = str(datos.get('nombre', '')).strip()
+    email = str(datos.get('email', '')).strip()
+    texto = str(datos.get('mensaje', '')).strip()
+
+    if not nombre or not texto or not PATRON_EMAIL.match(email):
+        return jsonify({"error": "Revisa el nombre, el email y el mensaje"}), 400
+    if len(nombre) > 200 or len(email) > 254 or len(texto) > 5000 or '\n' in nombre or '\r' in nombre:
+        return jsonify({"error": "Algún campo es demasiado largo"}), 400
+
+    if not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+    if demasiados_envios(request.remote_addr):
+        return jsonify({"error": "Demasiadas consultas. Inténtalo más tarde"}), 429
+
+    mensaje = EmailMessage()
+    mensaje['Subject'] = f'Consulta desde la web del SIO: {nombre}'
+    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+    mensaje['To'] = CONTACTO_DESTINO
+    mensaje['Reply-To'] = email
+    mensaje.set_content(f'Nombre: {nombre}\nEmail: {email}\n\n{texto}\n')
+
+    try:
+        enviar_correo(mensaje)
+    except Exception as e:
+        print("Error enviando consulta:", e)
+        return jsonify({"error": "No se ha podido enviar la consulta"}), 502
+    return jsonify({"mensaje": "Consulta enviada"}), 200
 
 
 # Función para conectarnos a la base de datos

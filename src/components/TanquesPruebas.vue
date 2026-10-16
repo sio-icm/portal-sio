@@ -58,7 +58,7 @@ const enviarSolicitud = () => {
     return
   }
 
-  const destinatario = "sio.icm@icm.csic.es"
+  const destinatario = "sio@icm.csic.es"
   const asunto = encodeURIComponent("Solicitud de Uso - Tanques de Pruebas SIO")
   
   // Construimos el cuerpo del mensaje
