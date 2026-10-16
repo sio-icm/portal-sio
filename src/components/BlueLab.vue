@@ -13,7 +13,8 @@ const backgroundStyle = computed(() => {
   <div class="bluelab-page">
 <section class="hero-bluelab" :style="{ backgroundImage: 'linear-gradient(rgba(1, 33, 105, 0.7), rgba(1, 33, 105, 0.9)), url(' + portadabluelab + ')' }">
   <div class="contenedor-ancho hero-flex">
-    <img src="../assets/logobluelabblanco.png" alt="Logo BLUE Lab" class="logo-hero">
+    <h1 class="solo-lectores">BLUE Lab</h1>
+    <img src="../assets/logobluelabblanco.png" alt="" class="logo-hero">
     <div class="hero-text-group">
       <p class="subtitle-hero">Pioneering the future of marine observation</p>
     </div>

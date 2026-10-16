@@ -126,6 +126,8 @@ body { top: 0px !important; }
 
 body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 .contenedor-ancho { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+/* Visible solo para lectores de pantalla y buscadores */
+.solo-lectores { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .btn-reset { background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; }
 
 .top-bar { 

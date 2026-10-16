@@ -33,7 +33,7 @@ const enviarContacto = async () => {
 <template>
   <div class="pagina-contacto">
     <div class="contenedor-ancho">
-      <h2 class="titulo-seccion">CONTACTO Y UBICACIÓN</h2>
+      <h1 class="titulo-seccion">CONTACTO Y UBICACIÓN</h1>
       
       <div class="contacto-unacolumna">
         <div class="tarjeta-dato datos-unificados">
