@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 // Importamos tu imagen de fondo
 import fondoPelagia from '../assets/Pelagia.jpg'
 
@@ -46,11 +46,20 @@ const estaSeleccionado = (dia) => {
   return diasSeleccionados.value.includes(fechaStr)
 }
 
-// Formatea los días para el envío por FormSubmit
-const diasOrdenadosTexto = computed(() => {
-  if (diasSeleccionados.value.length === 0) return 'Ningún día seleccionado'
-  return diasSeleccionados.value.join(' | ')
-})
+// Abre el correo del usuario con la solicitud preparada (sin servicios externos)
+const enviarSolicitud = () => {
+  if (diasSeleccionados.value.length === 0) return
+  const destinatario = "sio@icm.csic.es"
+  const asunto = encodeURIComponent("Solicitud de salida: Embarcación Pelagia")
+  const cuerpo = encodeURIComponent(
+    `Hola equipo del SIO,\n\n` +
+    `Me gustaría solicitar la embarcación Pelagia para estos días:\n` +
+    `- ${diasSeleccionados.value.join('\n- ')}\n\n` +
+    `Adjunto el Plan de Campaña firmado.\n\n` +
+    `Quedo a la espera de vuestra confirmación.\n\nUn saludo.`
+  )
+  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
+}
 </script>
 
 <template>
@@ -158,34 +167,25 @@ const diasOrdenadosTexto = computed(() => {
             <p class="leyenda">* Gris: Disponible | Azul: Ocupado/Mantenimiento | Verde: Tu selección</p>
           </div>
 
-          <form action="https://formsubmit.co/sio@icm.csic.es" method="POST" enctype="multipart/form-data" class="formulario-reserva">
+          <div class="formulario-reserva">
             <h3 class="titulo-mini" style="margin-top: 20px;">Paso 3: Envía tu Plan</h3>
-            
-            <input type="hidden" name="_subject" value="Nueva Reserva SIO: Embarcación Pelagia">
-            <input type="hidden" name="_template" value="table">
-            <input type="hidden" name="Recurso_Solicitado" value="Pelagia">
-            <input type="hidden" name="Dias_de_Reserva" :value="diasOrdenadosTexto">
-
-            <div class="form-grupo">
-              <label>Tu Correo Electrónico (Para confirmación):</label>
-              <input type="email" name="email" required placeholder="ejemplo@icm.csic.es" class="input-form">
-            </div>
-
-            <div class="form-grupo">
-              <label>Adjunta el Plan de Campaña Firmado:</label>
-              <input type="file" name="Documento_Adjunto" accept="application/pdf" required class="input-form file-input">
-            </div>
+            <p style="font-size: 0.85rem; color: #666; margin: 0 0 10px;">
+              Al pulsar el botón se abrirá tu programa de correo con la solicitud preparada para enviar a
+              <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.
+              <strong>Adjunta el Plan de Campaña firmado</strong> antes de enviarlo.
+            </p>
 
             <button 
-              type="submit" 
+              type="button"
+              @click="enviarSolicitud"
               :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
               :disabled="diasSeleccionados.length === 0"
               :title="diasSeleccionados.length === 0 ? 'Selecciona al menos un día' : ''"
             >
-              📤 Enviar Solicitud de Salida
+              📧 Preparar correo de solicitud
             </button>
             <p v-if="diasSeleccionados.length === 0" class="aviso-dias">Selecciona al menos un día en el calendario superior para poder enviar.</p>
-          </form>
+          </div>
 
         </div>
       </div>
@@ -260,7 +260,6 @@ const diasOrdenadosTexto = computed(() => {
 .form-grupo { margin-bottom: 15px; }
 .form-grupo label { display: block; font-size: 0.9rem; color: #333; margin-bottom: 5px; font-weight: bold; }
 .input-form { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
-.file-input { background: white; font-size: 0.85rem; cursor: pointer; }
 
 .btn-submit { width: 100%; background-color: #012169; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
 .btn-submit:hover:not(.btn-desactivado) { background-color: #0056b3; transform: translateY(-2px); }

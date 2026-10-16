@@ -13,7 +13,6 @@ const instrumentoExpandido = ref(null)
 const equipoSeleccionado = ref(null)
 const diasSeleccionados = ref([])
 const nombreInvestigador = ref('')
-const dniInvestigador = ref('')
 const institucionInvestigador = ref('')
 
 // --- CÀRREGA DE DADES ---
@@ -88,9 +87,24 @@ const toggleDia = (n) => {
 
 const diasOrdenadosTexto = computed(() => diasSeleccionados.value.length === 0 ? 'Cap dia' : diasSeleccionados.value.sort((a, b) => a - b).join(', '))
 
-const generarDocumento = () => {
-    if (diasSeleccionados.value.length === 0 || !nombreInvestigador.value) return alert("Emplena les dades abans")
-    alert("Generant PDF per a " + nombreInvestigador.value)
+// Obre el correu de l'usuari amb la sol·licitud preparada (sense serveis externs)
+const enviarSolicitud = () => {
+  if (diasSeleccionados.value.length === 0 || !nombreInvestigador.value.trim()) {
+    alert("Selecciona almenys un dia i escriu el teu nom.")
+    return
+  }
+  const destinatario = "sio@icm.csic.es"
+  const asunto = encodeURIComponent(`Sol·licitud de préstec SIO: ${equipoSeleccionado.value.nombre}`)
+  const cuerpo = encodeURIComponent(
+    `Hola equip del SIO,\n\n` +
+    `Voldria sol·licitar el préstec d'aquest instrument:\n\n` +
+    `Instrument: ${equipoSeleccionado.value.nombre}\n` +
+    `Dies: ${diasOrdenadosTexto.value} de ${nombreMes.value} ${anioActual.value}\n` +
+    `Nom: ${nombreInvestigador.value.trim()}\n` +
+    (institucionInvestigador.value.trim() ? `Institució: ${institucionInvestigador.value.trim()}\n` : '') +
+    `\nQuedo a l'espera de la vostra confirmació.\n\nSalutacions.`
+  )
+  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
 }
 </script>
 
@@ -186,57 +200,31 @@ const generarDocumento = () => {
                 <p class="leyenda">* Gris: Disponible | Blau: Ocupat | Verd: La teva selecció</p>
               </div>
 
-              <div class="generador-doc-box">
-                <h3 class="titulo-mini">Pàs 2: Generar Document de Responsabilitat</h3>
-                <p class="txt-p" style="font-size: 0.85rem; margin-bottom: 15px;">Emplena les teves dades per generar el document amb les dates de reserva ja incloses. Desa'l com a PDF per signar-lo.</p>
-                
-                <div class="form-grupo">
-                  <label>Nom i Cognoms:</label>
-                  <input type="text" v-model="nombreInvestigador" placeholder="Ex: Eve Galimany Sanromà" class="input-form">
-                </div>
-                <div class="form-grupo" style="display: flex; gap: 10px;">
-                  <div style="flex: 1;">
-                    <label>DNI / Passaport:</label>
-                    <input type="text" v-model="dniInvestigador" placeholder="Ex: 38110059W" class="input-form">
-                  </div>
-                  <div style="flex: 1;">
-                    <label>Institució (Opcional):</label>
-                    <input type="text" v-model="institucionInvestigador" placeholder="Ex: ICATMAR" class="input-form">
-                  </div>
-                </div>
-                
-                <button @click="generarDocumento" class="btn-generar" :disabled="diasSeleccionados.length === 0">
-                  📄 Generar i Desar PDF
-                </button>
-              </div>
-
-              <form action="https://formsubmit.co/sio@icm.csic.es" method="POST" enctype="multipart/form-data" class="formulario-reserva">
-                <h3 class="titulo-mini">Pàs 3: Envia la Sol·licitud</h3>
-                
-                <input type="hidden" name="_subject" :value="'Nova Reserva SIO: ' + equipoSeleccionado.nombre">
-                <input type="hidden" name="_template" value="table">
-                <input type="hidden" name="Equip_Sol·licitat" :value="equipoSeleccionado.nombre">
-                <input type="hidden" name="Dies_Reserva" :value="diasOrdenadosTexto">
-                <input type="hidden" name="Investigador" :value="nombreInvestigador">
+              <div class="formulario-reserva">
+                <h3 class="titulo-mini">Pàs 2: Envia la sol·licitud</h3>
+                <p class="txt-p" style="font-size: 0.85rem; margin-bottom: 15px;">
+                  En prémer el botó s'obrirà el teu programa de correu amb la sol·licitud preparada per enviar a
+                  <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>. El SIO et respondrà per confirmar la reserva.
+                </p>
 
                 <div class="form-grupo">
-                  <label>Correu Electrònic (Per confirmar la reserva):</label>
-                  <input type="email" name="email" required placeholder="exemple@icm.csic.es" class="input-form">
+                  <label for="nombre-investigador">Nom i Cognoms:</label>
+                  <input type="text" id="nombre-investigador" v-model="nombreInvestigador" placeholder="Ex: Eve Galimany Sanromà" class="input-form">
                 </div>
-
                 <div class="form-grupo">
-                  <label>Adjunta el PDF Generat i Signat Digitalment:</label>
-                  <input type="file" name="Document_Signat" accept="application/pdf" required class="input-form file-input">
+                  <label for="institucion-investigador">Institució (Opcional):</label>
+                  <input type="text" id="institucion-investigador" v-model="institucionInvestigador" placeholder="Ex: ICATMAR" class="input-form">
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="button"
+                  @click="enviarSolicitud"
                   :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
                   :disabled="diasSeleccionados.length === 0"
                 >
-                  📤 Enviar Sol·licitud de Reserva
+                  📧 Preparar correu de sol·licitud
                 </button>
-              </form>
+              </div>
               
               <button class="btn-cerrar" @click="equipoSeleccionado = null">Tancar Detalls</button>
             </div>
@@ -249,8 +237,8 @@ const generarDocumento = () => {
               <ol style="color: #666; font-size: 0.9rem; line-height: 1.6; padding-left: 20px;">
                 <li>Selecciona un instrument de la llista.</li>
                 <li>Fes clic als dies del calendari que necessitis.</li>
-                <li>Emplena el teu Nom i DNI per generar el document en PDF.</li>
-                <li>Signa el PDF al teu ordinador i adjunta'l al formulari final.</li>
+                <li>Escriu el teu nom i prem el botó: s'obrirà el teu correu amb la sol·licitud preparada.</li>
+                <li>Envia el correu i el SIO et respondrà per confirmar la reserva.</li>
               </ol>
             </div>
 
@@ -338,16 +326,11 @@ const generarDocumento = () => {
 .leyenda { font-size: 0.75rem; color: #999; margin-top: 10px; text-align: center; }
 
 /* GENERADOR DE DOCUMENTO Y FORMULARIO RESERVA */
-.generador-doc-box { background-color: #eef5fa; padding: 20px; border-radius: 8px; border: 1px dashed #0086c0; margin-bottom: 20px; }
 .formulario-reserva { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 15px; }
 .form-grupo { margin-bottom: 15px; }
 .form-grupo label { display: block; font-size: 0.85rem; color: #333; margin-bottom: 5px; font-weight: bold; }
 .input-form { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; font-family: inherit;}
-.file-input { background: white; font-size: 0.85rem; cursor: pointer; }
 
-.btn-generar { width: 100%; background-color: #0086c0; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px; }
-.btn-generar:hover:not(:disabled) { background-color: #006b99; }
-.btn-generar:disabled { background-color: #a0cadd; cursor: not-allowed; }
 
 .btn-submit { width: 100%; background-color: #012169; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
 .btn-submit:hover:not(.btn-desactivado) { background-color: #0056b3; transform: translateY(-2px); }
