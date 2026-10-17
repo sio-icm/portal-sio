@@ -58,3 +58,6 @@ dist/
 # Variables del backend con contraseñas
 *.env
 !deploy/backend.env.example
+
+# Base de datos de la instalación con Docker
+datos/

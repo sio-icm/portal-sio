@@ -13,7 +13,8 @@ src/assets/logos/    Logos de la cabecera (uno por idioma)
 public/              Archivos que se sirven tal cual (fotos, manuales en PDF...)
 backend/app.py       API (Flask)
 backend/sio_inventario.db   Base de datos (no está en git)
-deploy/              Plantillas para el servidor: Nginx, servicio systemd y variables
+deploy/              Configuración para el servidor: Nginx (servidor y contenedor) y variables
+Dockerfile, docker-compose.yml, backend/Dockerfile   Instalación con Docker
 logos/               Logos del SIO en alta resolución
 ```
 
@@ -46,102 +47,178 @@ interpreta: para escribir una arroba hay que poner `{'@'}`.
 Lo que viene de la base de datos (nombres y descripciones de instrumentos y
 proyectos) se muestra tal cual, sin traducir.
 
-## Instalar en el servidor
+## Instalar en el servidor (docker03.icm.csic.es)
 
-Requisitos: Node.js, `python3-venv` y Nginx. Se supone que el repositorio está en
-`/opt/portal-sio`; si está en otro sitio, cambiar la ruta en los pasos y plantillas.
+El portal corre en Docker en el servidor `docker03` (10.100.201.12):
 
-1. **Código y frontend**
+```
+Internet / red del centro
+        │  80 → 443 (HTTPS)
+Nginx del servidor  (/etc/nginx/conf.d/sio.conf, certificado de Informática)
+        │  127.0.0.1:8082
+Contenedor frontend  (Nginx con la web compilada; /api/ → backend)
+        │  red interna de Docker
+Contenedor backend   (Flask + gunicorn)  ──  ./datos/sio_inventario.db
+```
 
-   ```sh
-   sudo git clone https://github.com/sio-icm/portal-sio.git /opt/portal-sio
-   cd /opt/portal-sio
-   npm ci
-   npm run build          # genera dist/
-   ```
+Solo el Nginx del servidor es accesible desde fuera. Los contenedores escuchan
+únicamente dentro del servidor.
 
-2. **Backend**
+En el servidor no hay git: el código se sube como archivo desde VS Code
+(Remote Explorer).
 
-   ```sh
-   cd /opt/portal-sio/backend
-   python3 -m venv venv
-   venv/bin/python -m pip install -r requirements.txt
-   ```
+### 1. Preparar el archivo con el código (en tu ordenador)
 
-   Copiar la base de datos `sio_inventario.db` a `backend/`. El usuario que ejecute
-   el backend debe poder escribir en ese archivo y en la carpeta `backend/`.
+Se empaqueta el último commit (los cambios sin commit no se incluyen):
 
-3. **Variables del backend** (contraseña de la intranet, clave de sesión, correo)
+```sh
+cd ~/portal-sio
+git archive --format=tar.gz -o ~/portal-sio-codigo.tgz HEAD
+```
 
-   ```sh
-   sudo mkdir -p /etc/sio-portal
-   sudo cp deploy/backend.env.example /etc/sio-portal/backend.env
-   sudo chmod 600 /etc/sio-portal/backend.env
-   sudo nano /etc/sio-portal/backend.env   # rellenar siguiendo los comentarios
-   ```
+Súbelo al servidor arrastrándolo a la carpeta personal (`/home/bardaji`) en el
+explorador de la ventana de VS Code conectada al servidor.
 
-   Sin `SIO_SECRET_KEY`, `SIO_ADMIN_USER` y `SIO_ADMIN_PASSWORD_HASH` no se puede
-   entrar en la intranet; sin `SIO_SMTP_HOST`, el formulario de contacto avisa de
-   que no puede enviar y ofrece escribir a sio@icm.csic.es.
+### 2. Descomprimirlo en una carpeta nueva (en el servidor)
 
-4. **Servicio del backend**
+```sh
+mkdir -p ~/sio-portal && tar xzf ~/portal-sio-codigo.tgz -C ~/sio-portal
+cd ~/sio-portal
+```
 
-   Editar `deploy/sio-backend.service` (ruta y usuario) y:
+La instalación antigua (`~/portal-sio`) no se toca hasta el final.
 
-   ```sh
-   sudo cp deploy/sio-backend.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now sio-backend
-   systemctl status sio-backend
-   ```
+### 3. Base de datos y usuario del backend
 
-5. **Nginx y HTTPS**
+```sh
+mkdir -p datos
+cp ~/portal-sio/backend/sio_inventario.db datos/
+printf 'SIO_UID=%s\nSIO_GID=%s\n' "$(id -u)" "$(id -g)" > .env
+```
 
-   Partir de `deploy/nginx-portal-sio.conf`: poner como `root` la carpeta
-   `/opt/portal-sio/dist` y las rutas del certificado que proporcione Informática.
+El backend corre con tu usuario, que es el dueño de `datos/`.
 
-   ```sh
-   sudo cp deploy/nginx-portal-sio.conf /etc/nginx/sites-available/portal-sio
-   sudo ln -s /etc/nginx/sites-available/portal-sio /etc/nginx/sites-enabled/
-   sudo nginx -t && sudo systemctl reload nginx
-   ```
+### 4. Variables del backend (contraseña de la intranet, clave de sesión, correo)
 
-   El puerto 5000 no se abre fuera del servidor: Nginx pasa `/api/` al backend.
+```sh
+sudo mkdir -p /etc/sio-portal
+sudo cp deploy/backend.env.example /etc/sio-portal/backend.env
+sudo chmod 600 /etc/sio-portal/backend.env
+```
 
-6. **Comprobar**
+Genera la clave de sesión y el hash de la contraseña de la intranet:
 
-   - `https://sio.icm.csic.es/` carga la portada.
-   - `https://sio.icm.csic.es/proyectos` muestra los proyectos (el backend responde).
-   - Recargar en cualquier sección no da error 404.
-   - Se puede entrar en la intranet con el usuario configurado.
+```sh
+python3 -c "import secrets; print(secrets.token_hex(32))"
+sudo docker compose run --rm --no-deps backend python -c "from werkzeug.security import generate_password_hash as g; print(g('LA_CONTRASEÑA'))"
+```
+
+y rellena el archivo con `sudo nano /etc/sio-portal/backend.env`. El hash va
+**entre comillas simples** (`SIO_ADMIN_PASSWORD_HASH='scrypt:...'`).
+
+### 5. Arrancar los contenedores
+
+```sh
+sudo docker compose up -d --build
+sudo docker compose ps
+```
+
+Comprobar desde el propio servidor, antes de cambiar nada en Nginx:
+
+```sh
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8082/            # 200
+curl -s http://127.0.0.1:8082/api/proyectos | head -c 200                     # JSON
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8082/servicios      # 200
+```
+
+Si algo falla: `sudo docker compose logs backend` o `sudo docker compose logs frontend`.
+
+### 6. Pasar el Nginx del servidor a la instalación nueva
+
+```sh
+sudo cp /etc/nginx/conf.d/sio.conf /etc/nginx/sio.conf.antes-de-docker
+```
+
+- **Si todavía no hay certificado:** `sudo cp deploy/nginx-sio-sin-https.conf /etc/nginx/conf.d/sio.conf`
+- **Con el certificado** (ver el paso 7): `sudo cp deploy/nginx-sio.conf /etc/nginx/conf.d/sio.conf`
+
+```sh
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Para volver atrás:
+`sudo cp /etc/nginx/sio.conf.antes-de-docker /etc/nginx/conf.d/sio.conf && sudo systemctl reload nginx`.
+
+Si la web da error 502 y en `/var/log/nginx/error.log` aparece *Permission denied*
+al conectar con 127.0.0.1:8082, es SELinux: `sudo setsebool -P httpd_can_network_connect 1`.
+
+### 7. Certificado HTTPS
+
+Informática envía un `.crt` y un `.key`. La clave (`.key`) es secreta: no se
+reenvía, no se pega en ningún sitio y no se sube al repositorio.
+
+```sh
+sudo mkdir -p /etc/pki/nginx/private
+sudo cp sio.icm.csic.es.crt /etc/pki/nginx/sio.icm.csic.es.crt
+sudo cp sio.icm.csic.es.key /etc/pki/nginx/private/sio.icm.csic.es.key
+sudo chmod 600 /etc/pki/nginx/private/sio.icm.csic.es.key
+sudo restorecon -Rv /etc/pki/nginx           # SELinux
+sudo firewall-cmd --permanent --add-service=https && sudo firewall-cmd --reload   # si usa firewalld
+```
+
+Si el `.crt` no incluye la cadena intermedia, hay que añadirla al final del mismo
+archivo (pedirla a Informática). Después, aplicar `deploy/nginx-sio.conf` (paso 6),
+poner `SIO_COOKIE_SEGURA=1` en `/etc/sio-portal/backend.env` y reiniciar:
+`sudo docker compose up -d`.
+
+### 8. Comprobar
+
+- `https://sio.icm.csic.es/` carga la portada y `http://` redirige a `https://`.
+- `/proyectos` muestra los proyectos y recargar en cualquier sección no da 404.
+- Se puede entrar en la intranet con el usuario configurado.
+- Desde otro ordenador, los puertos 8000, 8081 y 8082 no responden.
+
+### 9. Retirar la instalación antigua
+
+Cuando todo funcione:
+
+```sh
+cd ~/portal-sio && sudo docker compose down        # contenedores antiguos (puertos 8000 y 8081)
+pkill -u "$USER" -f "portal-sio/backend/app.py"    # backend antiguo arrancado a mano (puerto 5000)
+```
+
+La carpeta `~/portal-sio` se puede guardar un tiempo como copia.
 
 ## Actualizar la web
 
+En tu ordenador, genera de nuevo `~/portal-sio-codigo.tgz` (paso 1) y súbelo. En el servidor:
+
 ```sh
-cd /opt/portal-sio
-git pull
-npm ci && npm run build
-backend/venv/bin/python -m pip install -r backend/requirements.txt
-sudo systemctl restart sio-backend
+cd ~/sio-portal
+tar xzf ~/portal-sio-codigo.tgz -C ~/sio-portal
+sudo docker compose up -d --build
 ```
 
-No hace falta recargar Nginx salvo que cambie su configuración.
+`datos/`, `.env` y `/etc/sio-portal/backend.env` no están en el archivo, así que
+no se tocan.
 
 ## Copias de seguridad
 
 Toda la información editable (instrumentos y proyectos) está en
-`backend/sio_inventario.db`. Para copiarla sin parar el backend:
+`~/sio-portal/datos/sio_inventario.db`. Para copiarla sin parar el backend:
 
 ```sh
-cd /opt/portal-sio/backend
-venv/bin/python -c "import sqlite3,sys; sqlite3.connect('sio_inventario.db').backup(sqlite3.connect(sys.argv[1]))" /ruta/copias/sio_inventario-$(date +%F).db
+cd ~/sio-portal
+sudo docker compose exec backend python -c "import sqlite3; sqlite3.connect('/datos/sio_inventario.db').backup(sqlite3.connect('/datos/copia-$(date +%F).db'))"
 ```
+
+La copia queda en `datos/copia-AAAA-MM-DD.db`.
 
 ## Cambiar la contraseña de la intranet
 
-Generar un hash nuevo, ponerlo en `SIO_ADMIN_PASSWORD_HASH` de
-`/etc/sio-portal/backend.env` y reiniciar con `sudo systemctl restart sio-backend`:
-
 ```sh
-backend/venv/bin/python -c "from werkzeug.security import generate_password_hash as g; print(g('NUEVA_CONTRASEÑA'))"
+cd ~/sio-portal
+sudo docker compose run --rm --no-deps backend python -c "from werkzeug.security import generate_password_hash as g; print(g('NUEVA_CONTRASEÑA'))"
+sudo nano /etc/sio-portal/backend.env      # SIO_ADMIN_PASSWORD_HASH='...'
+sudo docker compose up -d
 ```

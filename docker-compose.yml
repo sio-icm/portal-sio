@@ -1,0 +1,32 @@
+# Portal SIO en Docker: frontend (Nginx + web compilada) y backend (Flask + gunicorn).
+#
+# - Solo el frontend publica un puerto, y únicamente en 127.0.0.1: desde fuera se
+#   entra por el Nginx del servidor (deploy/nginx-sio.conf), que pone el HTTPS.
+# - El backend no publica ningún puerto; el frontend le habla por la red interna.
+# - La base de datos está en ./datos (fuera de la imagen), así no se pierde al
+#   reconstruir los contenedores.
+#
+# Variables opcionales (en un archivo .env junto a este, ver README):
+#   SIO_UID / SIO_GID  usuario con el que corre el backend (dueño de ./datos)
+#   SIO_PUERTO         puerto local del frontend (por defecto 8082)
+name: sio-portal
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    user: "${SIO_UID:-1000}:${SIO_GID:-1000}"
+    env_file: /etc/sio-portal/backend.env
+    environment:
+      SIO_DB_PATH: /datos/sio_inventario.db
+    volumes:
+      # :Z para que SELinux deje al contenedor usar la carpeta
+      - ./datos:/datos:Z
+
+  frontend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${SIO_PUERTO:-8082}:80"

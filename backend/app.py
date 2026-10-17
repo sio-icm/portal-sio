@@ -24,6 +24,7 @@ from werkzeug.security import check_password_hash
 #   SIO_SMTP_USER / SIO_SMTP_PASSWORD   solo si el servidor pide autenticación
 #   SIO_SMTP_FROM            remitente de los correos (por defecto el destinatario)
 #   SIO_CONTACTO_DESTINO     destinatario de las consultas (por defecto sio@icm.csic.es)
+#   SIO_COOKIE_SEGURA=1      la cookie de sesión solo viaja por HTTPS (activar con el certificado)
 #   SIO_DB_PATH              ruta de la base de datos (por defecto sio_inventario.db junto a este archivo)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
@@ -33,6 +34,7 @@ app.config.update(
     SECRET_KEY=os.environ.get('SIO_SECRET_KEY'),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=os.environ.get('SIO_COOKIE_SEGURA') == '1',
     PERMANENT_SESSION_LIFETIME=timedelta(days=7),
 )
 ADMIN_USER = os.environ.get('SIO_ADMIN_USER')
