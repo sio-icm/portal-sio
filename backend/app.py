@@ -24,6 +24,7 @@ from werkzeug.security import check_password_hash
 #   SIO_SMTP_USER / SIO_SMTP_PASSWORD   solo si el servidor pide autenticación
 #   SIO_SMTP_FROM            remitente de los correos (por defecto el destinatario)
 #   SIO_CONTACTO_DESTINO     destinatario de las consultas (por defecto sio@icm.csic.es)
+#   SIO_DB_PATH              ruta de la base de datos (por defecto sio_inventario.db junto a este archivo)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
 # Detrás de Nginx: la IP real del usuario llega en X-Forwarded-For
@@ -153,9 +154,13 @@ def contacto():
     return jsonify({"mensaje": "Consulta enviada"}), 200
 
 
+# La base de datos se busca junto a este archivo, no en la carpeta desde la que se arranca
+DB_PATH = os.environ.get('SIO_DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sio_inventario.db'))
+
+
 # Función para conectarnos a la base de datos
 def conectar_bd():
-    conexion = sqlite3.connect('sio_inventario.db')
+    conexion = sqlite3.connect(DB_PATH)
     conexion.row_factory = sqlite3.Row 
     return conexion
 
@@ -216,7 +221,7 @@ def modificar_instrumento(id):
 
     # Si la web pide ELIMINAR
     if request.method == 'DELETE':
-        conn = sqlite3.connect('sio_inventario.db')
+        conn = conectar_bd()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM instrumentos WHERE id = ?', (id,))
         conn.commit()
@@ -227,7 +232,7 @@ def modificar_instrumento(id):
     if request.method == 'PUT':
         try:
             datos = request.json
-            conn = sqlite3.connect('sio_inventario.db')
+            conn = conectar_bd()
             cursor = conn.cursor()
             
             cursor.execute('''
