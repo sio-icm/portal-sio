@@ -1,0 +1,32 @@
+# Servicio systemd del backend del portal SIO (gunicorn + Flask)
+#
+# Antes de usarlo, cambiar:
+#   RUTA_PORTAL  carpeta donde está el repositorio en el servidor (p. ej. /opt/portal-sio)
+#   USUARIO      usuario del sistema que ejecuta el backend; debe poder escribir
+#                en backend/sio_inventario.db y en la carpeta backend/ (SQLite
+#                crea ahí archivos temporales)
+#
+# Instalación:
+#   sudo cp deploy/sio-backend.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sio-backend
+# Ver el estado y los registros:
+#   systemctl status sio-backend
+#   journalctl -u sio-backend -f
+
+[Unit]
+Description=Backend del portal SIO (Flask + gunicorn)
+After=network.target
+
+[Service]
+User=USUARIO
+WorkingDirectory=RUTA_PORTAL/backend
+# Variables con la contraseña de la intranet, la clave secreta y el correo
+EnvironmentFile=/etc/sio-portal/backend.env
+# Solo escucha en el propio servidor: Nginx le pasa las peticiones de /api/
+ExecStart=RUTA_PORTAL/backend/venv/bin/python -m gunicorn --workers 2 --bind 127.0.0.1:5000 --access-logfile - app:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
