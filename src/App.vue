@@ -4,7 +4,9 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { cambiarIdioma } from './i18n'
 import { actualizarTitulo } from './router'
-import logoSio from './assets/sioblanco2baix.png'
+import logoSioCa from './assets/logos/logo-sio-blanco-ca.png'
+import logoSioEs from './assets/logos/logo-sio-blanco-es.png'
+import logoSioEn from './assets/logos/logo-sio-blanco-en.png'
 import logoCsic from './assets/csic.png'
 import logoIcm from './assets/icm.png'
 import logoSevero from './assets/severo.png'
@@ -17,6 +19,10 @@ const idiomas = [
   { codigo: 'es', etiqueta: 'ES', nombre: 'Español' },
   { codigo: 'en', etiqueta: 'EN', nombre: 'English' }
 ]
+
+// El logo lleva el nombre del servicio, así que cambia con el idioma
+const logosSio = { ca: logoSioCa, es: logoSioEs, en: logoSioEn }
+const logoSio = computed(() => logosSio[locale.value] || logoSioEs)
 
 const mostrarCabecera = computed(() => !route.meta.sinCabecera)
 const cabeceraSolida = computed(() => Boolean(route.meta.cabeceraSolida))
@@ -57,7 +63,7 @@ watch(locale, () => actualizarTitulo(route))
         
         <div class="header-left">
           <RouterLink to="/" :aria-label="$t('comun.inicio')">
-            <img :src="logoSio" alt="SIO" class="logo-principal">
+            <img :src="logoSio" :alt="$t('comun.nombreServicio')" class="logo-principal">
           </RouterLink>
           
           <div class="divider"></div>
