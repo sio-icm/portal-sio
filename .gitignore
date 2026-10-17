@@ -50,3 +50,11 @@ __pycache__/
 
 # Carpeta de compilación de Vue (opcional, pero recomendada para la rama principal)
 dist/
+
+# Certificados y claves (nunca al repositorio)
+*.key
+*.crt
+*.pem
+# Variables del backend con contraseñas
+*.env
+!deploy/backend.env.example
