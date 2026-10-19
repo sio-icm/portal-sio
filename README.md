@@ -64,27 +64,26 @@ Contenedor backend   (Flask + gunicorn)  ──  ./datos/sio_inventario.db
 Solo el Nginx del servidor es accesible desde fuera. Los contenedores escuchan
 únicamente dentro del servidor.
 
-En el servidor no hay git: el código se sube como archivo desde VS Code
-(Remote Explorer).
+En el servidor no hay git: el código se descarga de GitHub (el repositorio es
+público) con `curl`.
 
-### 1. Preparar el archivo con el código (en tu ordenador)
-
-Se empaqueta el último commit (los cambios sin commit no se incluyen):
+### 1. Subir los cambios a GitHub (en tu ordenador)
 
 ```sh
-cd ~/portal-sio
-git archive --format=tar.gz -o ~/portal-sio-codigo.tgz HEAD
+git push
 ```
 
-Súbelo al servidor arrastrándolo a la carpeta personal (`/home/bardaji`) en el
-explorador de la ventana de VS Code conectada al servidor.
-
-### 2. Descomprimirlo en una carpeta nueva (en el servidor)
+### 2. Descargar el código en una carpeta nueva (en el servidor)
 
 ```sh
-mkdir -p ~/sio-portal && tar xzf ~/portal-sio-codigo.tgz -C ~/sio-portal
+cd ~ && curl -sL -o portal-sio-codigo.tgz https://github.com/sio-icm/portal-sio/archive/refs/heads/arreglos.tar.gz
+mkdir -p ~/sio-portal && tar xzf ~/portal-sio-codigo.tgz -C ~/sio-portal --strip-components=1
+rm ~/portal-sio-codigo.tgz
 cd ~/sio-portal
 ```
+
+(Cuando la rama `arreglos` se fusione con `main`, cambiar `arreglos` por `main`
+en la dirección.)
 
 La instalación antigua (`~/portal-sio`) no se toca hasta el final.
 
@@ -191,16 +190,22 @@ La carpeta `~/portal-sio` se puede guardar un tiempo como copia.
 
 ## Actualizar la web
 
-En tu ordenador, genera de nuevo `~/portal-sio-codigo.tgz` (paso 1) y súbelo. En el servidor:
+1. En tu ordenador: `git push`.
+2. En el servidor:
 
 ```sh
-cd ~/sio-portal
-tar xzf ~/portal-sio-codigo.tgz -C ~/sio-portal
+cd ~ && curl -sL -o portal-sio-codigo.tgz https://github.com/sio-icm/portal-sio/archive/refs/heads/arreglos.tar.gz
+cd ~/sio-portal && find . -mindepth 1 -maxdepth 1 ! -name datos ! -name .env -exec rm -rf {} + && tar xzf ~/portal-sio-codigo.tgz --strip-components=1
+rm ~/portal-sio-codigo.tgz
 sudo docker compose up -d --build
+sudo docker image prune -f
 ```
 
-`datos/`, `.env` y `/etc/sio-portal/backend.env` no están en el archivo, así que
-no se tocan.
+- La segunda línea vacía `~/sio-portal` **excepto `datos/` y `.env`** y descomprime
+  la versión nueva, para que no se queden archivos que ya se han borrado del
+  repositorio. La base de datos y `/etc/sio-portal/backend.env` no se tocan.
+- `docker image prune -f` borra las imágenes antiguas que deja cada
+  reconstrucción, para que no se llene el disco.
 
 ## Copias de seguridad
 
