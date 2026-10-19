@@ -8,9 +8,12 @@ Logos en alta resolución (PNG con fondo transparente), en los tres idiomas de l
 | Castellano | `logo-sio-blanco-es.png` | `logo-sio-azul-es.png` |
 | English | `logo-sio-blanco-en.png` | `logo-sio-azul-en.png` |
 
-- Catalán y castellano: recortados de las hojas de propuestas originales.
-- Inglés: mismo símbolo, con el texto «Oceanographic / Engineering / Service» en
-  Montserrat Regular, con el mismo tamaño, interlineado y grosor que los otros dos.
-- `propuestas-logo-sio-en.png`: hoja de propuestas en inglés (opciones A y B).
+- Catalán: recortado de la hoja de propuestas original.
+- Castellano e inglés: mismo símbolo, con el texto en Montserrat Regular y el mismo
+  tamaño, interlineado y grosor que el catalán:
+  «Servicio / de Ingeniería / Oceanográfica» (la «de» en la segunda línea, como
+  «d'Enginyeria») y «Oceanographic / Engineering / Service».
+- `propuestas-logo-sio-es.png` y `propuestas-logo-sio-en.png`: hojas de propuestas
+  (opciones A y B).
 
 La web usa las versiones blancas reducidas de `src/assets/logos/`.
