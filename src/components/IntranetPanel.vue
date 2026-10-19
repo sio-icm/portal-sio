@@ -242,8 +242,8 @@ const eliminarProyecto = async (id) => {
       <div class="login-box">
         <h2>Accés SIO</h2>
         <form @submit.prevent="iniciarSesion">
-          <input v-model="usuario" placeholder="Usuari" required>
-          <input type="password" v-model="password" placeholder="Contrasenya" required>
+          <input v-model="usuario" placeholder="Usuari" autocomplete="username" required>
+          <input type="password" v-model="password" placeholder="Contrasenya" autocomplete="current-password" required>
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-size: 0.9rem; color: #555;">
             <input type="checkbox" v-model="recordarSesion" id="recordar" style="width: auto; margin: 0;">
             <label for="recordar" style="cursor: pointer;">Recordar sessió</label>
