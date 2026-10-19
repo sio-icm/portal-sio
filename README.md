@@ -227,3 +227,13 @@ sudo docker compose run --rm --no-deps backend python -c "from werkzeug.security
 sudo nano /etc/sio-portal/backend.env      # SIO_ADMIN_PASSWORD_HASH='...'
 sudo docker compose up -d
 ```
+
+## Notas del servidor docker03
+
+- Tiene 3,5 GB de RAM. El 19-10-2026 se congeló por falta de memoria: el servidor
+  de VS Code (Remote Explorer) ocupa unos 2 GB. Conviene cerrar la ventana remota
+  al terminar y no instalar extensiones en el servidor.
+- Tiene 2 GB de swap en `/swapfile` (activada en `/etc/fstab`, etiqueta SELinux
+  `swapfile_t` registrada con `semanage fcontext`).
+- Nginx del servidor y los contenedores arrancan solos al reiniciar
+  (`systemctl enable nginx`, `restart: unless-stopped`).
