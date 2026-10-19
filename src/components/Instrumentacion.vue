@@ -261,7 +261,7 @@ const enviarSolicitud = () => {
 .servicios-hub { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-servicios { 
   position: absolute; top: 0; left: 0; width: 100%; height: 550px; 
-  background-image: linear-gradient(rgba(1, 33, 105, 0.75), rgba(1, 33, 105, 0.9)), url('/instrumentacion.jpg');
+  background-image: linear-gradient(rgba(1, 33, 105, 0.75), rgba(1, 33, 105, 0.9)), url('/instrumentacion.webp');
   background-size: cover; background-position: center; z-index: 0; 
 }
 .contenido-hub { position: relative; z-index: 10; padding-top: 120px; max-width: 1300px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import portadabluelab from '../assets/portadabluelab.png'
+import portadabluelab from '../assets/portadabluelab.webp'
 import logoBlanco from '../assets/logobluelabblanco.png'
 
 const backgroundStyle = computed(() => {

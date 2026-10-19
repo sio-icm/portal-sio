@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import fondoInstrumentacion from '../assets/instrumentacion.jpg'
+const fondoInstrumentacion = '/instrumentacion.webp'
 
 const { t } = useI18n()
 

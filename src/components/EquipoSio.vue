@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import fondoInstrumentacion from '../assets/instrumentacion.jpg'
+const fondoInstrumentacion = '/instrumentacion.webp'
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`

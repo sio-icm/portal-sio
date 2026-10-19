@@ -1,7 +1,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { useCalendarioReservas } from '../composables/useCalendarioReservas'
-import fondoPelagia from '../assets/Pelagia.jpg'
+import fondoPelagia from '../assets/Pelagia.webp'
 
 const { t } = useI18n()
 const {

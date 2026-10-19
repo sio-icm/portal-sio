@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import fondoInstrumentacion from '../assets/instrumentacion.jpg'
+const fondoInstrumentacion = '/instrumentacion.webp'
 
 // Ruta del PDF de la memoria (dentro de public/). Mientras esté vacía no se
 // muestra el recuadro de descarga. Ejemplo: '/memorias/Memoria_SIO_2025.pdf'
