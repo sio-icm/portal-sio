@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import GestionAlbaranes from './GestionAlbaranes.vue'
 import BibliotecaDocs from './BibliotecaDocs.vue'
 import GestionEquipo from './GestionEquipo.vue'
 
@@ -21,7 +20,7 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const seccionActiva = ref('dashboard') // 'dashboard', 'equipo', 'albaranes', 'documentacion', 'instrumentacion', 'proyecto'
+const seccionActiva = ref('dashboard') // 'dashboard', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
 const usuario = ref('')
 const password = ref('')
 const recordarSesion = ref(false)
@@ -260,7 +259,6 @@ const eliminarProyecto = async (id) => {
 <nav class="sidebar-nav">
           <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">📊 Visió General</a>
           <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">👥 Gestión del Equipo</a>
-          <a href="#" @click.prevent="seccionActiva = 'albaranes'" :class="{ active: seccionActiva === 'albaranes' }">📦 Gestió d'Albarans</a>
           <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">📚 Documentació i Manuals</a>
           <a href="#" @click.prevent="seccionActiva = 'instrumentacion'" :class="{ active: seccionActiva === 'instrumentacion' }">
             {{ editandoId ? '✏️ Editant Instrument' : '🛠️ Alta Instrument' }}
@@ -277,10 +275,7 @@ const eliminarProyecto = async (id) => {
       <main class="main-content">
         
 
-        <div v-if="seccionActiva === 'albaranes'">
-          <GestionAlbaranes />
-        </div>
-        <div v-else-if="seccionActiva === 'documentacion'">
+        <div v-if="seccionActiva === 'documentacion'">
         <BibliotecaDocs />
         </div>
         <div v-else-if="seccionActiva === 'equipo'">
