@@ -1,15 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// Datos simulados copiados exactamente de tu captura de la Wiki
-const albaranes = ref([
-  { id: 1, fecha: '09/12/2025', numero: 'SIO-20251209-001', proyecto: 'BECA JUNIOR LEADER (3112JL - VAPC OTR12103)', ip: 'Aurora M. Ricard', importe: 3991.52, estado: 'En proceso' },
-  { id: 2, fecha: '14/11/2025', numero: 'SIO-20251114-01', proyecto: 'RhodoMed (8027MCIU-PID2023)', ip: 'Francesc Maynou', importe: 10.57, estado: 'Cobrado' },
-  { id: 3, fecha: '11/11/2025', numero: 'SIO-20251111-01', proyecto: 'FRESH-CARE (6068EC_FRESH-CARE)', ip: 'Marta Umbert', importe: 364.56, estado: 'Cobrado' },
-  { id: 4, fecha: '30/07/2025', numero: '3007P39', proyecto: 'Proyecto Inphinit La Caixa (3135LC_SONODA)', ip: 'Blanca Figuerola Balañá', importe: 20.12, estado: 'Cobrado' },
-  { id: 5, fecha: '12/06/2025', numero: '250611_001', proyecto: 'Departament Biologia (2000)', ip: 'M. Montserrat Sala', importe: 10.57, estado: 'Cobrado' },
-  { id: 6, fecha: '27/05/2025', numero: '20250527_001', proyecto: 'ARCTIC-MON (6036PN)', ip: 'Carolina Gabarró', importe: 145.16, estado: 'Cobrado' }
-])
+// Los albaranes NO pueden ir escritos en el código: este archivo se descarga
+// sin iniciar sesión, así que cualquiera vería nombres, proyectos e importes.
+// Cuando se gestionen de verdad, deben venir del backend con login.
+const albaranes = ref([])
 
 const totalCobrado = computed(() => {
   return albaranes.value
@@ -36,7 +31,7 @@ const getClassEstado = (estado) => {
   <div class="panel-albaranes">
     <div class="cabecera-panel">
       <h2>📦 Gestió d'Albarans i Facturació</h2>
-      <button class="btn-nou-albaran">+ Nou Albarà</button>
+      <button class="btn-nou-albaran" disabled title="Secció en preparació">+ Nou Albarà</button>
     </div>
 
     <div class="grid-kpis">
@@ -68,6 +63,9 @@ const getClassEstado = (estado) => {
           </tr>
         </thead>
         <tbody>
+          <tr v-if="albaranes.length === 0">
+            <td colspan="7" class="aviso-vacio">Secció en preparació: els albarans es gestionaran des de la base de dades del SIO.</td>
+          </tr>
           <tr v-for="albaran in albaranes" :key="albaran.id">
             <td class="td-fecha">{{ albaran.fecha }}</td>
             <td><strong>{{ albaran.numero }}</strong></td>
@@ -90,6 +88,8 @@ const getClassEstado = (estado) => {
 </template>
 
 <style scoped>
+.aviso-vacio { text-align: center; color: #666; font-style: italic; padding: 25px; }
+.btn-nou-albaran:disabled { opacity: 0.5; cursor: not-allowed; }
 .panel-albaranes {
   background: #ffffff;
   border-radius: 10px;
