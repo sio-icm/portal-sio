@@ -4,12 +4,18 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import BibliotecaDocs from './BibliotecaDocs.vue'
 import GestionEquipo from './GestionEquipo.vue'
+import DiarioActividad from './DiarioActividad.vue'
+import InformeSemestral from './InformeSemestral.vue'
+import GestionUsuarios from './GestionUsuarios.vue'
+import MiCuenta from './MiCuenta.vue'
 
 const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
 const apiUrlProyectos = `${apiBase}/proyectos`
 
 const estaLogueado = ref(false)
+// Quién ha iniciado sesión: { nombre, usuario_id, es_admin } (lo da el backend)
+const sesion = ref({ nombre: '', usuario_id: null, es_admin: false })
 
 // La sessió viu en una cookie del backend (mateix domini, el navegador l'envia sola)
 const peticionApi = async (url, opciones = {}) => {
@@ -20,7 +26,14 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const seccionActiva = ref('dashboard') // 'dashboard', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
+const seccionActiva = ref('dashboard') // 'dashboard', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
+
+// Las secciones nuevas avisan si la sesión ha caducado
+const sesionCaducada = () => {
+  if (!estaLogueado.value) return
+  estaLogueado.value = false
+  alert("La sessió ha caducat. Torna a entrar.")
+}
 const usuario = ref('')
 const password = ref('')
 const recordarSesion = ref(false)
@@ -85,6 +98,7 @@ onMounted(async () => {
     const respuesta = await peticionApi(`${apiBase}/sesion`)
     const datos = await respuesta.json()
     if (datos.autenticado) {
+      sesion.value = datos
       estaLogueado.value = true
       cargarInstrumentos()
       cargarProyectos()
@@ -104,11 +118,15 @@ const iniciarSesion = async () => {
     })
     password.value = ''
     if (respuesta.ok) {
+      sesion.value = await respuesta.json()
+      seccionActiva.value = 'dashboard'
       estaLogueado.value = true
       cargarInstrumentos()
       cargarProyectos()
     } else if (respuesta.status === 401) {
       alert("Usuari o contrasenya incorrectes")
+    } else if (respuesta.status === 429) {
+      alert("Massa intents fallits. Espera uns minuts i torna-ho a provar.")
     } else {
       alert("No s'ha pogut iniciar sessió. Contacta amb l'administrador.")
     }
@@ -256,8 +274,11 @@ const eliminarProyecto = async (id) => {
 
       <aside class="sidebar">
         <h3 class="sidebar-title">Panel SIO</h3>
+        <p class="sidebar-usuario">👤 {{ sesion.nombre }}</p>
 <nav class="sidebar-nav">
           <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">📊 Visió General</a>
+          <a href="#" @click.prevent="seccionActiva = 'diario'" :class="{ active: seccionActiva === 'diario' }">📓 Diari d'activitat</a>
+          <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">🧾 Informe semestral</a>
           <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">👥 Gestión del Equipo</a>
           <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">📚 Documentació i Manuals</a>
           <a href="#" @click.prevent="seccionActiva = 'instrumentacion'" :class="{ active: seccionActiva === 'instrumentacion' }">
@@ -266,6 +287,8 @@ const eliminarProyecto = async (id) => {
           <a href="#" @click.prevent="seccionActiva = 'proyecto'" :class="{ active: seccionActiva === 'proyecto' }">
             {{ editandoProyectoId ? '✏️ Editant Projecte' : '🚀 Alta Projecte' }}
           </a>
+          <a href="#" @click.prevent="seccionActiva = 'cuenta'" :class="{ active: seccionActiva === 'cuenta' }">👤 El meu compte</a>
+          <a v-if="sesion.es_admin" href="#" @click.prevent="seccionActiva = 'usuarios'" :class="{ active: seccionActiva === 'usuarios' }">🔐 Usuaris</a>
           <!-- Este lo dejamos sin prevent porque SÍ queremos que abra una pestaña nueva hacia la web pública -->
           <a href="/" target="_blank" class="btn-web">🌐 Veure Web Pública</a>
         </nav>
@@ -275,7 +298,11 @@ const eliminarProyecto = async (id) => {
       <main class="main-content">
         
 
-        <div v-if="seccionActiva === 'documentacion'">
+        <DiarioActividad v-if="seccionActiva === 'diario'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
+        <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
+        <div v-else-if="seccionActiva === 'documentacion'">
         <BibliotecaDocs />
         </div>
         <div v-else-if="seccionActiva === 'equipo'">
@@ -488,6 +515,7 @@ const eliminarProyecto = async (id) => {
 
 .dashboard-grid { display: flex; min-height: 100vh; }
 .sidebar { width: 250px; background: #012169; color: white; padding: 20px; display: flex; flex-direction: column; }
+.sidebar-usuario { color: #8cc63f; font-size: 0.85rem; margin: -5px 0 15px; }
 .sidebar-nav a { display: block; color: #ccc; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
 .sidebar-nav a.active { color: white; font-weight: bold; border-left: 3px solid #8cc63f; background: rgba(255, 255, 255, 0.05); }
 .btn-logout { margin-top: auto; background: none; border: 1px solid white; color: white; padding: 10px; cursor: pointer; border-radius: 4px; }
