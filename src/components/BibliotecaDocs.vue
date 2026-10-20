@@ -6,7 +6,7 @@ const documentos = ref([
   // --- ESTACIONS METEOROLÒGIQUES ---
   { id: 1, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Manual Consola Vantage Pro2', descripcion: 'Manual complet de l\'estació meteorològica Vantage Pro2.', formato: 'PDF', enlace: '/manuals/Vantage_pro2_console_manual.pdf' },
   { id: 2, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Manual de Instalación Vantage Pro/Pro2', descripcion: 'Guia completa d\'instal·lació i muntatge de màstil.', formato: 'PDF', enlace: '/manuals/Installation_vantage.pdf' },
-  { id: 3, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Guía de Inicio WeatherLink Software', descripcion: 'Guia del programari WeatherLink per a PC.', formato: 'PDF', enlace: '/manuals/Weatherlink_software_getting_started_guide... 1_28.pdf' },
+  { id: 3, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Guía de Inicio WeatherLink Software', descripcion: 'Guia del programari WeatherLink per a PC.', formato: 'PDF', enlace: '/manuals/Weatherlink_software_getting_started_guide_pc_2018_11_28.pdf' },
   { id: 4, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Manual Sensores UV y Radiación Solar', descripcion: 'Manual tècnic de sensors UV i radiació solar.', formato: 'PDF', enlace: '/manuals/Uv_and_solar_Vantage_pro.pdf' },
 
   // --- REGISTRADORS DE DADES ---
