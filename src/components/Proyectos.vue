@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { limpiarHtml } from '../utils/limpiarHtml'
 
 const proyectos = ref([])
 const cargando = ref(true)
@@ -85,7 +86,7 @@ const clasePorTipo = (categoria) => CATEGORIAS[categoria]?.clase || 'badge-gris'
 
                 <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ {{ $t('proyectos.detalle') }}</button>
                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
-                  <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
+                  <div class="contenido-html" v-html="limpiarHtml(p.descripcion_ampliada)"></div>
                   <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ {{ $t('proyectos.ocultarDetalle') }}</button>
                 </div>
               </div>
@@ -109,7 +110,7 @@ const clasePorTipo = (categoria) => CATEGORIAS[categoria]?.clase || 'badge-gris'
 
                 <button v-show="!descripcionesVisibles[p.id]" @click="toggleDesc(p.id)" class="btn-toggle">▼ {{ $t('proyectos.detalle') }}</button>
                 <div v-show="descripcionesVisibles[p.id]" class="caja-detalle">
-                  <div class="contenido-html" v-html="p.descripcion_ampliada"></div>
+                  <div class="contenido-html" v-html="limpiarHtml(p.descripcion_ampliada)"></div>
                   <button @click="toggleDesc(p.id)" class="btn-toggle-cerrar">▲ {{ $t('proyectos.ocultarDetalle') }}</button>
                 </div>
               </div>

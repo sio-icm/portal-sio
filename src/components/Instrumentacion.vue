@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { limpiarHtml } from '../utils/limpiarHtml'
 
 const { t, locale } = useI18n()
 
@@ -162,12 +163,12 @@ const enviarSolicitud = () => {
                     <div v-show="instrumentoExpandido === inst.id" class="contenido-acordeon">
                       <div class="bloque-info-wiki">
                         <h4>{{ $t('instrumentacion.descripcion') }}</h4>
-                        <div v-if="inst.descripcionCompleta" class="texto-wiki" v-html="inst.descripcionCompleta" style="white-space: pre-wrap;"></div>
+                        <div v-if="inst.descripcionCompleta" class="texto-wiki" v-html="limpiarHtml(inst.descripcionCompleta)" style="white-space: pre-wrap;"></div>
                         <div v-else class="texto-wiki">{{ $t('instrumentacion.sinDescripcion') }}</div>
                       </div>
                       <div class="bloque-info-wiki">
                         <h4>{{ $t('instrumentacion.especificaciones') }}</h4>
-                        <div v-if="inst.parametros" v-html="inst.parametros" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>
+                        <div v-if="inst.parametros" v-html="limpiarHtml(inst.parametros)" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>
                         <div v-else>{{ $t('instrumentacion.sinParametros') }}</div>
                       </div>
                       
