@@ -219,7 +219,21 @@ sudo docker compose exec backend python -c "import sqlite3; sqlite3.connect('/da
 
 La copia queda en `datos/copia-AAAA-MM-DD.db`.
 
-## Cambiar la contraseña de la intranet
+## Usuarios de la intranet y diario de actividad
+
+- El usuario de `/etc/sio-portal/backend.env` (`SIO_ADMIN_USER`) es el
+  **administrador del servidor**. Desde la intranet, en «Usuaris», crea los
+  usuarios personales de cada persona del equipo (y puede hacer administradores
+  a otros).
+- Cada persona cambia su contraseña en «El meu compte».
+- El **diari d'activitat** guarda notas (fecha, proyecto o «sense projecte»,
+  tipo, texto). Cada uno edita las suyas; los administradores, todas.
+- El **informe semestral** sale de esas notas: se elige el periodo y se imprime
+  o se guarda en PDF.
+- Las tablas `usuarios` y `notas` se crean solas en la base de datos al arrancar
+  el backend.
+
+## Cambiar la contraseña de la intranet del administrador del servidor
 
 ```sh
 cd ~/sio-portal
