@@ -53,11 +53,22 @@ def login_configurado():
     return bool(app.config['SECRET_KEY'])
 
 
+# Mientras un usuario tenga que cambiar la contraseña (primer acceso o contraseña
+# puesta por un administrador), solo puede usar estas rutas
+RUTAS_SIN_CAMBIO_CONTRASENA = {'cambiar_mi_contrasena'}
+
+
+def debe_cambiar_bloquea(vista):
+    return session.get('debe_cambiar') and vista.__name__ not in RUTAS_SIN_CAMBIO_CONTRASENA
+
+
 def requiere_login(vista):
     @wraps(vista)
     def envoltorio(*args, **kwargs):
         if not session.get('autenticado'):
             return jsonify({"error": "No autorizado"}), 401
+        if debe_cambiar_bloquea(vista):
+            return jsonify({"error": "Tienes que cambiar la contraseña", "debe_cambiar": True}), 403
         return vista(*args, **kwargs)
     return envoltorio
 
@@ -67,6 +78,8 @@ def requiere_admin(vista):
     def envoltorio(*args, **kwargs):
         if not session.get('autenticado'):
             return jsonify({"error": "No autorizado"}), 401
+        if debe_cambiar_bloquea(vista):
+            return jsonify({"error": "Tienes que cambiar la contraseña", "debe_cambiar": True}), 403
         if not session.get('es_admin'):
             return jsonify({"error": "Solo para administradores"}), 403
         return vista(*args, **kwargs)
@@ -87,12 +100,13 @@ def login_bloqueado(ip):
     return len(fallos) >= MAX_FALLOS_LOGIN
 
 
-def iniciar_sesion(usuario_id, nombre, es_admin, recordar):
+def iniciar_sesion(usuario_id, nombre, es_admin, recordar, debe_cambiar=False):
     session.clear()
     session['autenticado'] = True
     session['usuario_id'] = usuario_id
     session['nombre'] = nombre
     session['es_admin'] = bool(es_admin)
+    session['debe_cambiar'] = bool(debe_cambiar)
     session.permanent = bool(recordar)
 
 
@@ -123,7 +137,7 @@ def login():
     fila = conexion.execute('SELECT * FROM usuarios WHERE usuario = ? AND activo = 1', (usuario,)).fetchone()
     conexion.close()
     if fila and check_password_hash(fila['password_hash'], password):
-        iniciar_sesion(fila['id'], fila['nombre'], fila['es_admin'], recordar)
+        iniciar_sesion(fila['id'], fila['nombre'], fila['es_admin'], recordar, fila['debe_cambiar'])
         return jsonify(datos_sesion())
 
     fallos_login[ip].append(time.time())
@@ -144,6 +158,7 @@ def datos_sesion():
         "usuario_id": session.get('usuario_id'),
         "nombre": session.get('nombre') or ADMIN_USER,
         "es_admin": bool(session.get('es_admin', True)),
+        "debe_cambiar": bool(session.get('debe_cambiar')),
     }
 
 
@@ -474,6 +489,10 @@ def crear_tablas():
         conexion.execute('ALTER TABLE notas ADD COLUMN publicada INTEGER NOT NULL DEFAULT 0')
     if 'publicada_por' not in columnas:
         conexion.execute('ALTER TABLE notas ADD COLUMN publicada_por TEXT')
+    # Usuarios que tienen que cambiar la contraseña al entrar
+    columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
+    if 'debe_cambiar' not in columnas:
+        conexion.execute('ALTER TABLE usuarios ADD COLUMN debe_cambiar INTEGER NOT NULL DEFAULT 0')
     conexion.commit()
     conexion.close()
     os.makedirs(FOTOS_DIR, exist_ok=True)
@@ -753,7 +772,7 @@ def gestionar_usuarios():
     conexion = conectar_bd()
     if request.method == 'GET':
         filas = conexion.execute(
-            'SELECT id, usuario, nombre, es_admin, activo, creado FROM usuarios ORDER BY nombre').fetchall()
+            'SELECT id, usuario, nombre, es_admin, activo, debe_cambiar, creado FROM usuarios ORDER BY nombre').fetchall()
         conexion.close()
         return jsonify([dict(f) for f in filas])
 
@@ -775,7 +794,7 @@ def gestionar_usuarios():
         return jsonify({"error": error}), 400
     try:
         conexion.execute(
-            'INSERT INTO usuarios (usuario, nombre, password_hash, es_admin) VALUES (?, ?, ?, ?)',
+            'INSERT INTO usuarios (usuario, nombre, password_hash, es_admin, debe_cambiar) VALUES (?, ?, ?, ?, 1)',
             (usuario, nombre, generate_password_hash(password), 1 if datos.get('es_admin') else 0))
         conexion.commit()
     except sqlite3.IntegrityError:
@@ -833,6 +852,7 @@ def modificar_usuario(id):
             return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
         cambios.append('password_hash = ?')
         valores.append(generate_password_hash(str(datos['password'])))
+        cambios.append('debe_cambiar = 1')
     conexion = conectar_bd()
     if not conexion.execute('SELECT 1 FROM usuarios WHERE id = ?', (id,)).fetchone():
         conexion.close()
@@ -862,15 +882,18 @@ def cambiar_mi_contrasena():
     actual, nueva = str(datos.get('actual', '')), str(datos.get('nueva', ''))
     if len(nueva) < 8:
         return jsonify({"error": "La contraseña nueva debe tener al menos 8 caracteres"}), 400
+    if nueva == actual:
+        return jsonify({"error": "La contraseña nueva tiene que ser distinta de la actual"}), 400
     conexion = conectar_bd()
     fila = conexion.execute('SELECT password_hash FROM usuarios WHERE id = ?', (session['usuario_id'],)).fetchone()
     if not fila or not check_password_hash(fila['password_hash'], actual):
         conexion.close()
         return jsonify({"error": "La contraseña actual no es correcta"}), 400
-    conexion.execute('UPDATE usuarios SET password_hash = ? WHERE id = ?',
+    conexion.execute('UPDATE usuarios SET password_hash = ?, debe_cambiar = 0 WHERE id = ?',
                      (generate_password_hash(nueva), session['usuario_id']))
     conexion.commit()
     conexion.close()
+    session['debe_cambiar'] = False
     return jsonify({"cambiada": True})
 
 

@@ -35,7 +35,7 @@ const avisar = async (respuesta, textoOk) => {
 
 const crear = async () => {
   const r = await api('/api/usuarios', json('POST', nuevo.value))
-  if (await avisar(r, `Usuari «${nuevo.value.usuario}» creat. Passa-li la contrasenya inicial perquè la canviï a «El meu compte».`)) {
+  if (await avisar(r, `Usuari «${nuevo.value.usuario}» creat. Passa-li la contrasenya inicial: la primera vegada que entri haurà de canviar-la.`)) {
     nuevo.value = { usuario: '', nombre: '', password: '', es_admin: false }
   }
 }
@@ -98,7 +98,10 @@ const nuevaContrasena = async (u) => {
             <label class="check"><input type="checkbox" :checked="!!u.es_admin"
               @change="cambiar(u, { es_admin: $event.target.checked }, `Permisos de ${u.nombre} actualitzats.`)"></label>
           </td>
-          <td>{{ u.activo ? 'Actiu' : 'Desactivat' }}</td>
+          <td>
+            {{ u.activo ? 'Actiu' : 'Desactivat' }}
+            <span v-if="u.activo && u.debe_cambiar" class="pendiente" title="Ha de canviar la contrasenya en entrar">· pendent de canviar la contrasenya</span>
+          </td>
           <td v-if="editando && editando.id === u.id" class="acciones">
             <button class="btn-mini guardar" @click="guardarEdicion">💾 Desar</button>
             <button class="btn-mini" @click="editando = null">Cancel·lar</button>
@@ -140,6 +143,7 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .tabla th, .tabla td { border-bottom: 1px solid #e3e8ee; padding: 8px; text-align: left; font-size: 0.9rem; }
 .tabla th { color: #555; }
 .inactivo td { color: #999; }
+.pendiente { color: #c26a00; font-size: 0.8rem; }
 .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
 .input-fila { width: 100%; box-sizing: border-box; padding: 5px 8px; }
 .btn-mini.guardar { background: #e6f4ea; color: #1e6b34; border-color: #a8d5b5; }

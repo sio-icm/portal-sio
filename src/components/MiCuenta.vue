@@ -5,8 +5,12 @@ import { peticionIntranet } from '../utils/diario'
 // Cada usuario cambia aquí su propia contraseña. El administrador definido en
 // el servidor (backend.env) no tiene usuario en la base de datos: la suya se
 // cambia en el servidor (ver README).
-const props = defineProps({ sesion: { type: Object, required: true } })
-const emit = defineEmits(['sesion-caducada'])
+const props = defineProps({
+  sesion: { type: Object, required: true },
+  // true = primer acceso: hay que cambiar la contraseña antes de usar la intranet
+  obligatorio: { type: Boolean, default: false }
+})
+const emit = defineEmits(['sesion-caducada', 'cambiada'])
 
 const actual = ref('')
 const nueva = ref('')
@@ -29,6 +33,7 @@ const cambiar = async () => {
   if (r.ok) {
     mensaje.value = 'Contrasenya canviada.'
     actual.value = nueva.value = repetida.value = ''
+    emit('cambiada')
   } else {
     const d = await r.json().catch(() => ({}))
     error.value = d.error || "No s'ha pogut canviar la contrasenya."
@@ -38,8 +43,12 @@ const cambiar = async () => {
 
 <template>
   <div class="panel-cuenta">
-    <h2>👤 El meu compte</h2>
-    <p class="nombre">{{ props.sesion.nombre }} <span v-if="props.sesion.es_admin" class="etiqueta">Administrador</span></p>
+    <template v-if="props.obligatorio">
+      <h2>🔑 Canvia la contrasenya</h2>
+      <p class="aviso-obligatorio">Hola, {{ props.sesion.nombre }}. És el teu primer accés (o un administrador t'ha posat una contrasenya nova): tria'n una de personal per continuar.</p>
+    </template>
+    <h2 v-else>👤 El meu compte</h2>
+    <p v-if="!props.obligatorio" class="nombre">{{ props.sesion.nombre }} <span v-if="props.sesion.es_admin" class="etiqueta">Administrador</span></p>
 
     <p v-if="props.sesion.usuario_id === null" class="ayuda">
       Has entrat amb l'usuari administrador del servidor. La seva contrasenya es canvia al servidor (vegeu el README).
@@ -47,8 +56,8 @@ const cambiar = async () => {
     </p>
 
     <form v-else class="formulario" @submit.prevent="cambiar">
-      <h3>Canviar la contrasenya</h3>
-      <label>Contrasenya actual <input type="password" v-model="actual" autocomplete="current-password" required></label>
+      <h3 v-if="!props.obligatorio">Canviar la contrasenya</h3>
+      <label>{{ props.obligatorio ? 'Contrasenya inicial (la que t\'han donat)' : 'Contrasenya actual' }} <input type="password" v-model="actual" autocomplete="current-password" required></label>
       <label>Contrasenya nova (mínim 8 caràcters) <input type="password" v-model="nueva" minlength="8" autocomplete="new-password" required></label>
       <label>Repeteix la nova <input type="password" v-model="repetida" minlength="8" autocomplete="new-password" required></label>
       <button type="submit" class="btn-principal">Canviar</button>
@@ -64,6 +73,7 @@ h2 { margin: 0; color: #012169; }
 .nombre { font-weight: bold; color: #333; }
 .etiqueta { background: #012169; color: white; border-radius: 10px; padding: 2px 8px; font-size: 0.75rem; margin-left: 6px; }
 .ayuda { color: #666; font-size: 0.9rem; }
+.aviso-obligatorio { color: #444; font-size: 0.95rem; line-height: 1.5; }
 .formulario { display: flex; flex-direction: column; gap: 10px; }
 .formulario h3 { margin: 10px 0 0; color: #012169; }
 label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: bold; color: #444; }

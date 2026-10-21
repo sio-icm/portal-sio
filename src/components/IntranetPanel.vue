@@ -270,6 +270,12 @@ const eliminarProyecto = async (id) => {
       </div>
     </div>
 
+    <!-- Primer acceso (o contraseña puesta por un administrador): hay que cambiarla antes de seguir -->
+    <div v-else-if="sesion.debe_cambiar" class="cambio-obligatorio">
+      <MiCuenta :sesion="sesion" obligatorio @cambiada="sesion.debe_cambiar = false" @sesion-caducada="sesionCaducada" />
+      <button @click="cerrarSesion" class="btn-salir-cambio">Tancar sessió</button>
+    </div>
+
     <div v-else class="dashboard-grid">
 
       <aside class="sidebar">
@@ -540,4 +546,6 @@ const eliminarProyecto = async (id) => {
   .btn-logout { margin-top: 10px; padding: 6px; }
   .main-content { padding: 14px 10px; min-width: 0; }
 }
+.cambio-obligatorio { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 40px 15px; background: #f4f7f9; }
+.btn-salir-cambio { background: none; border: none; color: #012169; text-decoration: underline; cursor: pointer; }
 </style>
