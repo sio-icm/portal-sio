@@ -4,12 +4,14 @@ import re
 import smtplib
 import sqlite3
 import time
+import uuid
 from collections import defaultdict, deque
 from datetime import timedelta
 from email.message import EmailMessage
 from functools import wraps
 
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request, send_from_directory, session
+from PIL import Image, ImageOps, UnidentifiedImageError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -27,6 +29,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 #   SIO_CONTACTO_DESTINO     destinatario de las consultas (por defecto sio@icm.csic.es)
 #   SIO_COOKIE_SEGURA=1      la cookie de sesión solo viaja por HTTPS (activar con el certificado)
 #   SIO_DB_PATH              ruta de la base de datos (por defecto sio_inventario.db junto a este archivo)
+#   SIO_FOTOS_DIR            carpeta de las fotos del diario (por defecto fotos/ junto a la base de datos)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
 # Detrás de Nginx: la IP real del usuario llega en X-Forwarded-For
@@ -37,6 +40,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=os.environ.get('SIO_COOKIE_SEGURA') == '1',
     PERMANENT_SESSION_LIFETIME=timedelta(days=7),
+    MAX_CONTENT_LENGTH=40 * 1024 * 1024,  # subida de fotos del diario
 )
 ADMIN_USER = os.environ.get('SIO_ADMIN_USER')
 ADMIN_PASSWORD_HASH = os.environ.get('SIO_ADMIN_PASSWORD_HASH')
@@ -424,6 +428,9 @@ TIPOS_NOTA = ['campanya', 'desenvolupament', 'manteniment', 'calibratge',
 VISIBILIDADES = ['interna', 'publica']
 PATRON_FECHA = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 PATRON_USUARIO = re.compile(r'^[a-z0-9._-]{3,30}$')
+FOTOS_DIR = os.environ.get('SIO_FOTOS_DIR', os.path.join(os.path.dirname(DB_PATH), 'fotos'))
+MAX_FOTOS_POR_NOTA = 12
+LADO_FOTO, LADO_MINIATURA = 1600, 480
 
 
 def crear_tablas():
@@ -453,9 +460,23 @@ def crear_tablas():
             actualizado TEXT
         );
         CREATE INDEX IF NOT EXISTS notas_fecha ON notas(fecha);
+        CREATE TABLE IF NOT EXISTS fotos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nota_id INTEGER NOT NULL REFERENCES notas(id),
+            archivo TEXT NOT NULL,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS fotos_nota ON fotos(nota_id);
     """)
+    # Columnas añadidas después (fase 2): aprobación de las notas públicas
+    columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(notas)')]
+    if 'publicada' not in columnas:
+        conexion.execute('ALTER TABLE notas ADD COLUMN publicada INTEGER NOT NULL DEFAULT 0')
+    if 'publicada_por' not in columnas:
+        conexion.execute('ALTER TABLE notas ADD COLUMN publicada_por TEXT')
     conexion.commit()
     conexion.close()
+    os.makedirs(FOTOS_DIR, exist_ok=True)
 
 
 crear_tablas()
@@ -530,8 +551,9 @@ def gestionar_notas():
             'SELECT n.*, p.titulo AS proyecto_titulo '
             'FROM notas n LEFT JOIN proyectos p ON p.id = n.proyecto_id '
             f'{donde} ORDER BY n.fecha DESC, n.id DESC', valores).fetchall()
+        notas = con_fotos(conexion, [dict(f) for f in filas])
         conexion.close()
-        return jsonify([dict(f) for f in filas])
+        return jsonify(notas)
 
     valores, error = validar_nota(request.get_json(silent=True) or {})
     if error:
@@ -560,6 +582,9 @@ def modificar_nota(id):
         return jsonify({"error": "Solo puede modificarla quien la escribió o un administrador"}), 403
 
     if request.method == 'DELETE':
+        for foto in conexion.execute('SELECT archivo FROM fotos WHERE nota_id = ?', (id,)).fetchall():
+            borrar_archivos_foto(foto['archivo'])
+        conexion.execute('DELETE FROM fotos WHERE nota_id = ?', (id,))
         conexion.execute('DELETE FROM notas WHERE id = ?', (id,))
         conexion.commit()
         conexion.close()
@@ -569,12 +594,157 @@ def modificar_nota(id):
     if error:
         conexion.close()
         return jsonify({"error": error}), 400
+    # Si la nota deja de ser pública, o la cambia alguien que no es administrador,
+    # deja de estar publicada y tiene que volver a aprobarse
+    publicada = nota['publicada'] and valores[4] == 'publica' and session.get('es_admin')
     conexion.execute(
         'UPDATE notas SET fecha = ?, titulo = ?, texto = ?, tipo = ?, visibilidad = ?, proyecto_id = ?, '
-        "actualizado = datetime('now') WHERE id = ?", valores + (id,))
+        "publicada = ?, actualizado = datetime('now') WHERE id = ?", valores + (1 if publicada else 0, id))
     conexion.commit()
     conexion.close()
     return jsonify({"id": id})
+
+
+def con_fotos(conexion, notas):
+    """Añade a cada nota la lista de ids de sus fotos."""
+    if not notas:
+        return notas
+    ids = [n['id'] for n in notas]
+    marcas = ','.join('?' * len(ids))
+    por_nota = defaultdict(list)
+    for f in conexion.execute(f'SELECT id, nota_id FROM fotos WHERE nota_id IN ({marcas}) ORDER BY id', ids):
+        por_nota[f['nota_id']].append(f['id'])
+    for n in notas:
+        n['fotos'] = por_nota.get(n['id'], [])
+    return notas
+
+
+def borrar_archivos_foto(archivo):
+    for nombre in (archivo, 'mini-' + archivo):
+        try:
+            os.remove(os.path.join(FOTOS_DIR, nombre))
+        except FileNotFoundError:
+            pass
+
+
+def guardar_foto(fichero):
+    """Reduce la foto, la gira según el EXIF y la guarda en WebP (y una miniatura). Devuelve el nombre."""
+    try:
+        imagen = Image.open(fichero.stream)
+        imagen.load()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        return None
+    imagen = ImageOps.exif_transpose(imagen)
+    if imagen.mode not in ('RGB', 'RGBA'):
+        imagen = imagen.convert('RGB')
+    nombre = uuid.uuid4().hex + '.webp'
+    grande = imagen.copy()
+    grande.thumbnail((LADO_FOTO, LADO_FOTO))
+    grande.save(os.path.join(FOTOS_DIR, nombre), 'WEBP', quality=80, method=4)
+    imagen.thumbnail((LADO_MINIATURA, LADO_MINIATURA))
+    imagen.save(os.path.join(FOTOS_DIR, 'mini-' + nombre), 'WEBP', quality=75, method=4)
+    return nombre
+
+
+@app.route('/api/notas/<int:id>/fotos', methods=['POST'])
+@requiere_login
+def subir_fotos(id):
+    conexion = conectar_bd()
+    nota = conexion.execute('SELECT * FROM notas WHERE id = ?', (id,)).fetchone()
+    if not nota:
+        conexion.close()
+        return jsonify({"error": "La nota no existe"}), 404
+    if not puede_editar(nota):
+        conexion.close()
+        return jsonify({"error": "Solo puede añadir fotos quien escribió la nota o un administrador"}), 403
+    ficheros = request.files.getlist('fotos')
+    ya = conexion.execute('SELECT COUNT(*) FROM fotos WHERE nota_id = ?', (id,)).fetchone()[0]
+    if not ficheros:
+        conexion.close()
+        return jsonify({"error": "No se ha recibido ninguna foto"}), 400
+    if ya + len(ficheros) > MAX_FOTOS_POR_NOTA:
+        conexion.close()
+        return jsonify({"error": f"Máximo {MAX_FOTOS_POR_NOTA} fotos por nota"}), 400
+    rechazadas = []
+    for fichero in ficheros:
+        nombre = guardar_foto(fichero)
+        if nombre:
+            conexion.execute('INSERT INTO fotos (nota_id, archivo) VALUES (?, ?)', (id, nombre))
+        else:
+            rechazadas.append(fichero.filename)
+    conexion.commit()
+    conexion.close()
+    return jsonify({"rechazadas": rechazadas}), 201
+
+
+@app.route('/api/fotos/<int:id>', methods=['GET', 'DELETE'])
+def foto(id):
+    conexion = conectar_bd()
+    fila = conexion.execute(
+        'SELECT f.archivo, n.* FROM fotos f JOIN notas n ON n.id = f.nota_id WHERE f.id = ?', (id,)).fetchone()
+    conexion.close()
+    if not fila:
+        return jsonify({"error": "No existe"}), 404
+    archivo = fila['archivo']
+
+    if request.method == 'DELETE':
+        if not session.get('autenticado'):
+            return jsonify({"error": "No autorizado"}), 401
+        if not puede_editar(fila):
+            return jsonify({"error": "No puedes borrar esta foto"}), 403
+        conexion = conectar_bd()
+        conexion.execute('DELETE FROM fotos WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        borrar_archivos_foto(archivo)
+        return '', 204
+
+    # Las fotos de notas aprobadas para la web las ve cualquiera; el resto, solo el equipo
+    es_publica = fila['visibilidad'] == 'publica' and fila['publicada']
+    if not es_publica and not session.get('autenticado'):
+        return jsonify({"error": "No existe"}), 404
+    nombre = ('mini-' + archivo) if request.args.get('mini') else archivo
+    respuesta = send_from_directory(FOTOS_DIR, nombre, mimetype='image/webp', max_age=3600)
+    if not es_publica:
+        respuesta.headers['Cache-Control'] = 'private, max-age=3600'
+    return respuesta
+
+
+@app.route('/api/notas/<int:id>/publicacion', methods=['PUT'])
+@requiere_admin
+def publicar_nota(id):
+    publicar = bool((request.get_json(silent=True) or {}).get('publicada'))
+    conexion = conectar_bd()
+    nota = conexion.execute('SELECT visibilidad FROM notas WHERE id = ?', (id,)).fetchone()
+    if not nota:
+        conexion.close()
+        return jsonify({"error": "La nota no existe"}), 404
+    if publicar and nota['visibilidad'] != 'publica':
+        conexion.close()
+        return jsonify({"error": "Solo se pueden publicar las notas marcadas como públicas"}), 400
+    conexion.execute('UPDATE notas SET publicada = ?, publicada_por = ? WHERE id = ?',
+                     (1 if publicar else 0, session.get('nombre') if publicar else None, id))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"id": id, "publicada": publicar})
+
+
+@app.route('/api/diario', methods=['GET'])
+def diario_publico():
+    """Notas aprobadas para la web (sin login): el diario de campaña público."""
+    try:
+        limite = min(int(request.args.get('limite', 200)), 200)
+    except ValueError:
+        limite = 200
+    conexion = conectar_bd()
+    filas = conexion.execute(
+        'SELECT n.id, n.fecha, n.titulo, n.texto, n.tipo, n.autor, n.proyecto_id, p.titulo AS proyecto_titulo '
+        'FROM notas n LEFT JOIN proyectos p ON p.id = n.proyecto_id '
+        "WHERE n.visibilidad = 'publica' AND n.publicada = 1 "
+        'ORDER BY n.fecha DESC, n.id DESC LIMIT ?', (limite,)).fetchall()
+    notas = con_fotos(conexion, [dict(f) for f in filas])
+    conexion.close()
+    return jsonify(notas)
 
 
 @app.route('/api/usuarios', methods=['GET', 'POST'])

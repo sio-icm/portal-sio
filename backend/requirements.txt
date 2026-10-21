@@ -7,5 +7,7 @@ Jinja2==3.1.6
 MarkupSafe==3.0.3
 click==8.5.0
 blinker==1.9.0
+# Fotos del diario de actividad (reducir tamaño y convertir a WebP)
+Pillow==12.3.0
 # Servidor para producción (en lugar del servidor de pruebas de Flask)
 gunicorn==26.2.0
