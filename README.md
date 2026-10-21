@@ -209,15 +209,19 @@ sudo docker image prune -f
 
 ## Copias de seguridad
 
-Toda la información editable (instrumentos y proyectos) está en
-`~/sio-portal/datos/sio_inventario.db`. Para copiarla sin parar el backend:
+Toda la información editable está en `~/sio-portal/datos/`: la base de datos
+`sio_inventario.db` (instrumentos, proyectos, usuarios y notas del diario) y la
+carpeta `fotos/` (fotos del diario). Para copiar la base de datos sin parar el
+backend:
 
 ```sh
 cd ~/sio-portal
 sudo docker compose exec backend python -c "import sqlite3; sqlite3.connect('/datos/sio_inventario.db').backup(sqlite3.connect('/datos/copia-$(date +%F).db'))"
 ```
 
-La copia queda en `datos/copia-AAAA-MM-DD.db`.
+La copia queda en `datos/copia-AAAA-MM-DD.db`. Para tener una copia completa
+fuera del servidor, guarda también la carpeta de fotos, por ejemplo:
+`tar czf ~/sio-datos-$(date +%F).tgz -C ~/sio-portal datos`.
 
 ## Usuarios de la intranet y diario de actividad
 
@@ -228,6 +232,11 @@ La copia queda en `datos/copia-AAAA-MM-DD.db`.
 - Cada persona cambia su contraseña en «El meu compte».
 - El **diari d'activitat** guarda notas (fecha, proyecto o «sense projecte»,
   tipo, texto). Cada uno edita las suyas; los administradores, todas.
+- Cada nota puede llevar **hasta 12 fotos**; el servidor las reduce a 1600 px en
+  WebP y las guarda en `datos/fotos/`.
+- Las notas marcadas como **públicas** solo salen en la web (página `/diario`)
+  cuando un administrador las aprueba con «Publicar a la web». Si el autor las
+  edita después, vuelven a revisión.
 - El **informe semestral** sale de esas notas: se elige el periodo y se imprime
   o se guarda en PDF.
 - Las tablas `usuarios` y `notas` se crean solas en la base de datos al arrancar
