@@ -33,16 +33,80 @@ const opcionsEditor = [
 
 const autores = computed(() => [...new Set(notas.value.map(n => n.autor))].sort())
 
-const notasFiltradas = computed(() => notas.value.filter(n => {
+// Filtros de proyecto, tipo y autor (sirven para las dos vistas)
+const cumpleFiltros = (n) => {
   const f = filtros.value
-  if (f.desde && n.fecha < f.desde) return false
-  if (f.hasta && n.fecha > f.hasta) return false
   if (f.proyecto === 'ninguno' && n.proyecto_id !== null) return false
   if (f.proyecto && f.proyecto !== 'ninguno' && String(n.proyecto_id) !== f.proyecto) return false
   if (f.tipo && n.tipo !== f.tipo) return false
   if (f.autor && n.autor !== f.autor) return false
   return true
+}
+
+// Vista de lista: además, filtro por fechas
+const notasFiltradas = computed(() => notas.value.filter(n => {
+  const f = filtros.value
+  if (f.desde && n.fecha < f.desde) return false
+  if (f.hasta && n.fecha > f.hasta) return false
+  return cumpleFiltros(n)
 }))
+
+// ---------- VISTA DE CALENDARIO ----------
+const CLAVE_VISTA = 'sio_diario_vista'
+const leerVista = () => { try { return localStorage.getItem(CLAVE_VISTA) || 'calendario' } catch { return 'calendario' } }
+const vista = ref(leerVista()) // 'calendario' o 'lista'
+const cambiarVista = (v) => { vista.value = v; try { localStorage.setItem(CLAVE_VISTA, v) } catch { /* sin almacenamiento */ } }
+
+const hoy = hoyIso()
+const aIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const primerDiaMes = (iso) => { const [a, m] = iso.split('-').map(Number); return new Date(a, m - 1, 1) }
+const mesVisible = ref(primerDiaMes(hoy))
+const diaSeleccionado = ref(hoy)
+
+const nombreMes = computed(() => {
+  const t = new Intl.DateTimeFormat('ca', { month: 'long', year: 'numeric' }).format(mesVisible.value)
+  return t.charAt(0).toUpperCase() + t.slice(1)
+})
+const fechaLarga = (iso) => {
+  const [a, m, d] = iso.split('-').map(Number)
+  return new Intl.DateTimeFormat('ca', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(a, m - 1, d))
+}
+const DIAS_SEMANA = ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg']
+
+const moverMes = (salto) => {
+  const d = mesVisible.value
+  mesVisible.value = new Date(d.getFullYear(), d.getMonth() + salto, 1)
+}
+const irAHoy = () => { mesVisible.value = primerDiaMes(hoy); diaSeleccionado.value = hoy }
+
+const notasPorDia = computed(() => {
+  const mapa = {}
+  for (const n of notas.value) if (cumpleFiltros(n)) (mapa[n.fecha] ||= []).push(n)
+  return mapa
+})
+
+// Celdas del mes, empezando en lunes (con los días del mes anterior/siguiente para completar semanas)
+const celdas = computed(() => {
+  const primero = mesVisible.value
+  const desfase = (primero.getDay() + 6) % 7
+  const diasMes = new Date(primero.getFullYear(), primero.getMonth() + 1, 0).getDate()
+  const total = Math.ceil((desfase + diasMes) / 7) * 7
+  return Array.from({ length: total }, (_, i) => {
+    const d = new Date(primero.getFullYear(), primero.getMonth(), 1 - desfase + i)
+    const iso = aIso(d)
+    return { iso, dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), notas: notasPorDia.value[iso] || [] }
+  })
+})
+
+const seleccionarDia = (celda) => {
+  diaSeleccionado.value = celda.iso
+  if (!celda.delMes) mesVisible.value = primerDiaMes(celda.iso)
+}
+
+// Notas que se muestran debajo: en lista, las filtradas; en calendario, las del día elegido
+const notasMostradas = computed(() => vista.value === 'lista'
+  ? notasFiltradas.value
+  : (notasPorDia.value[diaSeleccionado.value] || []))
 
 const puedeEditar = (nota) => props.sesion.es_admin || (nota.usuario_id !== null && nota.usuario_id === props.sesion.usuario_id)
 
@@ -63,9 +127,10 @@ const cargar = async () => {
 
 onMounted(cargar)
 
-const nuevaNota = () => {
+const nuevaNota = (fecha) => {
   errorFormulario.value = ''
   formulario.value = notaVacia()
+  if (typeof fecha === 'string') formulario.value.fecha = fecha
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -98,6 +163,9 @@ const guardar = async () => {
       errorFormulario.value = d.error || "No s'ha pogut desar la nota."
       return
     }
+    // En el calendario, se va al día de la nota guardada
+    diaSeleccionado.value = datos.fecha
+    mesVisible.value = primerDiaMes(datos.fecha)
     formulario.value = null
     await cargar()
   } catch {
@@ -159,7 +227,13 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
   <div class="diario">
     <div class="cabecera">
       <h2>📓 Diari d'activitat</h2>
-      <button v-if="!formulario" class="btn-principal" @click="nuevaNota">+ Nova nota</button>
+      <div class="cabecera-botones">
+        <div class="selector-vista" role="group" aria-label="Vista">
+          <button type="button" :class="{ activo: vista === 'calendario' }" :aria-pressed="vista === 'calendario'" @click="cambiarVista('calendario')">📅 Calendari</button>
+          <button type="button" :class="{ activo: vista === 'lista' }" :aria-pressed="vista === 'lista'" @click="cambiarVista('lista')">☰ Llista</button>
+        </div>
+        <button v-if="!formulario" class="btn-principal" @click="nuevaNota(vista === 'calendario' ? diaSeleccionado : undefined)">+ Nova nota</button>
+      </div>
     </div>
     <p class="ayuda">Apunta aquí el que fem: campanyes, desenvolupaments, manteniments, calibratges... Les notes serveixen per fer la memòria semestral.</p>
 
@@ -206,8 +280,10 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
 
     <!-- FILTROS -->
     <div class="filtros">
-      <label>Des de <input type="date" v-model="filtros.desde"></label>
-      <label>Fins a <input type="date" v-model="filtros.hasta"></label>
+      <template v-if="vista === 'lista'">
+        <label>Des de <input type="date" v-model="filtros.desde"></label>
+        <label>Fins a <input type="date" v-model="filtros.hasta"></label>
+      </template>
       <label>Projecte
         <select v-model="filtros.proyecto">
           <option value="">Tots</option>
@@ -230,15 +306,45 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
       <button type="button" class="btn-secundario" @click="limpiarFiltros">Netejar</button>
     </div>
 
-    <!-- LISTADO -->
     <p v-if="cargando" class="aviso">Carregant notes...</p>
     <p v-else-if="error" class="error">{{ error }}</p>
-    <p v-else-if="notasFiltradas.length === 0" class="aviso">
-      {{ notas.length === 0 ? 'Encara no hi ha cap nota. Comença amb «+ Nova nota».' : 'Cap nota coincideix amb els filtres.' }}
-    </p>
-    <p v-else class="contador">{{ notasFiltradas.length }} {{ notasFiltradas.length === 1 ? 'nota' : 'notes' }}</p>
 
-    <article v-for="nota in notasFiltradas" :key="nota.id" class="nota">
+    <!-- CALENDARIO -->
+    <template v-else-if="vista === 'calendario'">
+      <div class="calendario">
+        <div class="cal-cabecera">
+          <button type="button" class="btn-mes" aria-label="Mes anterior" @click="moverMes(-1)">‹</button>
+          <span class="cal-mes">{{ nombreMes }}</span>
+          <button type="button" class="btn-mes" aria-label="Mes següent" @click="moverMes(1)">›</button>
+          <button type="button" class="btn-secundario btn-hoy" @click="irAHoy">Avui</button>
+        </div>
+        <div class="cal-grid">
+          <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
+          <button v-for="c in celdas" :key="c.iso" type="button" class="cal-celda"
+                  :class="{ fuera: !c.delMes, hoy: c.iso === hoy, elegido: c.iso === diaSeleccionado }"
+                  :aria-label="`${fechaLarga(c.iso)}: ${c.notas.length} notes`" @click="seleccionarDia(c)">
+            <span class="cal-numero">{{ c.dia }}</span>
+            <span v-for="n in c.notas.slice(0, 3)" :key="n.id" class="cal-chip" :style="{ background: tipoNota(n.tipo).color }" :title="n.titulo">{{ n.titulo }}</span>
+            <span v-if="c.notas.length > 3" class="cal-mas">+{{ c.notas.length - 3 }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="dia-cabecera">
+        <h3>{{ fechaLarga(diaSeleccionado) }}</h3>
+        <button v-if="!formulario" class="btn-secundario" @click="nuevaNota(diaSeleccionado)">+ Nova nota per a aquest dia</button>
+      </div>
+      <p v-if="notasMostradas.length === 0" class="aviso">Cap nota aquest dia.</p>
+    </template>
+
+    <!-- LISTA -->
+    <template v-else>
+      <p v-if="notasFiltradas.length === 0" class="aviso">
+        {{ notas.length === 0 ? 'Encara no hi ha cap nota. Comença amb «+ Nova nota».' : 'Cap nota coincideix amb els filtres.' }}
+      </p>
+      <p v-else class="contador">{{ notasFiltradas.length }} {{ notasFiltradas.length === 1 ? 'nota' : 'notes' }}</p>
+    </template>
+
+    <article v-for="nota in (cargando || error ? [] : notasMostradas)" :key="nota.id" class="nota">
       <div class="nota-cabecera">
         <span class="fecha">{{ fechaCorta(nota.fecha) }}</span>
         <span class="etiqueta" :style="{ background: tipoNota(nota.tipo).color }">{{ tipoNota(nota.tipo).etiqueta }}</span>
@@ -277,6 +383,36 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
 .diario { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid #0086c0; }
 .cabecera { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cabecera h2 { margin: 0; color: #012169; }
+.cabecera-botones { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.selector-vista { display: flex; border: 1px solid #012169; border-radius: 4px; overflow: hidden; }
+.selector-vista button { background: white; color: #012169; border: none; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 0.85rem; }
+.selector-vista button.activo { background: #012169; color: white; }
+.calendario { border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px; margin-bottom: 18px; }
+.cal-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cal-mes { font-weight: bold; color: #012169; font-size: 1.1rem; min-width: 170px; text-align: center; }
+.btn-mes { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; width: 32px; height: 32px; cursor: pointer; font-size: 1.1rem; }
+.btn-hoy { margin-left: auto; padding: 5px 12px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dia-semana { text-align: center; font-size: 0.75rem; font-weight: bold; color: #666; padding: 4px 0; }
+.cal-celda { min-height: 86px; border: 1px solid #e3e8ee; border-radius: 6px; background: white; padding: 4px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; cursor: pointer; font: inherit; overflow: hidden; }
+.cal-celda:hover { border-color: #0086c0; }
+.cal-celda.fuera { background: #fafbfc; color: #aaa; }
+.cal-celda.hoy .cal-numero { background: #0086c0; color: white; border-radius: 10px; padding: 0 6px; }
+.cal-celda.elegido { border: 2px solid #012169; box-shadow: 0 0 0 2px rgba(1,33,105,0.12); }
+.cal-numero { font-size: 0.8rem; font-weight: bold; align-self: flex-start; }
+.cal-chip { color: white; font-size: 0.7rem; border-radius: 3px; padding: 1px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-mas { font-size: 0.7rem; color: #666; }
+.dia-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.dia-cabecera h3 { margin: 0; color: #012169; font-size: 1.05rem; }
+.dia-cabecera h3::first-letter { text-transform: uppercase; }
+@media (max-width: 700px) {
+  .diario { padding: 14px; }
+  .calendario { padding: 6px; }
+  .cal-grid { gap: 2px; }
+  .cal-mes { min-width: 0; font-size: 1rem; }
+  .cal-celda { min-height: 48px; padding: 3px; }
+  .cal-chip { font-size: 0; height: 6px; padding: 0; }
+}
 .ayuda { color: #666; font-size: 0.9rem; margin: 8px 0 20px; }
 .formulario { background: #f4f7f9; border-radius: 8px; padding: 20px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 12px; }
 .formulario h3 { margin: 0; color: #012169; }
