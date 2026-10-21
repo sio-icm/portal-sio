@@ -785,17 +785,43 @@ def gestionar_usuarios():
     return jsonify({"usuario": usuario}), 201
 
 
-@app.route('/api/usuarios/<int:id>', methods=['PUT'])
+@app.route('/api/usuarios/<int:id>', methods=['PUT', 'DELETE'])
 @requiere_admin
 def modificar_usuario(id):
+    if request.method == 'DELETE':
+        if id == session.get('usuario_id'):
+            return jsonify({"error": "No puedes borrar tu propio usuario"}), 400
+        conexion = conectar_bd()
+        if not conexion.execute('SELECT 1 FROM usuarios WHERE id = ?', (id,)).fetchone():
+            conexion.close()
+            return jsonify({"error": "El usuario no existe"}), 404
+        notas = conexion.execute('SELECT COUNT(*) FROM notas WHERE usuario_id = ?', (id,)).fetchone()[0]
+        if notas:
+            conexion.close()
+            return jsonify({"error": f"Tiene {notas} notas en el diario: no se puede borrar sin perderlas. Desactívalo."}), 400
+        conexion.execute('DELETE FROM usuarios WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        return '', 204
+
     datos = request.get_json(silent=True) or {}
     cambios, valores = [], []
+    nombre_nuevo = None
+    if 'usuario' in datos:
+        usuario = str(datos['usuario']).strip().lower()
+        if not PATRON_USUARIO.match(usuario):
+            return jsonify({"error": "Usuario: de 3 a 30 letras minúsculas, números, punto, guion o guion bajo"}), 400
+        if usuario == (ADMIN_USER or '').lower():
+            return jsonify({"error": "Ese nombre de usuario está reservado"}), 400
+        cambios.append('usuario = ?')
+        valores.append(usuario)
     if 'nombre' in datos:
         nombre = str(datos['nombre']).strip()
         if not nombre:
             return jsonify({"error": "El nombre es obligatorio"}), 400
         cambios.append('nombre = ?')
         valores.append(nombre)
+        nombre_nuevo = nombre
     if 'es_admin' in datos:
         cambios.append('es_admin = ?')
         valores.append(1 if datos['es_admin'] else 0)
@@ -812,9 +838,18 @@ def modificar_usuario(id):
         conexion.close()
         return jsonify({"error": "El usuario no existe"}), 404
     if cambios:
-        conexion.execute(f'UPDATE usuarios SET {", ".join(cambios)} WHERE id = ?', valores + [id])
+        try:
+            conexion.execute(f'UPDATE usuarios SET {", ".join(cambios)} WHERE id = ?', valores + [id])
+        except sqlite3.IntegrityError:
+            conexion.close()
+            return jsonify({"error": "Ese usuario ya existe"}), 400
+        # El nombre del autor también se guarda en cada nota: se corrige en todas las suyas
+        if nombre_nuevo:
+            conexion.execute('UPDATE notas SET autor = ? WHERE usuario_id = ?', (nombre_nuevo, id))
         conexion.commit()
     conexion.close()
+    if nombre_nuevo and id == session.get('usuario_id'):
+        session['nombre'] = nombre_nuevo
     return jsonify({"id": id})
 
 

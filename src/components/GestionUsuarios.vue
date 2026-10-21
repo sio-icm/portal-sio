@@ -42,6 +42,19 @@ const crear = async () => {
 
 const cambiar = async (u, cambios, textoOk) => avisar(await api(`/api/usuarios/${u.id}`, json('PUT', cambios)), textoOk)
 
+// Edición en la propia fila (usuario y nombre)
+const editando = ref(null) // { id, usuario, nombre }
+const empezarEdicion = (u) => { editando.value = { id: u.id, usuario: u.usuario, nombre: u.nombre } }
+const guardarEdicion = async () => {
+  const { id, usuario, nombre } = editando.value
+  if (await cambiar({ id }, { usuario, nombre }, `Usuari «${usuario}» actualitzat.`)) editando.value = null
+}
+
+const borrar = async (u) => {
+  if (!confirm(`Segur que vols esborrar l'usuari «${u.usuario}» (${u.nombre})?`)) return
+  await avisar(await api(`/api/usuarios/${u.id}`, { method: 'DELETE' }), `Usuari «${u.usuario}» esborrat.`)
+}
+
 const nuevaContrasena = async (u) => {
   const p = prompt(`Nova contrasenya per a ${u.nombre} (mínim 8 caràcters):`)
   if (p) await cambiar(u, { password: p }, `Contrasenya de ${u.nombre} canviada.`)
@@ -51,7 +64,8 @@ const nuevaContrasena = async (u) => {
 <template>
   <div class="panel-usuarios">
     <h2>👥 Usuaris de la intranet</h2>
-    <p class="ayuda">Cada persona de l'equip té el seu usuari: així el diari sap qui escriu cada nota. Els administradors poden gestionar usuaris i editar qualsevol nota.</p>
+    <p class="ayuda">Cada persona de l'equip té el seu usuari: així el diari sap qui escriu cada nota. Els administradors poden gestionar usuaris i editar qualsevol nota.
+      Un usuari només es pot esborrar si no ha escrit cap nota; si en té, desactiva'l.</p>
 
     <form class="nuevo" @submit.prevent="crear">
       <h3>Nou usuari</h3>
@@ -72,18 +86,30 @@ const nuevaContrasena = async (u) => {
       <tbody>
         <tr v-if="usuarios.length === 0"><td colspan="5" class="aviso">Encara no hi ha usuaris personals.</td></tr>
         <tr v-for="u in usuarios" :key="u.id" :class="{ inactivo: !u.activo }">
-          <td>{{ u.usuario }}</td>
-          <td>{{ u.nombre }}</td>
+          <template v-if="editando && editando.id === u.id">
+            <td><input v-model="editando.usuario" class="input-fila" aria-label="Usuari"></td>
+            <td><input v-model="editando.nombre" class="input-fila" aria-label="Nom complet"></td>
+          </template>
+          <template v-else>
+            <td>{{ u.usuario }}</td>
+            <td>{{ u.nombre }}</td>
+          </template>
           <td>
             <label class="check"><input type="checkbox" :checked="!!u.es_admin"
               @change="cambiar(u, { es_admin: $event.target.checked }, `Permisos de ${u.nombre} actualitzats.`)"></label>
           </td>
           <td>{{ u.activo ? 'Actiu' : 'Desactivat' }}</td>
-          <td class="acciones">
+          <td v-if="editando && editando.id === u.id" class="acciones">
+            <button class="btn-mini guardar" @click="guardarEdicion">💾 Desar</button>
+            <button class="btn-mini" @click="editando = null">Cancel·lar</button>
+          </td>
+          <td v-else class="acciones">
+            <button class="btn-mini" @click="empezarEdicion(u)">✏️ Editar</button>
             <button class="btn-mini" @click="nuevaContrasena(u)">🔑 Contrasenya</button>
             <button class="btn-mini" @click="cambiar(u, { activo: !u.activo }, u.activo ? `${u.nombre} desactivat.` : `${u.nombre} activat.`)">
               {{ u.activo ? '⛔ Desactivar' : '✅ Activar' }}
             </button>
+            <button class="btn-mini peligro" @click="borrar(u)">🗑️ Esborrar</button>
           </td>
         </tr>
       </tbody>
@@ -111,5 +137,8 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .tabla th { color: #555; }
 .inactivo td { color: #999; }
 .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+.input-fila { width: 100%; box-sizing: border-box; padding: 5px 8px; }
+.btn-mini.guardar { background: #e6f4ea; color: #1e6b34; border-color: #a8d5b5; }
+.btn-mini.peligro { color: #b02a37; }
 .btn-mini { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; }
 </style>
