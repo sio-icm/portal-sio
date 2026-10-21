@@ -27,6 +27,7 @@ export default {
     bluelab: 'BLUE Lab',
     equipo: 'Team',
     noticias: 'News',
+    diario: 'Activity log',
     memoria: 'Annual report',
     contacto: 'Contact',
     intranet: 'Intranet',
@@ -532,5 +533,28 @@ export default {
     completa: 'Full SIO Annual Report {anio}',
     completaTexto: 'Detailed document with the annual review, list of projects and service metrics (PDF).',
     descargar: 'Download PDF'
+  },
+
+  diario: {
+    titulo: 'Activity Log',
+    subtitulo: 'What we do day to day: campaigns, developments and work at the Oceanographic Engineering Service.',
+    todos: 'All',
+    general: 'General activity',
+    cargando: 'Loading the log...',
+    error: 'The log could not be loaded.',
+    vacio: 'We will soon publish the log of our campaigns here.',
+    por: 'by {autor}',
+    ampliar: 'View the full-size photo',
+    enlace: 'Follow our campaigns in the activity log',
+    tipos: {
+      campanya: 'Sea campaign',
+      desenvolupament: 'Development',
+      manteniment: 'Maintenance',
+      calibratge: 'Calibration',
+      divulgacio: 'Outreach',
+      formacio: 'Training',
+      gestio: 'Management',
+      altres: 'Other'
+    }
   }
 }

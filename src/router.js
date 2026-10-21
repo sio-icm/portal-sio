@@ -19,6 +19,7 @@ const routes = [
   { path: '/idi', name: 'idi', component: () => import('./components/DesarrolloIdi.vue'), meta: { titulo: 'rutas.idi' } },
   { path: '/bluelab', name: 'bluelab', component: () => import('./components/BlueLab.vue'), meta: { titulo: 'rutas.bluelab' } },
   { path: '/equipo', name: 'equipo', component: () => import('./components/EquipoSio.vue'), meta: { titulo: 'rutas.equipo' } },
+  { path: '/diario', name: 'diario', component: () => import('./components/DiarioCampana.vue'), meta: { titulo: 'rutas.diario' } },
   { path: '/noticias', name: 'noticias', component: () => import('./components/NoticiasSio.vue'), meta: { titulo: 'rutas.noticias' } },
   { path: '/memoria', name: 'memoria', component: () => import('./components/MemoriaAnual.vue'), meta: { titulo: 'rutas.memoria' } },
   { path: '/contacto', name: 'contacto', component: () => import('./components/Contacto.vue'), meta: { titulo: 'rutas.contacto', cabeceraSolida: true } },

@@ -27,6 +27,7 @@ export default {
     bluelab: 'BLUE Lab',
     equipo: 'Equipo',
     noticias: 'Noticias',
+    diario: 'Diario de actividad',
     memoria: 'Memoria anual',
     contacto: 'Contacto',
     intranet: 'Intranet',
@@ -532,5 +533,28 @@ export default {
     completa: 'Memoria Completa SIO {anio}',
     completaTexto: 'Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF).',
     descargar: 'Descargar PDF'
+  },
+
+  diario: {
+    titulo: 'Diario de actividad',
+    subtitulo: 'Lo que hacemos día a día: campañas, desarrollos y trabajos del Servicio de Ingeniería Oceanográfica.',
+    todos: 'Todo',
+    general: 'Actividad general',
+    cargando: 'Cargando el diario...',
+    error: 'No se ha podido cargar el diario.',
+    vacio: 'Muy pronto publicaremos aquí el diario de nuestras campañas.',
+    por: 'por {autor}',
+    ampliar: 'Ver la foto ampliada',
+    enlace: 'Sigue nuestras campañas en el diario de actividad',
+    tipos: {
+      campanya: 'Campaña de mar',
+      desenvolupament: 'Desarrollo',
+      manteniment: 'Mantenimiento',
+      calibratge: 'Calibración',
+      divulgacio: 'Divulgación',
+      formacio: 'Formación',
+      gestio: 'Gestión',
+      altres: 'Otros'
+    }
   }
 }

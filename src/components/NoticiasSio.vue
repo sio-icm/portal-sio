@@ -31,6 +31,8 @@ const backgroundStyle = computed(() => {
       <h1 class="titulo-seccion">{{ $t('noticias.titulo') }}</h1>
       <p class="subtitulo">{{ $t('noticias.subtitulo') }}</p>
 
+      <RouterLink :to="{ name: 'diario' }" class="enlace-diario">📓 {{ $t('diario.enlace') }} →</RouterLink>
+
       <div class="grid-noticias">
         <div v-for="(noticia, i) in noticias" :key="noticia.fecha" class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
@@ -46,6 +48,8 @@ const backgroundStyle = computed(() => {
 </template>
 
 <style scoped>
+.enlace-diario { display: inline-block; margin-bottom: 25px; background: #8cc63f; color: #012169; font-weight: bold; padding: 10px 18px; border-radius: 6px; text-decoration: none; }
+.enlace-diario:hover { background: #a5d65f; }
 .noticias-page { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-noticias { position: absolute; top: 0; left: 0; width: 100%; height: 550px; background-image: linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('/instrumentacion.webp'); background-size: cover; background-position: center; z-index: 0; }
 .contenido-noticias { position: relative; z-index: 10; padding-top: 120px; }

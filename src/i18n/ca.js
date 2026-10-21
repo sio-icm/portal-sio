@@ -27,6 +27,7 @@ export default {
     bluelab: 'BLUE Lab',
     equipo: 'Equip',
     noticias: 'Notícies',
+    diario: "Diari d'activitat",
     memoria: 'Memòria anual',
     contacto: 'Contacte',
     intranet: 'Intranet',
@@ -532,5 +533,28 @@ export default {
     completa: 'Memòria completa SIO {anio}',
     completaTexto: "Document detallat amb el balanç anual, la llista de projectes i les mètriques del servei (PDF).",
     descargar: 'Descarregar PDF'
+  },
+
+  diario: {
+    titulo: "Diari d'activitat",
+    subtitulo: "El que fem dia a dia: campanyes, desenvolupaments i feines del Servei d'Enginyeria Oceanogràfica.",
+    todos: 'Tot',
+    general: 'Activitat general',
+    cargando: 'Carregant el diari...',
+    error: "No s'ha pogut carregar el diari.",
+    vacio: 'Molt aviat publicarem aquí el diari de les nostres campanyes.',
+    por: 'per {autor}',
+    ampliar: 'Veure la foto ampliada',
+    enlace: "Segueix les nostres campanyes al diari d'activitat",
+    tipos: {
+      campanya: 'Campanya de mar',
+      desenvolupament: 'Desenvolupament',
+      manteniment: 'Manteniment',
+      calibratge: 'Calibratge',
+      divulgacio: 'Divulgació',
+      formacio: 'Formació',
+      gestio: 'Gestió',
+      altres: 'Altres'
+    }
   }
 }
