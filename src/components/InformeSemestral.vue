@@ -121,6 +121,9 @@ const imprimir = () => window.print()
             <p class="entrada-cabecera"><strong>{{ fechaCorta(n.fecha) }}</strong> · {{ tipoNota(n.tipo).etiqueta }} · {{ n.autor }}</p>
             <p class="entrada-titulo">{{ n.titulo }}</p>
             <div v-if="n.texto" class="entrada-texto" v-html="limpiarHtml(n.texto)"></div>
+            <div v-if="n.fotos && n.fotos.length" class="entrada-fotos">
+              <img v-for="f in n.fotos.slice(0, 4)" :key="f" :src="`/api/fotos/${f}?mini=1`" alt="">
+            </div>
           </article>
         </section>
       </template>
@@ -162,6 +165,8 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .entrada-cabecera { margin: 0; font-size: 0.85rem; color: #555; }
 .entrada-titulo { margin: 2px 0; font-weight: bold; }
 .entrada-texto { font-size: 0.92rem; line-height: 1.5; }
+.entrada-fotos { display: flex; gap: 6px; margin-top: 6px; }
+.entrada-fotos img { width: 150px; height: 105px; object-fit: cover; border-radius: 3px; }
 </style>
 
 <style>

@@ -114,6 +114,44 @@ const borrar = async (nota) => {
   else alert("No s'ha pogut esborrar la nota.")
 }
 
+// Aprobar o retirar de la web (solo administradores)
+const cambiarPublicacion = async (nota, publicada) => {
+  const respuesta = await api(`/api/notas/${nota.id}/publicacion`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publicada })
+  })
+  if (respuesta.ok) await cargar()
+  else alert("No s'ha pogut canviar la publicació.")
+}
+
+// Fotos: se añaden a una nota ya guardada
+const subiendoFotos = ref(null) // id de la nota a la que se están subiendo
+const subirFotos = async (nota, evento) => {
+  const ficheros = [...evento.target.files]
+  evento.target.value = ''
+  if (!ficheros.length) return
+  const datos = new FormData()
+  ficheros.forEach(f => datos.append('fotos', f))
+  subiendoFotos.value = nota.id
+  try {
+    const respuesta = await api(`/api/notas/${nota.id}/fotos`, { method: 'POST', body: datos })
+    const d = await respuesta.json().catch(() => ({}))
+    if (!respuesta.ok) alert(d.error || (respuesta.status === 413 ? 'Les fotos pesen massa (màxim 40 MB en total).' : "No s'han pogut pujar les fotos."))
+    else if (d.rechazadas?.length) alert(`Aquests fitxers no són imatges i no s'han pujat: ${d.rechazadas.join(', ')}`)
+    await cargar()
+  } finally {
+    subiendoFotos.value = null
+  }
+}
+
+const borrarFoto = async (fotoId) => {
+  if (!confirm('Esborrar aquesta foto?')) return
+  const respuesta = await api(`/api/fotos/${fotoId}`, { method: 'DELETE' })
+  if (respuesta.ok) await cargar()
+  else alert("No s'ha pogut esborrar la foto.")
+}
+
 const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto: '', tipo: '', autor: '' } }
 </script>
 
@@ -157,6 +195,8 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
       </div>
       <label>Text</label>
       <QuillEditor theme="snow" v-model:content="formulario.texto" contentType="html" :toolbar="opcionsEditor" class="editor" />
+      <p class="nota-ayuda">Les fotos s'afegeixen des de la nota, un cop desada.
+        <span v-if="formulario.visibilidad === 'publica'"> Les notes públiques només surten a la web quan un administrador les aprova.</span></p>
       <p v-if="errorFormulario" class="error">{{ errorFormulario }}</p>
       <div class="botones">
         <button type="submit" class="btn-principal" :disabled="guardando">{{ guardando ? 'Desant...' : '💾 Desar nota' }}</button>
@@ -202,15 +242,32 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
       <div class="nota-cabecera">
         <span class="fecha">{{ fechaCorta(nota.fecha) }}</span>
         <span class="etiqueta" :style="{ background: tipoNota(nota.tipo).color }">{{ tipoNota(nota.tipo).etiqueta }}</span>
-        <span v-if="nota.visibilidad === 'publica'" class="etiqueta publica">Pública</span>
+        <span v-if="nota.visibilidad === 'publica' && nota.publicada" class="etiqueta publica">Publicada a la web</span>
+        <span v-else-if="nota.visibilidad === 'publica'" class="etiqueta pendiente">Pública · pendent d'aprovació</span>
         <span class="autor">{{ nota.autor }}</span>
       </div>
       <h4>{{ nota.titulo }}</h4>
       <p class="proyecto">{{ nota.proyecto_titulo || 'Sense projecte' }}</p>
       <div v-if="nota.texto" class="texto" v-html="limpiarHtml(nota.texto)"></div>
-      <div v-if="puedeEditar(nota)" class="acciones">
-        <button class="btn-mini" @click="editarNota(nota)">✏️ Editar</button>
-        <button class="btn-mini peligro" @click="borrar(nota)">🗑️ Esborrar</button>
+      <div v-if="nota.fotos.length" class="fotos">
+        <div v-for="f in nota.fotos" :key="f" class="foto">
+          <a :href="`/api/fotos/${f}`" target="_blank" rel="noopener"><img :src="`/api/fotos/${f}?mini=1`" alt="" loading="lazy"></a>
+          <button v-if="puedeEditar(nota)" class="foto-borrar" title="Esborrar la foto" @click="borrarFoto(f)">✕</button>
+        </div>
+      </div>
+      <div class="acciones">
+        <template v-if="puedeEditar(nota)">
+          <button class="btn-mini" @click="editarNota(nota)">✏️ Editar</button>
+          <label class="btn-mini" :class="{ ocupado: subiendoFotos === nota.id }">
+            {{ subiendoFotos === nota.id ? 'Pujant...' : '📷 Afegir fotos' }}
+            <input type="file" accept="image/*" multiple hidden :disabled="subiendoFotos !== null" @change="subirFotos(nota, $event)">
+          </label>
+          <button class="btn-mini peligro" @click="borrar(nota)">🗑️ Esborrar</button>
+        </template>
+        <template v-if="sesion.es_admin && nota.visibilidad === 'publica'">
+          <button v-if="!nota.publicada" class="btn-mini aprobar" @click="cambiarPublicacion(nota, true)">✅ Publicar a la web</button>
+          <button v-else class="btn-mini" @click="cambiarPublicacion(nota, false)">↩️ Retirar de la web</button>
+        </template>
       </div>
     </article>
   </div>
@@ -240,12 +297,21 @@ input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: 
 .nota-cabecera { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.8rem; }
 .fecha { font-weight: bold; color: #012169; }
 .etiqueta { color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
-.etiqueta.publica { background: #8cc63f; }
+.etiqueta.publica { background: #198754; }
+.etiqueta.pendiente { background: #fd7e14; }
+.nota-ayuda { margin: 0; font-size: 0.8rem; color: #666; }
+.fotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.foto { position: relative; }
+.foto img { width: 120px; height: 90px; object-fit: cover; border-radius: 4px; display: block; }
+.foto-borrar { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.75rem; }
+.btn-mini.aprobar { background: #e6f4ea; color: #1e6b34; border-color: #a8d5b5; }
+label.btn-mini { display: inline-block; font-weight: normal; color: inherit; }
+label.btn-mini.ocupado { opacity: 0.6; cursor: wait; }
 .autor { margin-left: auto; color: #666; }
 .nota h4 { margin: 8px 0 2px; color: #222; }
 .proyecto { margin: 0 0 8px; font-size: 0.85rem; color: #0086c0; }
 .texto { font-size: 0.92rem; color: #333; line-height: 1.5; }
-.acciones { display: flex; gap: 8px; margin-top: 10px; }
+.acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .btn-mini { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; }
 .btn-mini.peligro { color: #b02a37; }
 </style>
