@@ -528,4 +528,16 @@ const eliminarProyecto = async (id) => {
 .acordeon-dash { background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); overflow: hidden; }
 .acordeon-dash-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #ffffff; border-bottom: 1px solid #eee; cursor: pointer; }
 .btn-nou { background: #8cc63f; color: #012169; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+/* Móvil: el menú pasa arriba y el contenido ocupa todo el ancho */
+@media (max-width: 768px) {
+  .dashboard-grid { flex-direction: column; min-height: 0; }
+  .sidebar { width: auto; padding: 12px 14px; }
+  .sidebar-title { margin: 0 0 4px; }
+  .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sidebar-nav a { margin: 0; padding: 6px 9px; font-size: 0.85rem; background: rgba(255, 255, 255, 0.06); }
+  .sidebar-nav a.active { border-left: none; box-shadow: inset 0 -2px 0 #8cc63f; }
+  .btn-logout { margin-top: 10px; padding: 6px; }
+  .main-content { padding: 14px 10px; min-width: 0; }
+}
 </style>

@@ -133,6 +133,10 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .error { color: #b02a37; font-weight: bold; }
 .aviso { color: #666; font-style: italic; text-align: center; }
 .tabla { width: 100%; border-collapse: collapse; margin-top: 10px; }
+@media (max-width: 768px) {
+  .panel-usuarios { padding: 14px; }
+  .tabla { display: block; overflow-x: auto; }
+}
 .tabla th, .tabla td { border-bottom: 1px solid #e3e8ee; padding: 8px; text-align: left; font-size: 0.9rem; }
 .tabla th { color: #555; }
 .inactivo td { color: #999; }
