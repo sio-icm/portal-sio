@@ -107,6 +107,16 @@ watch(locale, () => actualizarTitulo(route))
 </template>
   
 <style>
+/* Figtree (SIL OFL, ver src/assets/fonts/OFL-Figtree.txt): la tipografía del logo
+   de BLUE Lab, usada en las fichas de la portada. Incluida en la web, sin Google Fonts */
+@font-face {
+  font-family: 'Figtree';
+  src: url('./assets/fonts/figtree-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root { 
   --icm-navy: #012169ff;   
   --icm-blue: #0086c0;

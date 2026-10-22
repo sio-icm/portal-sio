@@ -106,9 +106,13 @@ import logoBlueLab from '../assets/logobluelab.png'
 
 .contenido h3 {
   margin: 0;
-  font-size: 1.1rem;
-  letter-spacing: 1px;
-  font-weight: bold;
+  /* Misma tipografía que el logo de BLUE Lab, con una palabra por línea */
+  font-family: 'Figtree', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  font-size: 1.7rem;
+  line-height: 1.02;
+  letter-spacing: 0;
+  width: min-content;
   transition: transform 0.3s ease;
 }
 
@@ -134,10 +138,8 @@ import logoBlueLab from '../assets/logobluelab.png'
   }
 
   .contenido h3 {
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
+    font-size: 1.25rem;
     padding: 0 8px;
-    text-align: center;
   }
 
   .seccion-fichas-sio {
