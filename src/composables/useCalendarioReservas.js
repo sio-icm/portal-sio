@@ -1,10 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 // Calendario de reservas compartido (Pelagia, Tanques de Pruebas):
 // varios meses a partir del actual, selección de días y fechas escritas
-// en el idioma de la web.
-export function useCalendarioReservas(numeroMeses = 7) {
+// en el idioma de la web. Los días ocupados salen de las reservas del
+// calendario de equipo de la intranet ('pelagia' o 'tanc').
+export function useCalendarioReservas(recurso, numeroMeses = 7) {
   const { locale } = useI18n()
 
   const hoy = new Date()
@@ -28,9 +29,18 @@ export function useCalendarioReservas(numeroMeses = 7) {
   const diasSeleccionados = ref([])
   const claveDia = (dia) => `${mesVisible.value.getFullYear()}-${mesVisible.value.getMonth()}-${dia}`
 
-  // Días ocupados: todavía no hay un calendario real de reservas.
-  // Cuando lo haya, se consultará aquí; mientras tanto no se marca ninguno.
-  const esOcupado = () => false
+  // Días ocupados ('AAAA-MM-DD'), sin nombres ni motivos
+  const ocupados = ref(new Set())
+  const iso = (fecha) => `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
+  onMounted(async () => {
+    const desde = iso(meses[0])
+    const hasta = iso(new Date(hoy.getFullYear(), hoy.getMonth() + numeroMeses, 0))
+    try {
+      const r = await fetch(`/api/ocupacion?recurso=${recurso}&desde=${desde}&hasta=${hasta}`)
+      if (r.ok) ocupados.value = new Set(await r.json())
+    } catch { /* sin conexión con el servidor: se muestran todos libres */ }
+  })
+  const esOcupado = (dia) => ocupados.value.has(iso(new Date(mesVisible.value.getFullYear(), mesVisible.value.getMonth(), dia)))
 
   const toggleDia = (dia) => {
     if (esOcupado(dia)) return

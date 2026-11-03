@@ -8,7 +8,7 @@ const { t } = useI18n()
 const {
   nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
   diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
-} = useCalendarioReservas()
+} = useCalendarioReservas('tanc')
 
 // --- FORMULARIO ---
 const proposito = ref('')

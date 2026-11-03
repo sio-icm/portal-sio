@@ -60,7 +60,17 @@ const instrumentosAgrupados = computed(() => {
 })
 
 const cambiarCategoria = (cat) => { categoriaActiva.value = cat; equipoSeleccionado.value = null; instrumentoExpandido.value = null }
-const verDetalles = (equipo) => { equipoSeleccionado.value = equipo; diasSeleccionados.value = [] }
+const verDetalles = (equipo) => { equipoSeleccionado.value = equipo; diasSeleccionados.value = []; cargarOcupacion(equipo.id) }
+
+// Días en que el instrumento está prestado o reservado (de la intranet, sin nombres)
+const ocupados = ref(new Set())
+const cargarOcupacion = async (id) => {
+  ocupados.value = new Set()
+  try {
+    const r = await fetch(`/api/ocupacion?recurso=instrument&instrumento_id=${id}`)
+    if (r.ok && equipoSeleccionado.value?.id === id) ocupados.value = new Set(await r.json())
+  } catch { /* sin conexión: se muestran todos libres */ }
+}
 const toggleAcordeon = (id) => { instrumentoExpandido.value = instrumentoExpandido.value === id ? null : id }
 
 // --- CALENDARI (Corregit per incloure les funcions que et faltaven) ---
@@ -83,12 +93,10 @@ const cambiarMes = (dir) => {
   diasSeleccionados.value = []
 }
 
-// Aquestes són les funcions que faltaven al teu script!
-const esOcupado = (n) => {
-    // Si vols una lògica real d'ocupació, l'hauries de fer aquí
-    return false 
-}
+const esOcupado = (n) => ocupados.value.has(
+  `${anioActual.value}-${String(mesActual.value + 1).padStart(2, '0')}-${String(n).padStart(2, '0')}`)
 const toggleDia = (n) => {
+    if (esOcupado(n)) return
     const i = diasSeleccionados.value.indexOf(n)
     i > -1 ? diasSeleccionados.value.splice(i, 1) : diasSeleccionados.value.push(n)
 }

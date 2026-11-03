@@ -7,7 +7,7 @@ const { t } = useI18n()
 const {
   nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
   diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
-} = useCalendarioReservas()
+} = useCalendarioReservas('pelagia')
 
 // Abre el correo del usuario con la solicitud preparada (sin servicios externos)
 const enviarSolicitud = () => {
