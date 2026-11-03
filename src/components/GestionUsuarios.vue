@@ -65,7 +65,8 @@ const nuevaContrasena = async (u) => {
   <div class="panel-usuarios">
     <h2>👥 Usuaris de la intranet</h2>
     <p class="ayuda">Cada persona de l'equip té el seu usuari: així el diari sap qui escriu cada nota. Els administradors poden gestionar usuaris i editar qualsevol nota.
-      Un usuari només es pot esborrar si no ha escrit cap nota; si en té, desactiva'l.</p>
+      Un usuari només es pot esborrar si no ha escrit cap nota; si en té, desactiva'l.
+      «Plantilla» = compta per a l'avís de falta de personal del calendari d'equip.</p>
 
     <form class="nuevo" @submit.prevent="crear">
       <h3>Nou usuari</h3>
@@ -82,9 +83,9 @@ const nuevaContrasena = async (u) => {
     <p v-if="error" class="error">{{ error }}</p>
 
     <table class="tabla">
-      <thead><tr><th>Usuari</th><th>Nom</th><th>Administrador</th><th>Estat</th><th></th></tr></thead>
+      <thead><tr><th>Usuari</th><th>Nom</th><th>Administrador</th><th>Plantilla</th><th>Estat</th><th></th></tr></thead>
       <tbody>
-        <tr v-if="usuarios.length === 0"><td colspan="5" class="aviso">Encara no hi ha usuaris personals.</td></tr>
+        <tr v-if="usuarios.length === 0"><td colspan="6" class="aviso">Encara no hi ha usuaris personals.</td></tr>
         <tr v-for="u in usuarios" :key="u.id" :class="{ inactivo: !u.activo }">
           <template v-if="editando && editando.id === u.id">
             <td><input v-model="editando.usuario" class="input-fila" aria-label="Usuari"></td>
@@ -97,6 +98,10 @@ const nuevaContrasena = async (u) => {
           <td>
             <label class="check"><input type="checkbox" :checked="!!u.es_admin"
               @change="cambiar(u, { es_admin: $event.target.checked }, `Permisos de ${u.nombre} actualitzats.`)"></label>
+          </td>
+          <td>
+            <label class="check"><input type="checkbox" :checked="!!u.plantilla" :aria-label="`${u.nombre} compta a la plantilla`"
+              @change="cambiar(u, { plantilla: $event.target.checked }, $event.target.checked ? `${u.nombre} compta a la plantilla.` : `${u.nombre} ja no compta a la plantilla.`)"></label>
           </td>
           <td>
             {{ u.activo ? 'Actiu' : 'Desactivat' }}
