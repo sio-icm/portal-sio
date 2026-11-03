@@ -6,7 +6,7 @@ import sqlite3
 import time
 import uuid
 from collections import defaultdict, deque
-from datetime import timedelta
+from datetime import date, timedelta
 from email.message import EmailMessage
 from functools import wraps
 
@@ -772,7 +772,7 @@ def gestionar_usuarios():
     conexion = conectar_bd()
     if request.method == 'GET':
         filas = conexion.execute(
-            'SELECT id, usuario, nombre, es_admin, activo, debe_cambiar, creado FROM usuarios ORDER BY nombre').fetchall()
+            'SELECT id, usuario, nombre, es_admin, activo, debe_cambiar, plantilla, creado FROM usuarios ORDER BY nombre').fetchall()
         conexion.close()
         return jsonify([dict(f) for f in filas])
 
@@ -847,6 +847,9 @@ def modificar_usuario(id):
     if 'activo' in datos:
         cambios.append('activo = ?')
         valores.append(1 if datos['activo'] else 0)
+    if 'plantilla' in datos:
+        cambios.append('plantilla = ?')
+        valores.append(1 if datos['plantilla'] else 0)
     if datos.get('password'):
         if len(str(datos['password'])) < 8:
             return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
@@ -895,6 +898,471 @@ def cambiar_mi_contrasena():
     conexion.close()
     session['debe_cambiar'] = False
     return jsonify({"cambiada": True})
+
+
+# ---------------------------------------------------------------------------
+# Calendari d'equip: qui és al centre, reserves de recursos i avisos
+# ---------------------------------------------------------------------------
+# Tipus d'entrada del calendari. FUERA_DEL_CENTRO = la persona no és al centre
+# (compta per a l'avís de falta de personal). AUSENCIAS_PATRON = el patró no pot
+# sortir amb la Pelagia (una «campanya» pot ser la mateixa sortida, no avisa).
+TIPOS_CALENDARIO = ['teletreball', 'campanya', 'vacances', 'baixa', 'formacio', 'reunio', 'altres']
+FUERA_DEL_CENTRO = {'teletreball', 'campanya', 'vacances', 'baixa', 'formacio'}
+AUSENCIAS_PATRON = {'teletreball', 'vacances', 'baixa', 'formacio'}
+RECURSOS = ['pelagia', 'tanc', 'instrument']
+AJUSTES_INICIALES = {'minim_presents': '3', 'patro_pelagia': 'brian'}
+MAX_DIAS_CONSULTA = 400
+
+# Festius de Barcelona (Catalunya + els dos locals). Es poden afegir i treure
+# des de la intranet; aquests només es carreguen la primera vegada.
+FESTIUS_INICIALES = [
+    ('2026-01-01', 'Any Nou'), ('2026-01-06', 'Reis'), ('2026-04-03', 'Divendres Sant'),
+    ('2026-04-06', 'Dilluns de Pasqua'), ('2026-05-01', 'Festa del Treball'),
+    ('2026-05-25', 'Segona Pasqua (local Barcelona)'), ('2026-06-24', 'Sant Joan'),
+    ('2026-08-15', "L'Assumpció"), ('2026-09-11', 'Diada Nacional de Catalunya'),
+    ('2026-09-24', 'La Mercè (local Barcelona)'), ('2026-10-12', "Festa Nacional d'Espanya"),
+    ('2026-11-01', 'Tots Sants'), ('2026-12-08', 'La Immaculada'), ('2026-12-25', 'Nadal'),
+    ('2026-12-26', 'Sant Esteve'),
+    ('2027-01-01', 'Any Nou'), ('2027-01-06', 'Reis'), ('2027-03-26', 'Divendres Sant'),
+    ('2027-03-29', 'Dilluns de Pasqua'), ('2027-05-01', 'Festa del Treball'),
+    ('2027-05-17', 'Segona Pasqua (local Barcelona, pendent de confirmar)'), ('2027-06-24', 'Sant Joan'),
+    ('2027-08-15', "L'Assumpció"), ('2027-09-11', 'Diada Nacional de Catalunya'),
+    ('2027-09-24', 'La Mercè (local Barcelona, pendent de confirmar)'),
+    ('2027-10-12', "Festa Nacional d'Espanya"), ('2027-11-01', 'Tots Sants'),
+    ('2027-12-08', 'La Immaculada'), ('2027-12-25', 'Nadal'), ('2027-12-26', 'Sant Esteve'),
+]
+
+
+def crear_tablas_calendario():
+    conexion = conectar_bd()
+    conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS calendario (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER REFERENCES usuarios(id),  -- NULL = tot l'equip
+            tipo TEXT NOT NULL,
+            inicio TEXT NOT NULL,
+            fin TEXT NOT NULL,
+            nota TEXT NOT NULL DEFAULT '',
+            creado_por INTEGER,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS calendario_fechas ON calendario(inicio, fin);
+        CREATE TABLE IF NOT EXISTS reservas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recurso TEXT NOT NULL,
+            instrumento_id INTEGER REFERENCES instrumentos(id),
+            inicio TEXT NOT NULL,
+            fin TEXT NOT NULL,
+            usuario_id INTEGER REFERENCES usuarios(id),
+            para TEXT NOT NULL DEFAULT '',
+            proposito TEXT NOT NULL DEFAULT '',
+            creado_por INTEGER,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS reservas_fechas ON reservas(inicio, fin);
+        CREATE TABLE IF NOT EXISTS festius (
+            fecha TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS ajustes (
+            clave TEXT PRIMARY KEY,
+            valor TEXT NOT NULL
+        );
+    """)
+    columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
+    if 'plantilla' not in columnas:
+        # 1 = compta per a l'avís de falta de personal
+        conexion.execute('ALTER TABLE usuarios ADD COLUMN plantilla INTEGER NOT NULL DEFAULT 1')
+    for clave, valor in AJUSTES_INICIALES.items():
+        conexion.execute('INSERT OR IGNORE INTO ajustes (clave, valor) VALUES (?, ?)', (clave, valor))
+    if not conexion.execute("SELECT 1 FROM ajustes WHERE clave = 'festius_carregats'").fetchone():
+        conexion.executemany('INSERT OR IGNORE INTO festius (fecha, nombre) VALUES (?, ?)', FESTIUS_INICIALES)
+        conexion.execute("INSERT INTO ajustes (clave, valor) VALUES ('festius_carregats', '1')")
+    conexion.commit()
+    conexion.close()
+
+
+crear_tablas_calendario()
+
+
+def leer_ajustes(conexion):
+    ajustes = dict(AJUSTES_INICIALES)
+    ajustes.update({f['clave']: f['valor'] for f in conexion.execute('SELECT clave, valor FROM ajustes')})
+    return {'minim_presents': int(ajustes['minim_presents']), 'patro_pelagia': ajustes['patro_pelagia']}
+
+
+def fecha_valida(texto):
+    try:
+        return date.fromisoformat(texto) if PATRON_FECHA.match(texto or '') else None
+    except ValueError:
+        return None
+
+
+def validar_rango(datos):
+    """Comprova inici i fi (AAAA-MM-DD, fi >= inici). Retorna (inicio, fin, error)."""
+    inicio = fecha_valida(str(datos.get('inicio', '')).strip())
+    fin_texto = str(datos.get('fin') or datos.get('inicio') or '').strip()
+    fin = fecha_valida(fin_texto)
+    if not inicio or not fin:
+        return None, None, "Fecha no válida (AAAA-MM-DD)"
+    if fin < inicio:
+        return None, None, "La fecha final es anterior a la inicial"
+    if (fin - inicio).days > 366:
+        return None, None, "El periodo no puede superar un año"
+    return inicio.isoformat(), fin.isoformat(), None
+
+
+def dias_entre(inicio, fin):
+    dia, ultimo = date.fromisoformat(inicio), date.fromisoformat(fin)
+    while dia <= ultimo:
+        yield dia.isoformat()
+        dia += timedelta(days=1)
+
+
+def usuario_existe(conexion, usuario_id):
+    return conexion.execute('SELECT 1 FROM usuarios WHERE id = ? AND activo = 1', (usuario_id,)).fetchone() is not None
+
+
+def puede_editar_calendario(fila):
+    if session.get('es_admin'):
+        return True
+    yo = session.get('usuario_id')
+    return yo is not None and yo in (fila['usuario_id'], fila['creado_por'])
+
+
+def calcular_avisos(conexion, desde, hasta):
+    """Avisos del periode: falta de personal, recursos reservats dues vegades i
+    Pelagia reservada quan el patró no hi és. Caps de setmana i festius no compten."""
+    ajustes = leer_ajustes(conexion)
+    festius = {f['fecha'] for f in conexion.execute(
+        'SELECT fecha FROM festius WHERE fecha BETWEEN ? AND ?', (desde, hasta))}
+    plantilla = {f['id']: f['nombre'] for f in conexion.execute(
+        'SELECT id, nombre FROM usuarios WHERE activo = 1 AND plantilla = 1')}
+    entradas = conexion.execute(
+        'SELECT usuario_id, tipo, inicio, fin FROM calendario WHERE inicio <= ? AND fin >= ?', (hasta, desde)).fetchall()
+    reservas = conexion.execute(
+        '''SELECT r.*, i.nombre AS instrumento FROM reservas r LEFT JOIN instrumentos i ON i.id = r.instrumento_id
+           WHERE r.inicio <= ? AND r.fin >= ? ORDER BY r.inicio, r.id''', (hasta, desde)).fetchall()
+    patron = conexion.execute('SELECT id, nombre FROM usuarios WHERE usuario = ? AND activo = 1',
+                              (ajustes['patro_pelagia'],)).fetchone()
+
+    def laborable(dia):
+        return dia not in festius and date.fromisoformat(dia).weekday() < 5
+
+    def fuera(usuario_id, dia, tipos):
+        return any(e['usuario_id'] == usuario_id and e['tipo'] in tipos and e['inicio'] <= dia <= e['fin']
+                   for e in entradas)
+
+    avisos = []
+    # 1. Falta de personal
+    if plantilla:
+        for dia in dias_entre(desde, hasta):
+            if not laborable(dia):
+                continue
+            presentes = [u for u in plantilla if not fuera(u, dia, FUERA_DEL_CENTRO)]
+            if len(presentes) < ajustes['minim_presents']:
+                avisos.append({'id': f'personal:{dia}', 'tipo': 'personal', 'fecha': dia,
+                               'texto': f"Només {len(presentes)} de {len(plantilla)} persones al centre"})
+
+    # 2. El mateix recurs reservat dues vegades els mateixos dies
+    for i, a in enumerate(reservas):
+        for b in reservas[i + 1:]:
+            if a['recurso'] != b['recurso'] or (a['recurso'] == 'instrument' and a['instrumento_id'] != b['instrumento_id']):
+                continue
+            inicio, fin = max(a['inicio'], b['inicio']), min(a['fin'], b['fin'])
+            if inicio > fin:
+                continue
+            nombre = a['instrumento'] or 'instrument' if a['recurso'] == 'instrument' else NOMBRE_RECURSO[a['recurso']]
+            avisos.append({'id': f"conflicte:{a['id']}-{b['id']}", 'tipo': 'conflicte',
+                           'fecha': max(inicio, desde), 'fin': fin,
+                           'texto': f"{nombre}: dues reserves els mateixos dies"})
+
+    # 3. Pelagia reservada sense el patró
+    for r in reservas:
+        if r['recurso'] != 'pelagia':
+            continue
+        if not patron:
+            avisos.append({'id': f"patro:{r['id']}", 'tipo': 'patro', 'fecha': max(r['inicio'], desde),
+                           'texto': "Pelagia reservada: no hi ha cap patró configurat"})
+            continue
+        dias = [d for d in dias_entre(max(r['inicio'], desde), min(r['fin'], hasta))
+                if fuera(patron['id'], d, AUSENCIAS_PATRON)]
+        if dias:
+            avisos.append({'id': f"patro:{r['id']}:{dias[0]}", 'tipo': 'patro', 'fecha': dias[0], 'fin': dias[-1],
+                           'texto': f"Pelagia reservada però {patron['nombre']} (patró) no hi és"})
+    avisos.sort(key=lambda a: (a['fecha'], a['tipo']))
+    return avisos
+
+
+NOMBRE_RECURSO = {'pelagia': 'Pelagia', 'tanc': 'Tanc de proves', 'instrument': 'Instrument'}
+
+
+@app.route('/api/calendario', methods=['GET'])
+@requiere_login
+def ver_calendario():
+    desde = fecha_valida(request.args.get('desde', ''))
+    hasta = fecha_valida(request.args.get('hasta', ''))
+    if not desde or not hasta or hasta < desde or (hasta - desde).days > MAX_DIAS_CONSULTA:
+        return jsonify({"error": "Periodo no válido"}), 400
+    desde, hasta = desde.isoformat(), hasta.isoformat()
+    conexion = conectar_bd()
+    entradas = conexion.execute(
+        '''SELECT c.*, u.nombre AS persona FROM calendario c LEFT JOIN usuarios u ON u.id = c.usuario_id
+           WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''', (hasta, desde)).fetchall()
+    reservas = conexion.execute(
+        '''SELECT r.*, u.nombre AS persona, i.nombre AS instrumento FROM reservas r
+           LEFT JOIN usuarios u ON u.id = r.usuario_id LEFT JOIN instrumentos i ON i.id = r.instrumento_id
+           WHERE r.inicio <= ? AND r.fin >= ? ORDER BY r.inicio, r.id''', (hasta, desde)).fetchall()
+    festius = conexion.execute(
+        'SELECT fecha, nombre FROM festius WHERE fecha BETWEEN ? AND ? ORDER BY fecha', (desde, hasta)).fetchall()
+    equipo = conexion.execute(
+        'SELECT id, usuario, nombre, plantilla FROM usuarios WHERE activo = 1 ORDER BY nombre').fetchall()
+    respuesta = {
+        'entradas': [dict(e, editable=puede_editar_calendario(e)) for e in entradas],
+        'reservas': [dict(r, editable=puede_editar_calendario(r)) for r in reservas],
+        'festius': [dict(f) for f in festius],
+        'equipo': [dict(u) for u in equipo],
+        'ajustes': leer_ajustes(conexion),
+        'avisos': calcular_avisos(conexion, desde, hasta),
+    }
+    conexion.close()
+    return jsonify(respuesta)
+
+
+def validar_entrada(conexion, datos):
+    tipo = datos.get('tipo')
+    if tipo not in TIPOS_CALENDARIO:
+        return None, "Tipo no válido"
+    inicio, fin, error = validar_rango(datos)
+    if error:
+        return None, error
+    nota = str(datos.get('nota', '') or '').strip()
+    if len(nota) > 500:
+        return None, "La nota es demasiado larga (máximo 500 caracteres)"
+    usuario_id = datos.get('usuario_id', session.get('usuario_id'))
+    if usuario_id in ('', None):
+        # Entrada per a tot l'equip: només reunions i altres (no treu ningú del centre)
+        if tipo not in ('reunio', 'altres'):
+            return None, "Elige la persona"
+        usuario_id = None
+    else:
+        try:
+            usuario_id = int(usuario_id)
+        except (TypeError, ValueError):
+            return None, "Persona no válida"
+        if not usuario_existe(conexion, usuario_id):
+            return None, "La persona no existe"
+        if not session.get('es_admin') and usuario_id != session.get('usuario_id'):
+            return None, "Solo puedes apuntar tus propios días"
+    return (usuario_id, tipo, inicio, fin, nota), None
+
+
+@app.route('/api/calendario/entradas', methods=['POST'])
+@requiere_login
+def crear_entrada_calendario():
+    conexion = conectar_bd()
+    valores, error = validar_entrada(conexion, request.get_json(silent=True) or {})
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    cursor = conexion.execute(
+        'INSERT INTO calendario (usuario_id, tipo, inicio, fin, nota, creado_por) VALUES (?, ?, ?, ?, ?, ?)',
+        valores + (session.get('usuario_id'),))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"id": cursor.lastrowid}), 201
+
+
+@app.route('/api/calendario/entradas/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_entrada_calendario(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM calendario WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if not puede_editar_calendario(fila):
+        conexion.close()
+        return jsonify({"error": "Solo puedes cambiar tus propias entradas"}), 403
+    if request.method == 'DELETE':
+        conexion.execute('DELETE FROM calendario WHERE id = ?', (id,))
+    else:
+        datos = request.get_json(silent=True) or {}
+        datos.setdefault('usuario_id', fila['usuario_id'])
+        valores, error = validar_entrada(conexion, datos)
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        conexion.execute('UPDATE calendario SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, nota = ? WHERE id = ?',
+                         valores + (id,))
+    conexion.commit()
+    conexion.close()
+    return ('', 204) if request.method == 'DELETE' else jsonify({"id": id})
+
+
+def validar_reserva(conexion, datos):
+    recurso = datos.get('recurso')
+    if recurso not in RECURSOS:
+        return None, "Recurso no válido"
+    instrumento_id = None
+    if recurso == 'instrument':
+        try:
+            instrumento_id = int(datos.get('instrumento_id'))
+        except (TypeError, ValueError):
+            return None, "Elige el instrumento"
+        if not conexion.execute('SELECT 1 FROM instrumentos WHERE id = ?', (instrumento_id,)).fetchone():
+            return None, "El instrumento no existe"
+    inicio, fin, error = validar_rango(datos)
+    if error:
+        return None, error
+    para = str(datos.get('para', '') or '').strip()
+    proposito = str(datos.get('proposito', '') or '').strip()
+    if len(para) > 200 or len(proposito) > 500:
+        return None, "Texto demasiado largo"
+    usuario_id = datos.get('usuario_id', session.get('usuario_id'))
+    if usuario_id in ('', None):
+        usuario_id = None
+    else:
+        try:
+            usuario_id = int(usuario_id)
+        except (TypeError, ValueError):
+            return None, "Persona no válida"
+        if not usuario_existe(conexion, usuario_id):
+            return None, "La persona no existe"
+        if not session.get('es_admin') and usuario_id != session.get('usuario_id'):
+            return None, "Solo puedes hacer reservas a tu nombre"
+    if usuario_id is None and not para:
+        return None, "Indica el responsable de la reserva"
+    return (recurso, instrumento_id, inicio, fin, usuario_id, para, proposito), None
+
+
+@app.route('/api/calendario/reservas', methods=['POST'])
+@requiere_login
+def crear_reserva():
+    conexion = conectar_bd()
+    valores, error = validar_reserva(conexion, request.get_json(silent=True) or {})
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    cursor = conexion.execute(
+        '''INSERT INTO reservas (recurso, instrumento_id, inicio, fin, usuario_id, para, proposito, creado_por)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', valores + (session.get('usuario_id'),))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"id": cursor.lastrowid}), 201
+
+
+@app.route('/api/calendario/reservas/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_reserva(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM reservas WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if not puede_editar_calendario(fila):
+        conexion.close()
+        return jsonify({"error": "Solo puedes cambiar tus propias reservas"}), 403
+    if request.method == 'DELETE':
+        conexion.execute('DELETE FROM reservas WHERE id = ?', (id,))
+    else:
+        datos = request.get_json(silent=True) or {}
+        datos.setdefault('usuario_id', fila['usuario_id'])
+        valores, error = validar_reserva(conexion, datos)
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        conexion.execute(
+            '''UPDATE reservas SET recurso = ?, instrumento_id = ?, inicio = ?, fin = ?, usuario_id = ?,
+               para = ?, proposito = ? WHERE id = ?''', valores + (id,))
+    conexion.commit()
+    conexion.close()
+    return ('', 204) if request.method == 'DELETE' else jsonify({"id": id})
+
+
+@app.route('/api/calendario/festius', methods=['GET', 'POST'])
+@requiere_login
+def gestionar_festius():
+    conexion = conectar_bd()
+    if request.method == 'GET':
+        filas = conexion.execute('SELECT fecha, nombre FROM festius ORDER BY fecha').fetchall()
+        conexion.close()
+        return jsonify([dict(f) for f in filas])
+    if not session.get('es_admin'):
+        conexion.close()
+        return jsonify({"error": "Solo administradores"}), 403
+    datos = request.get_json(silent=True) or {}
+    fecha = fecha_valida(str(datos.get('fecha', '')).strip())
+    nombre = str(datos.get('nombre', '')).strip()
+    if not fecha or not nombre or len(nombre) > 100:
+        conexion.close()
+        return jsonify({"error": "Indica la fecha y el nombre del festivo"}), 400
+    conexion.execute('INSERT OR REPLACE INTO festius (fecha, nombre) VALUES (?, ?)', (fecha.isoformat(), nombre))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"fecha": fecha.isoformat()}), 201
+
+
+@app.route('/api/calendario/festius/<fecha>', methods=['DELETE'])
+@requiere_admin
+def borrar_festiu(fecha):
+    conexion = conectar_bd()
+    conexion.execute('DELETE FROM festius WHERE fecha = ?', (fecha,))
+    conexion.commit()
+    conexion.close()
+    return '', 204
+
+
+@app.route('/api/calendario/ajustes', methods=['PUT'])
+@requiere_admin
+def cambiar_ajustes_calendario():
+    datos = request.get_json(silent=True) or {}
+    conexion = conectar_bd()
+    if 'minim_presents' in datos:
+        try:
+            minimo = int(datos['minim_presents'])
+        except (TypeError, ValueError):
+            minimo = -1
+        if not 0 <= minimo <= 50:
+            conexion.close()
+            return jsonify({"error": "Número de personas no válido"}), 400
+        conexion.execute("INSERT OR REPLACE INTO ajustes (clave, valor) VALUES ('minim_presents', ?)", (str(minimo),))
+    if 'patro_pelagia' in datos:
+        patron = str(datos['patro_pelagia'] or '').strip().lower()
+        if patron and not conexion.execute('SELECT 1 FROM usuarios WHERE usuario = ?', (patron,)).fetchone():
+            conexion.close()
+            return jsonify({"error": "Ese usuario no existe"}), 400
+        conexion.execute("INSERT OR REPLACE INTO ajustes (clave, valor) VALUES ('patro_pelagia', ?)", (patron,))
+    conexion.commit()
+    ajustes = leer_ajustes(conexion)
+    conexion.close()
+    return jsonify(ajustes)
+
+
+@app.route('/api/ocupacion', methods=['GET'])
+def ocupacion_publica():
+    """Dies ocupats d'un recurs per als calendaris públics (sense noms ni motius)."""
+    recurso = request.args.get('recurso')
+    if recurso not in RECURSOS:
+        return jsonify({"error": "Recurso no válido"}), 400
+    hoy = date.today()
+    desde = fecha_valida(request.args.get('desde', '')) or hoy.replace(day=1)
+    hasta = fecha_valida(request.args.get('hasta', '')) or desde + timedelta(days=MAX_DIAS_CONSULTA)
+    if hasta < desde or (hasta - desde).days > MAX_DIAS_CONSULTA:
+        return jsonify({"error": "Periodo no válido"}), 400
+    desde, hasta = desde.isoformat(), hasta.isoformat()
+    condiciones, valores = ['recurso = ?', 'inicio <= ?', 'fin >= ?'], [recurso, hasta, desde]
+    if recurso == 'instrument':
+        try:
+            valores.append(int(request.args.get('instrumento_id')))
+        except (TypeError, ValueError):
+            return jsonify({"error": "Instrumento no válido"}), 400
+        condiciones.append('instrumento_id = ?')
+    conexion = conectar_bd()
+    filas = conexion.execute(f'SELECT inicio, fin FROM reservas WHERE {" AND ".join(condiciones)}', valores).fetchall()
+    conexion.close()
+    dias = sorted({d for f in filas for d in dias_entre(max(f['inicio'], desde), min(f['fin'], hasta))})
+    return jsonify(dias)
 
 
 if __name__ == '__main__':
