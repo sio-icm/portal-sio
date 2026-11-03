@@ -972,12 +972,15 @@ def crear_tablas_calendario():
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
     if 'plantilla' not in columnas:
         # 1 = compta per a l'avís de falta de personal
-        conexion.execute('ALTER TABLE usuarios ADD COLUMN plantilla INTEGER NOT NULL DEFAULT 1')
+        try:
+            conexion.execute('ALTER TABLE usuarios ADD COLUMN plantilla INTEGER NOT NULL DEFAULT 1')
+        except sqlite3.OperationalError:
+            pass  # l'altre procés de gunicorn l'ha afegit alhora
     for clave, valor in AJUSTES_INICIALES.items():
         conexion.execute('INSERT OR IGNORE INTO ajustes (clave, valor) VALUES (?, ?)', (clave, valor))
     if not conexion.execute("SELECT 1 FROM ajustes WHERE clave = 'festius_carregats'").fetchone():
         conexion.executemany('INSERT OR IGNORE INTO festius (fecha, nombre) VALUES (?, ?)', FESTIUS_INICIALES)
-        conexion.execute("INSERT INTO ajustes (clave, valor) VALUES ('festius_carregats', '1')")
+        conexion.execute("INSERT OR IGNORE INTO ajustes (clave, valor) VALUES ('festius_carregats', '1')")
     conexion.commit()
     conexion.close()
 

@@ -242,6 +242,26 @@ fuera del servidor, guarda también la carpeta de fotos, por ejemplo:
 - Las tablas `usuarios` y `notas` se crean solas en la base de datos al arrancar
   el backend.
 
+## Calendari d'equip
+
+- Cada persona apunta sus días de teletrabajo, campaña, vacaciones, baja,
+  formación o reuniones, y reserva la **Pelagia**, el **tanque de pruebas** o un
+  **instrumento** (también préstamos a gente de fuera). Cada uno cambia lo suyo;
+  los administradores, todo.
+- La pantalla principal de la intranet muestra un resumen (Hoy / Semana / Mes).
+  «✓ Vist» lo pliega hasta el día siguiente o hasta que salga un aviso nuevo
+  (se recuerda en cada navegador).
+- **Avisos**: menos personas en el centro que el mínimo (por defecto 3; solo
+  cuentan las marcadas como «Plantilla» en «Usuaris»), el mismo recurso
+  reservado dos veces y la Pelagia reservada cuando el patrón (por defecto
+  `brian`) no está. Fines de semana y festivos no cuentan.
+- Los **festivos de Barcelona** de 2026 y 2027 se cargan la primera vez; los
+  administradores los cambian en «Configuració» (los locales de 2027 están
+  pendientes de confirmar cuando el Ayuntamiento los publique).
+- Las páginas públicas de la Pelagia, los tanques y los instrumentos marcan en
+  azul (o rojo) los días reservados, sin nombres ni motivos.
+- Tablas: `calendario`, `reservas`, `festius`, `ajustes` (se crean solas).
+
 ## Cambiar la contraseña de la intranet del administrador del servidor
 
 ```sh
