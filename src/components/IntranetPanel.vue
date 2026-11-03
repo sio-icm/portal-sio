@@ -9,6 +9,7 @@ import InformeSemestral from './InformeSemestral.vue'
 import GestionUsuarios from './GestionUsuarios.vue'
 import MiCuenta from './MiCuenta.vue'
 import CalendariEquip from './CalendariEquip.vue'
+import ResumenCalendario from './ResumenCalendario.vue'
 
 const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
@@ -436,6 +437,7 @@ const eliminarProyecto = async (id) => {
         </div>
 
         <div v-else class="dashboard-view">
+          <ResumenCalendario :sesion="sesion" @abrir="seccionActiva = 'calendari'" @sesion-caducada="sesionCaducada" />
           
           <div class="acordeon-dash">
             <div class="acordeon-dash-header" @click="toggleDashboard('proyectos')">
