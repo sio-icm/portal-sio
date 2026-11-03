@@ -8,6 +8,7 @@ import DiarioActividad from './DiarioActividad.vue'
 import InformeSemestral from './InformeSemestral.vue'
 import GestionUsuarios from './GestionUsuarios.vue'
 import MiCuenta from './MiCuenta.vue'
+import CalendariEquip from './CalendariEquip.vue'
 
 const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
@@ -26,7 +27,7 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const seccionActiva = ref('dashboard') // 'dashboard', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
+const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
 
 // Las secciones nuevas avisan si la sesión ha caducado
 const sesionCaducada = () => {
@@ -283,6 +284,7 @@ const eliminarProyecto = async (id) => {
         <p class="sidebar-usuario">👤 {{ sesion.nombre }}</p>
 <nav class="sidebar-nav">
           <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">📊 Visió General</a>
+          <a href="#" @click.prevent="seccionActiva = 'calendari'" :class="{ active: seccionActiva === 'calendari' }">🗓️ Calendari d'equip</a>
           <a href="#" @click.prevent="seccionActiva = 'diario'" :class="{ active: seccionActiva === 'diario' }">📓 Diari d'activitat</a>
           <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">🧾 Informe semestral</a>
           <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">👥 Gestión del Equipo</a>
@@ -304,7 +306,8 @@ const eliminarProyecto = async (id) => {
       <main class="main-content">
         
 
-        <DiarioActividad v-if="seccionActiva === 'diario'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <CalendariEquip v-if="seccionActiva === 'calendari'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <DiarioActividad v-else-if="seccionActiva === 'diario'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
