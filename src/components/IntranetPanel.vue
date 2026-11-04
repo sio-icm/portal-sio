@@ -269,6 +269,14 @@ const eliminarProyecto = async (id) => {
           </div>
           <button type="submit">ENTRAR</button>
         </form>
+        <!-- Encara no hi ha correu des del servidor: la contrasenya nova la posa un administrador -->
+        <details class="olvido">
+          <summary>Has oblidat l'usuari o la contrasenya?</summary>
+          <p><b>Usuari:</b> normalment és el teu nom en minúscules, sense accents (ex.: <i>nina</i>).</p>
+          <p><b>Contrasenya:</b> demana a un administrador (Raül Ferrando o Raül Bardají) que te'n posi una de provisional.
+            Quan entris, l'hauràs de canviar per una de teva.</p>
+          <a class="btn-olvido" :href="`mailto:sio@icm.csic.es?subject=${encodeURIComponent('Intranet SIO: he oblidat la contrasenya')}&body=${encodeURIComponent('Hola,\n\nNo recordo la contrasenya (o l\'usuari) de la intranet del SIO. Em podeu posar una contrasenya provisional?\n\nNom:\n\nGràcies!')}`">✉️ Demanar-ne una de nova</a>
+        </details>
       </div>
     </div>
 
@@ -522,6 +530,10 @@ const eliminarProyecto = async (id) => {
 .login-overlay { position: fixed; inset: 0; background: #012169; display: flex; align-items: center; justify-content: center; z-index: 100; }
 .login-box { background: white; padding: 40px; border-radius: 8px; width: 300px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); }
 .login-box input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.olvido { margin-top: 15px; font-size: 0.85rem; color: #444; }
+.olvido summary { cursor: pointer; color: #0086c0; text-align: center; }
+.olvido p { margin: 8px 0; line-height: 1.4; }
+.btn-olvido { display: block; text-align: center; margin-top: 8px; padding: 8px; border: 1px solid #0086c0; border-radius: 4px; color: #0086c0; text-decoration: none; font-weight: bold; }
 .login-box button { width: 100%; padding: 10px; background: #8cc63f; color: #012169; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
 
 .dashboard-grid { display: flex; min-height: 100vh; }
