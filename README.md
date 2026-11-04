@@ -153,22 +153,29 @@ al conectar con 127.0.0.1:8082, es SELinux: `sudo setsebool -P httpd_can_network
 
 ### 7. Certificado HTTPS
 
-Informática envía un `.crt` y un `.key`. La clave (`.key`) es secreta: no se
-reenvía, no se pega en ningún sitio y no se sube al repositorio.
+Informática instala el certificado en `/etc/httpd/certs/`: `sio.icm.csic.es.pem`
+(certificado + cadena GEANT/HARICA) y `sio.icm.csic.es.key`. La clave es secreta:
+no se copia, no se pega en ningún sitio y no se sube al repositorio.
+El certificado de noviembre de 2026 **caduca el 22-05-2027**.
 
 ```sh
-sudo mkdir -p /etc/pki/nginx/private
-sudo cp sio.icm.csic.es.crt /etc/pki/nginx/sio.icm.csic.es.crt
-sudo cp sio.icm.csic.es.key /etc/pki/nginx/private/sio.icm.csic.es.key
-sudo chmod 600 /etc/pki/nginx/private/sio.icm.csic.es.key
-sudo restorecon -Rv /etc/pki/nginx           # SELinux
-sudo firewall-cmd --permanent --add-service=https && sudo firewall-cmd --reload   # si usa firewalld
+# Comprobar: nombre, fechas, cadena (2 o más) y que la clave corresponde
+sudo openssl x509 -in /etc/httpd/certs/sio.icm.csic.es.pem -noout -subject -dates
+sudo grep -c "BEGIN CERTIFICATE" /etc/httpd/certs/sio.icm.csic.es.pem
+sudo restorecon -Rv /etc/httpd/certs         # SELinux: que Nginx pueda leerlos
+
+# Nginx con HTTPS (copia de la configuración anterior antes)
+sudo cp /etc/nginx/conf.d/sio.conf /etc/nginx/sio.conf.antes-de-https
+sudo cp ~/sio-portal/deploy/nginx-sio.conf /etc/nginx/conf.d/sio.conf
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Si el `.crt` no incluye la cadena intermedia, hay que añadirla al final del mismo
-archivo (pedirla a Informática). Después, aplicar `deploy/nginx-sio.conf` (paso 6),
-poner `SIO_COOKIE_SEGURA=1` en `/etc/sio-portal/backend.env` y reiniciar:
-`sudo docker compose up -d`.
+docker03 no tiene cortafuegos propio (ni firewalld ni nftables); el 443 lo abre
+Informática en el de la red. Después, poner `SIO_COOKIE_SEGURA=1` en
+`/etc/sio-portal/backend.env` y, en `~/sio-portal`, `sudo docker compose up -d`.
+
+Si algo falla: `sudo cp /etc/nginx/sio.conf.antes-de-https /etc/nginx/conf.d/sio.conf && sudo systemctl reload nginx`.
+Cuando renueven el certificado en la misma carpeta: `sudo systemctl reload nginx`.
 
 ### 8. Comprobar
 
