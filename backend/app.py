@@ -11,6 +11,7 @@ from email.message import EmailMessage
 from functools import wraps
 
 from flask import Flask, jsonify, request, send_from_directory, session
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from PIL import Image, ImageOps, UnidentifiedImageError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -30,6 +31,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 #   SIO_COOKIE_SEGURA=1      la cookie de sesión solo viaja por HTTPS (activar con el certificado)
 #   SIO_DB_PATH              ruta de la base de datos (por defecto sio_inventario.db junto a este archivo)
 #   SIO_FOTOS_DIR            carpeta de las fotos del diario (por defecto fotos/ junto a la base de datos)
+#   SIO_URL_PUBLICA          adreça de la web als enllaços dels correus (per defecte https://sio.icm.csic.es)
 #   FLASK_DEBUG=1            activa el modo debug (nunca en el servidor)
 app = Flask(__name__)
 # Detrás de Nginx: la IP real del usuario llega en X-Forwarded-For
@@ -772,7 +774,7 @@ def gestionar_usuarios():
     conexion = conectar_bd()
     if request.method == 'GET':
         filas = conexion.execute(
-            'SELECT id, usuario, nombre, es_admin, activo, debe_cambiar, plantilla, creado FROM usuarios ORDER BY nombre').fetchall()
+            'SELECT id, usuario, nombre, email, es_admin, activo, debe_cambiar, plantilla, creado FROM usuarios ORDER BY nombre').fetchall()
         conexion.close()
         return jsonify([dict(f) for f in filas])
 
@@ -789,13 +791,16 @@ def gestionar_usuarios():
         error = "El nombre es obligatorio"
     elif len(password) < 8:
         error = "La contraseña debe tener al menos 8 caracteres"
+    email = None
+    if not error:
+        email, error = validar_email_usuario(conexion, datos.get('email'))
     if error:
         conexion.close()
         return jsonify({"error": error}), 400
     try:
         conexion.execute(
-            'INSERT INTO usuarios (usuario, nombre, password_hash, es_admin, debe_cambiar) VALUES (?, ?, ?, ?, 1)',
-            (usuario, nombre, generate_password_hash(password), 1 if datos.get('es_admin') else 0))
+            'INSERT INTO usuarios (usuario, nombre, email, password_hash, es_admin, debe_cambiar) VALUES (?, ?, ?, ?, ?, 1)',
+            (usuario, nombre, email, generate_password_hash(password), 1 if datos.get('es_admin') else 0))
         conexion.commit()
     except sqlite3.IntegrityError:
         conexion.close()
@@ -860,6 +865,13 @@ def modificar_usuario(id):
     if not conexion.execute('SELECT 1 FROM usuarios WHERE id = ?', (id,)).fetchone():
         conexion.close()
         return jsonify({"error": "El usuario no existe"}), 404
+    if 'email' in datos:
+        email, error = validar_email_usuario(conexion, datos['email'], id)
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        cambios.append('email = ?')
+        valores.append(email)
     if cambios:
         try:
             conexion.execute(f'UPDATE usuarios SET {", ".join(cambios)} WHERE id = ?', valores + [id])
@@ -1366,6 +1378,146 @@ def ocupacion_publica():
     conexion.close()
     dias = sorted({d for f in filas for d in dias_entre(max(f['inicio'], desde), min(f['fin'], hasta))})
     return jsonify(dias)
+
+
+# ---------------------------------------------------------------------------
+# Correu de cada usuari i «He oblidat la contrasenya»
+# ---------------------------------------------------------------------------
+# L'enllaç porta un testimoni signat amb SIO_SECRET_KEY que caduca en una hora
+# i que deixa de valer quan es canvia la contrasenya (inclou un tros del hash).
+# L'adreça de la web es fixa (SIO_URL_PUBLICA) perquè ningú pugui fer arribar
+# un enllaç que apunti a una altra web canviant la capçalera Host.
+URL_PUBLICA = os.environ.get('SIO_URL_PUBLICA', 'https://sio.icm.csic.es').rstrip('/')
+VALIDEZ_ENLACE = 3600
+MAX_RECUPERACIONES_POR_HORA = 5
+recuperaciones_por_ip = defaultdict(deque)
+
+
+def crear_columna_email():
+    conexion = conectar_bd()
+    columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
+    if 'email' not in columnas:
+        try:
+            conexion.execute('ALTER TABLE usuarios ADD COLUMN email TEXT')
+        except sqlite3.OperationalError:
+            pass  # l'altre procés de gunicorn l'ha afegit alhora
+    conexion.commit()
+    conexion.close()
+
+
+crear_columna_email()
+
+
+def validar_email_usuario(conexion, email, usuario_id=None):
+    """Retorna (email normalitzat o None, error)."""
+    email = str(email or '').strip().lower()
+    if not email:
+        return None, None
+    if len(email) > 254 or not PATRON_EMAIL.match(email):
+        return None, "Correo no válido"
+    otro = conexion.execute('SELECT id FROM usuarios WHERE lower(email) = ? AND id IS NOT ?', (email, usuario_id)).fetchone()
+    if otro:
+        return None, "Ese correo ya lo tiene otro usuario"
+    return email, None
+
+
+def serializador_enlaces():
+    return URLSafeTimedSerializer(app.config['SECRET_KEY'], salt='restablir-contrasenya')
+
+
+def demasiadas_recuperaciones(ip):
+    ahora = time.time()
+    peticiones = recuperaciones_por_ip[ip]
+    while peticiones and ahora - peticiones[0] > 3600:
+        peticiones.popleft()
+    if len(peticiones) >= MAX_RECUPERACIONES_POR_HORA:
+        return True
+    peticiones.append(ahora)
+    return False
+
+
+@app.route('/api/recuperar', methods=['POST'])
+def recuperar_contrasena():
+    # Sempre la mateixa resposta: no es diu si l'usuari o el correu existeixen
+    respuesta = jsonify({"mensaje": "Si existe, te hemos enviado un enlace"})
+    if not login_configurado() or not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"error": "El envío de correo no está configurado"}), 503
+    if demasiadas_recuperaciones(request.remote_addr):
+        return jsonify({"error": "Demasiadas peticiones. Inténtalo más tarde"}), 429
+    dato = str((request.get_json(silent=True) or {}).get('usuario', '')).strip().lower()
+    if not dato or len(dato) > 254:
+        return respuesta
+    conexion = conectar_bd()
+    fila = conexion.execute(
+        'SELECT id, nombre, usuario, email, password_hash FROM usuarios WHERE activo = 1 AND (usuario = ? OR lower(email) = ?)',
+        (dato, dato)).fetchone()
+    conexion.close()
+    if not fila or not fila['email']:
+        return respuesta
+    testimonio = serializador_enlaces().dumps({'id': fila['id'], 'h': fila['password_hash'][-12:]})
+    enlace = f"{URL_PUBLICA}/intranet?restablir={testimonio}"
+    mensaje = EmailMessage()
+    mensaje['Subject'] = 'Intranet SIO: canvi de contrasenya'
+    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+    mensaje['To'] = fila['email']
+    mensaje.set_content(
+        f"Hola, {fila['nombre']}:\n\n"
+        f"Algú (segurament tu) ha demanat canviar la contrasenya de la intranet del SIO.\n"
+        f"El teu usuari és: {fila['usuario']}\n\n"
+        f"Per posar-ne una de nova, obre aquest enllaç (val durant una hora i només una vegada):\n\n"
+        f"{enlace}\n\n"
+        f"Si no ho has demanat tu, no cal que facis res: la contrasenya actual continua sent vàlida.\n\n"
+        f"-- \nWeb del SIO (missatge automàtic, no contestis aquest correu)\n")
+    try:
+        enviar_correo(mensaje)
+    except Exception as e:
+        print("Error enviando el enlace de recuperación:", e)
+        return jsonify({"error": "No se ha podido enviar el correo. Pídelo a un administrador"}), 502
+    return respuesta
+
+
+@app.route('/api/restablir', methods=['POST'])
+def restablecer_contrasena():
+    datos = request.get_json(silent=True) or {}
+    nueva = str(datos.get('nueva', ''))
+    try:
+        contenido = serializador_enlaces().loads(str(datos.get('token', '')), max_age=VALIDEZ_ENLACE)
+    except SignatureExpired:
+        return jsonify({"error": "El enlace ha caducado. Pide uno nuevo"}), 400
+    except BadSignature:
+        return jsonify({"error": "El enlace no es válido"}), 400
+    if len(nueva) < 8:
+        return jsonify({"error": "La contraseña nueva debe tener al menos 8 caracteres"}), 400
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT id, usuario, password_hash FROM usuarios WHERE id = ? AND activo = 1',
+                            (contenido.get('id'),)).fetchone()
+    if not fila or not hmac.compare_digest(fila['password_hash'][-12:], str(contenido.get('h', ''))):
+        conexion.close()
+        return jsonify({"error": "Este enlace ya se ha usado. Pide uno nuevo"}), 400
+    conexion.execute('UPDATE usuarios SET password_hash = ?, debe_cambiar = 0 WHERE id = ?',
+                     (generate_password_hash(nueva), fila['id']))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"usuario": fila['usuario']})
+
+
+@app.route('/api/mi-cuenta', methods=['GET', 'PUT'])
+@requiere_login
+def mi_cuenta():
+    usuario_id = session.get('usuario_id')
+    if usuario_id is None:
+        return jsonify({"email": None})
+    conexion = conectar_bd()
+    if request.method == 'PUT':
+        email, error = validar_email_usuario(conexion, (request.get_json(silent=True) or {}).get('email'), usuario_id)
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        conexion.execute('UPDATE usuarios SET email = ? WHERE id = ?', (email, usuario_id))
+        conexion.commit()
+    fila = conexion.execute('SELECT email FROM usuarios WHERE id = ?', (usuario_id,)).fetchone()
+    conexion.close()
+    return jsonify({"email": fila['email'] if fila else None})
 
 
 if __name__ == '__main__':
