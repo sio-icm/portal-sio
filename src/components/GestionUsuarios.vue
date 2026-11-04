@@ -11,7 +11,7 @@ const json = (metodo, cuerpo) => ({ method: metodo, headers: { 'Content-Type': '
 const usuarios = ref([])
 const error = ref('')
 const mensaje = ref('')
-const nuevo = ref({ usuario: '', nombre: '', password: '', es_admin: false })
+const nuevo = ref({ usuario: '', nombre: '', email: '', password: '', es_admin: false })
 
 const cargar = async () => {
   const r = await api('/api/usuarios')
@@ -36,18 +36,18 @@ const avisar = async (respuesta, textoOk) => {
 const crear = async () => {
   const r = await api('/api/usuarios', json('POST', nuevo.value))
   if (await avisar(r, `Usuari «${nuevo.value.usuario}» creat. Passa-li la contrasenya inicial: la primera vegada que entri haurà de canviar-la.`)) {
-    nuevo.value = { usuario: '', nombre: '', password: '', es_admin: false }
+    nuevo.value = { usuario: '', nombre: '', email: '', password: '', es_admin: false }
   }
 }
 
 const cambiar = async (u, cambios, textoOk) => avisar(await api(`/api/usuarios/${u.id}`, json('PUT', cambios)), textoOk)
 
 // Edición en la propia fila (usuario y nombre)
-const editando = ref(null) // { id, usuario, nombre }
-const empezarEdicion = (u) => { editando.value = { id: u.id, usuario: u.usuario, nombre: u.nombre } }
+const editando = ref(null) // { id, usuario, nombre, email }
+const empezarEdicion = (u) => { editando.value = { id: u.id, usuario: u.usuario, nombre: u.nombre, email: u.email || '' } }
 const guardarEdicion = async () => {
-  const { id, usuario, nombre } = editando.value
-  if (await cambiar({ id }, { usuario, nombre }, `Usuari «${usuario}» actualitzat.`)) editando.value = null
+  const { id, usuario, nombre, email } = editando.value
+  if (await cambiar({ id }, { usuario, nombre, email }, `Usuari «${usuario}» actualitzat.`)) editando.value = null
 }
 
 const borrar = async (u) => {
@@ -66,6 +66,7 @@ const nuevaContrasena = async (u) => {
     <h2>👥 Usuaris de la intranet</h2>
     <p class="ayuda">Cada persona de l'equip té el seu usuari: així el diari sap qui escriu cada nota. Els administradors poden gestionar usuaris i editar qualsevol nota.
       Un usuari només es pot esborrar si no ha escrit cap nota; si en té, desactiva'l.
+      El correu serveix per a «He oblidat la contrasenya».
       «Plantilla» = compta per a l'avís de falta de personal del calendari d'equip.</p>
 
     <form class="nuevo" @submit.prevent="crear">
@@ -73,6 +74,7 @@ const nuevaContrasena = async (u) => {
       <div class="fila">
         <label>Usuari <input v-model="nuevo.usuario" placeholder="ex.: nhoareau" autocomplete="off" required></label>
         <label class="ancho">Nom complet <input v-model="nuevo.nombre" placeholder="ex.: Nina Hoareau" required></label>
+        <label class="ancho">Correu <input v-model="nuevo.email" type="email" placeholder="ex.: nhoareau@icm.csic.es"></label>
         <label>Contrasenya inicial <input v-model="nuevo.password" type="text" minlength="8" autocomplete="new-password" required></label>
         <label class="check"><input type="checkbox" v-model="nuevo.es_admin"> Administrador</label>
         <button type="submit" class="btn-principal">Crear</button>
@@ -83,17 +85,19 @@ const nuevaContrasena = async (u) => {
     <p v-if="error" class="error">{{ error }}</p>
 
     <table class="tabla">
-      <thead><tr><th>Usuari</th><th>Nom</th><th>Administrador</th><th>Plantilla</th><th>Estat</th><th></th></tr></thead>
+      <thead><tr><th>Usuari</th><th>Nom</th><th>Correu</th><th>Administrador</th><th>Plantilla</th><th>Estat</th><th></th></tr></thead>
       <tbody>
-        <tr v-if="usuarios.length === 0"><td colspan="6" class="aviso">Encara no hi ha usuaris personals.</td></tr>
+        <tr v-if="usuarios.length === 0"><td colspan="7" class="aviso">Encara no hi ha usuaris personals.</td></tr>
         <tr v-for="u in usuarios" :key="u.id" :class="{ inactivo: !u.activo }">
           <template v-if="editando && editando.id === u.id">
             <td><input v-model="editando.usuario" class="input-fila" aria-label="Usuari"></td>
             <td><input v-model="editando.nombre" class="input-fila" aria-label="Nom complet"></td>
+            <td><input v-model="editando.email" type="email" class="input-fila" aria-label="Correu" placeholder="(cap)"></td>
           </template>
           <template v-else>
             <td>{{ u.usuario }}</td>
             <td>{{ u.nombre }}</td>
+            <td class="correo">{{ u.email || '—' }}</td>
           </template>
           <td>
             <label class="check"><input type="checkbox" :checked="!!u.es_admin"
@@ -149,6 +153,7 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .tabla th { color: #555; }
 .inactivo td { color: #999; }
 .pendiente { color: #c26a00; font-size: 0.8rem; }
+.correo { color: #555; font-size: 0.85rem; word-break: break-all; }
 .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
 .input-fila { width: 100%; box-sizing: border-box; padding: 5px 8px; }
 .btn-mini.guardar { background: #e6f4ea; color: #1e6b34; border-color: #a8d5b5; }

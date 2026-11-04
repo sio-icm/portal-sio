@@ -92,6 +92,54 @@ const cargarProyectos = async () => {
   } catch (error) { console.error("Error carregant projectes:", error) }
 }
 
+// ==============================
+// HE OBLIDAT LA CONTRASENYA
+// ==============================
+// L'enllaç del correu porta ?restablir=... : en aquest cas es mostra el formulari de contrasenya nova
+const tokenRestablir = ref(new URLSearchParams(window.location.search).get('restablir'))
+const mensajeLogin = ref('')
+const olvido = ref({ dato: '', enviando: false, enviado: '', error: '' })
+const pedirEnlace = async () => {
+  olvido.value = { ...olvido.value, enviando: true, enviado: '', error: '' }
+  try {
+    const r = await fetch(`${apiBase}/recuperar`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: olvido.value.dato })
+    })
+    if (r.ok) olvido.value.enviado = "Si l'usuari o el correu existeixen i tenen un correu configurat, t'hem enviat un enllaç (mira també el correu brossa). Val durant una hora."
+    else olvido.value.error = (await r.json().catch(() => ({}))).error || "No s'ha pogut enviar."
+  } catch {
+    olvido.value.error = "No s'ha pogut connectar amb el servidor."
+  } finally {
+    olvido.value.enviando = false
+  }
+}
+const restablir = ref({ nueva: '', repetida: '', error: '', guardando: false })
+const guardarRestablir = async () => {
+  const f = restablir.value
+  f.error = ''
+  if (f.nueva !== f.repetida) { f.error = 'Les dues contrasenyes no coincideixen.'; return }
+  f.guardando = true
+  try {
+    const r = await fetch(`${apiBase}/restablir`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tokenRestablir.value, nueva: f.nueva })
+    })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) { f.error = d.error || "No s'ha pogut canviar la contrasenya."; return }
+    salirDeRestablir()
+    usuario.value = d.usuario || ''
+    mensajeLogin.value = 'Contrasenya canviada. Ja pots entrar amb la nova.'
+  } catch {
+    f.error = "No s'ha pogut connectar amb el servidor."
+  } finally {
+    f.guardando = false
+  }
+}
+const salirDeRestablir = () => {
+  tokenRestablir.value = null
+  restablir.value = { nueva: '', repetida: '', error: '', guardando: false }
+  window.history.replaceState({}, '', window.location.pathname) // treu el testimoni de la barra d'adreces
+}
+
 onMounted(async () => {
   // Neteja de l'antic login fals, que guardava 'sio_auth' al navegador
   sessionStorage.removeItem('sio_auth')
@@ -259,7 +307,20 @@ const eliminarProyecto = async (id) => {
 
     <div v-if="!estaLogueado" class="login-overlay">
       <div class="login-box">
+        <!-- Enllaç del correu «He oblidat la contrasenya» -->
+        <template v-if="tokenRestablir">
+          <h2>Nova contrasenya</h2>
+          <form @submit.prevent="guardarRestablir">
+            <input type="password" v-model="restablir.nueva" placeholder="Contrasenya nova (mínim 8)" minlength="8" autocomplete="new-password" required>
+            <input type="password" v-model="restablir.repetida" placeholder="Repeteix-la" minlength="8" autocomplete="new-password" required>
+            <p v-if="restablir.error" class="login-error">{{ restablir.error }}</p>
+            <button type="submit" :disabled="restablir.guardando">DESAR</button>
+          </form>
+          <p class="olvido"><a href="#" @click.prevent="salirDeRestablir">← Tornar a l'accés</a></p>
+        </template>
+        <template v-else>
         <h2>Accés SIO</h2>
+        <p v-if="mensajeLogin" class="login-ok">{{ mensajeLogin }}</p>
         <form @submit.prevent="iniciarSesion">
           <input v-model="usuario" placeholder="Usuari" autocomplete="username" required>
           <input type="password" v-model="password" placeholder="Contrasenya" autocomplete="current-password" required>
@@ -269,14 +330,19 @@ const eliminarProyecto = async (id) => {
           </div>
           <button type="submit">ENTRAR</button>
         </form>
-        <!-- Encara no hi ha correu des del servidor: la contrasenya nova la posa un administrador -->
         <details class="olvido">
           <summary>Has oblidat l'usuari o la contrasenya?</summary>
-          <p><b>Usuari:</b> normalment és el teu nom en minúscules, sense accents (ex.: <i>nina</i>).</p>
-          <p><b>Contrasenya:</b> demana a un administrador (Raül Ferrando o Raül Bardají) que te'n posi una de provisional.
-            Quan entris, l'hauràs de canviar per una de teva.</p>
-          <a class="btn-olvido" :href="`mailto:sio@icm.csic.es?subject=${encodeURIComponent('Intranet SIO: he oblidat la contrasenya')}&body=${encodeURIComponent('Hola,\n\nNo recordo la contrasenya (o l\'usuari) de la intranet del SIO. Em podeu posar una contrasenya provisional?\n\nNom:\n\nGràcies!')}`">✉️ Demanar-ne una de nova</a>
+          <p>Escriu el teu usuari o el teu correu i t'enviarem un enllaç per posar una contrasenya nova (i et recordarem l'usuari).</p>
+          <form @submit.prevent="pedirEnlace">
+            <input v-model="olvido.dato" placeholder="Usuari o correu" autocomplete="username" required>
+            <button type="submit" class="btn-olvido" :disabled="olvido.enviando">✉️ Enviar-me l'enllaç</button>
+          </form>
+          <p v-if="olvido.enviado" class="login-ok">{{ olvido.enviado }}</p>
+          <p v-if="olvido.error" class="login-error">{{ olvido.error }}</p>
+          <p class="nota-olvido">Si no tens cap correu configurat, demana a un administrador (Raül Ferrando o Raül Bardají) una contrasenya provisional.
+            L'usuari sol ser el teu nom en minúscules (ex.: <i>nina</i>).</p>
         </details>
+        </template>
       </div>
     </div>
 
@@ -533,7 +599,11 @@ const eliminarProyecto = async (id) => {
 .olvido { margin-top: 15px; font-size: 0.85rem; color: #444; }
 .olvido summary { cursor: pointer; color: #0086c0; text-align: center; }
 .olvido p { margin: 8px 0; line-height: 1.4; }
-.btn-olvido { display: block; text-align: center; margin-top: 8px; padding: 8px; border: 1px solid #0086c0; border-radius: 4px; color: #0086c0; text-decoration: none; font-weight: bold; }
+.olvido a { color: #0086c0; }
+.login-box .btn-olvido { background: white; border: 1px solid #0086c0; color: #0086c0; }
+.nota-olvido { color: #666; font-size: 0.8rem; }
+.login-ok { color: #198754; font-weight: bold; font-size: 0.85rem; }
+.login-error { color: #b02a37; font-weight: bold; font-size: 0.85rem; margin: -5px 0 10px; }
 .login-box button { width: 100%; padding: 10px; background: #8cc63f; color: #012169; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
 
 .dashboard-grid { display: flex; min-height: 100vh; }

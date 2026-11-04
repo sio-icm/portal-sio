@@ -236,7 +236,13 @@ fuera del servidor, guarda también la carpeta de fotos, por ejemplo:
   **administrador del servidor**. Desde la intranet, en «Usuaris», crea los
   usuarios personales de cada persona del equipo (y puede hacer administradores
   a otros).
-- Cada persona cambia su contraseña en «El meu compte».
+- Cada persona cambia su contraseña en «El meu compte», y allí también pone su
+  correo (el administrador lo puede poner en «Usuaris»).
+- **«Has oblidat l'usuari o la contrasenya?»** (pantalla de acceso): con el
+  usuario o el correo, la web envía un enlace que vale una hora y una sola vez.
+  Los correos salen por `smtp.icm.csic.es` con el remitente `web-sio@docker03…`:
+  nunca en nombre de sio@icm.csic.es. Sin correo configurado, un administrador
+  pone una contraseña provisional en «Usuaris → 🔑 Contrasenya».
 - El **diari d'activitat** guarda notas (fecha, proyecto o «sense projecte»,
   tipo, texto). Cada uno edita las suyas; los administradores, todas.
 - Cada nota puede llevar **hasta 12 fotos**; el servidor las reduce a 1600 px en

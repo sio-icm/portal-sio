@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { peticionIntranet } from '../utils/diario'
 
 // Cada usuario cambia aquí su propia contraseña. El administrador definido en
@@ -17,6 +17,26 @@ const nueva = ref('')
 const repetida = ref('')
 const mensaje = ref('')
 const error = ref('')
+
+// Correu per a «He oblidat la contrasenya»
+const email = ref('')
+const mensajeEmail = ref('')
+const errorEmail = ref('')
+onMounted(async () => {
+  if (props.obligatorio || props.sesion.usuario_id === null) return
+  const r = await peticionIntranet('/api/mi-cuenta', {}, () => emit('sesion-caducada'))
+  if (r.ok) email.value = (await r.json()).email || ''
+})
+const guardarEmail = async () => {
+  mensajeEmail.value = ''
+  errorEmail.value = ''
+  const r = await peticionIntranet('/api/mi-cuenta', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value })
+  }, () => emit('sesion-caducada'))
+  const d = await r.json().catch(() => ({}))
+  if (r.ok) { email.value = d.email || ''; mensajeEmail.value = email.value ? 'Correu desat.' : 'Correu esborrat.' }
+  else errorEmail.value = d.error || "No s'ha pogut desar el correu."
+}
 
 const cambiar = async () => {
   mensaje.value = ''
@@ -63,6 +83,15 @@ const cambiar = async () => {
       <button type="submit" class="btn-principal">Canviar</button>
       <p v-if="mensaje" class="ok">{{ mensaje }}</p>
       <p v-if="error" class="error">{{ error }}</p>
+    </form>
+
+    <form v-if="!props.obligatorio && props.sesion.usuario_id !== null" class="formulario" @submit.prevent="guardarEmail">
+      <h3>El meu correu</h3>
+      <p class="ayuda">Si oblides la contrasenya, t'hi enviarem un enllaç per posar-ne una de nova.</p>
+      <label>Correu <input type="email" v-model="email" autocomplete="email" placeholder="ex.: nhoareau@icm.csic.es"></label>
+      <button type="submit" class="btn-principal">Desar el correu</button>
+      <p v-if="mensajeEmail" class="ok">{{ mensajeEmail }}</p>
+      <p v-if="errorEmail" class="error">{{ errorEmail }}</p>
     </form>
   </div>
 </template>
