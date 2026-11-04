@@ -11,6 +11,8 @@ set -euo pipefail
 PORTAL=${PORTAL:-/home/bardaji/sio-portal}
 COPIAS=${COPIAS:-/home/bardaji/sio-copias}
 DIAS_GUARDAR=${DIAS_GUARDAR:-30}
+# Dueño de las copias: el usuario que se conecta por SSH para bajarlas a otro ordenador
+PROPIETARIO=${PROPIETARIO:-bardaji}
 HOY=$(date +%F)
 TEMPORAL=copia-en-curso.db
 
@@ -34,6 +36,7 @@ tar czf "$COPIAS/sio-$HOY.tgz.parcial" -C "$PORTAL/datos" \
 rm -f "$PORTAL/datos/$TEMPORAL"
 mv "$COPIAS/sio-$HOY.tgz.parcial" "$COPIAS/sio-$HOY.tgz"
 chmod 600 "$COPIAS/sio-$HOY.tgz"
+chown "$PROPIETARIO:" "$COPIAS" "$COPIAS/sio-$HOY.tgz"
 
 # 3. Borrar las copias antiguas
 find "$COPIAS" -maxdepth 1 -name 'sio-*.tgz' -mtime +"$DIAS_GUARDAR" -delete
