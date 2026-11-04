@@ -274,8 +274,10 @@ sudo systemctl start sio-copia.service && ls -lh ~/sio-copias   # primera copia,
 - Las notas marcadas como **públicas** solo salen en la web (página `/diario`)
   cuando un administrador las aprueba con «Publicar a la web». Si el autor las
   edita después, vuelven a revisión.
-- El **informe semestral** sale de esas notas: se elige el periodo y se imprime
-  o se guarda en PDF.
+- El **informe semestral** sale de esas notas y del calendari d'equip
+  (campañas, formación, reuniones con nota y uso de la Pelagia, el tanque y los
+  préstamos; nunca teletrabajo, vacaciones ni bajas): se elige el periodo, se
+  quita con la ✕ lo que no interese y se imprime o se guarda en PDF.
 - Las tablas `usuarios` y `notas` se crean solas en la base de datos al arrancar
   el backend.
 
