@@ -230,6 +230,30 @@ La copia queda en `datos/copia-AAAA-MM-DD.db`. Para tener una copia completa
 fuera del servidor, guarda también la carpeta de fotos, por ejemplo:
 `tar czf ~/sio-datos-$(date +%F).tgz -C ~/sio-portal datos`.
 
+### Copia automática cada noche
+
+`deploy/copia-seguridad.sh` hace una copia coherente de la base de datos (sin
+parar la web), la empaqueta con las fotos en `~/sio-copias/sio-AAAA-MM-DD.tgz`
+y borra las de más de 30 días. La lanza un temporizador de systemd a las 3:00
+(si el servidor estaba apagado, al arrancar). Instalación, una sola vez:
+
+```sh
+cd ~/sio-portal
+sudo install -m 755 deploy/copia-seguridad.sh /usr/local/bin/sio-copia-seguridad
+sudo cp deploy/sio-copia.service deploy/sio-copia.timer /etc/systemd/system/
+sudo restorecon -v /usr/local/bin/sio-copia-seguridad /etc/systemd/system/sio-copia.*
+sudo systemctl daemon-reload && sudo systemctl enable --now sio-copia.timer
+sudo systemctl start sio-copia.service && ls -lh ~/sio-copias   # primera copia, para probar
+```
+
+- Ver cuándo toca la siguiente: `systemctl list-timers sio-copia.timer`
+- Ver si ha fallado: `journalctl -u sio-copia.service -n 20`
+- Restaurar: `tar xzf ~/sio-copias/sio-AAAA-MM-DD.tgz -C /tmp/restaurar`, parar el
+  backend, copiar `sio_inventario.db` y `fotos/` a `~/sio-portal/datos/` y arrancarlo.
+- Las copias están en el mismo disco: protegen de errores y borrados, no de que
+  se estropee el servidor. De vez en cuando, bájate la última a tu ordenador:
+  `scp docker03.icm.csic.es:sio-copias/sio-$(date +%F).tgz ~/`
+
 ## Usuarios de la intranet y diario de actividad
 
 - El usuario de `/etc/sio-portal/backend.env` (`SIO_ADMIN_USER`) es el

@@ -1,0 +1,9 @@
+# Copia de seguridad del portal SIO. Se instala en /etc/systemd/system/ (ver README).
+[Unit]
+Description=Copia de seguridad del portal SIO (base de datos y fotos)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sio-copia-seguridad

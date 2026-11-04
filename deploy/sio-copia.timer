@@ -1,0 +1,12 @@
+# Cada noche a las 3:00. Persistent=true: si el servidor estaba apagado a esa
+# hora, la copia se hace al arrancar.
+[Unit]
+Description=Copia de seguridad diaria del portal SIO
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
