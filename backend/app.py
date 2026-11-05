@@ -347,8 +347,13 @@ def gestionar_instrumentos():
         try:
             conexion = conectar_bd()
             instrumentos = conexion.execute('SELECT * FROM instrumentos').fetchall()
+            # Si avui està prestat o reservat al calendari d'equip, fins quan (sense noms)
+            hoy = date.today().isoformat()
+            prestados = {f['instrumento_id']: f['hasta'] for f in conexion.execute(
+                "SELECT instrumento_id, MAX(fin) AS hasta FROM reservas WHERE recurso = 'instrument' "
+                "AND inicio <= ? AND fin >= ? GROUP BY instrumento_id", (hoy, hoy))}
             conexion.close()
-            lista_instrumentos = [dict(fila) for fila in instrumentos]
+            lista_instrumentos = [dict(fila, prestado_hasta=prestados.get(fila['id'])) for fila in instrumentos]
             return jsonify(lista_instrumentos)
         except Exception as e:
             return jsonify({"error": str(e)}), 500

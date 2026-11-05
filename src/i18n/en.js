@@ -162,6 +162,9 @@ export default {
   },
 
   instrumentacion: {
+    enPrestamo: 'On loan',
+    enPrestamoHasta: 'On loan until {fecha}',
+    avisoPrestamo: 'It is currently on loan or booked until {fecha}. You can request it for later dates.',
     titulo: 'Oceanographic Instrumentation',
     subtitulo: 'Technical catalogue, calibrations and SIO equipment loans.',
     cargando: 'Connecting to the SIO database...',

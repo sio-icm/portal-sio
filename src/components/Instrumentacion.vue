@@ -36,6 +36,7 @@ const cargarDatos = async () => {
       nombre: fila.nombre,
       marca: fila.marca || '',
       estado: fila.estado || 'Disponible',
+      prestadoHasta: fila.prestado_hasta || null,
       ultimaCalibracion: fila.ultima_calibracion || '',
       descripcionCompleta: fila.descripcion || '',
       parametros: fila.parametros_tecnicos || ''
@@ -63,6 +64,12 @@ const instrumentosAgrupados = computed(() => {
 })
 
 const cambiarCategoria = (cat) => { categoriaActiva.value = cat; equipoSeleccionado.value = null; instrumentoExpandido.value = null }
+// «14 de diciembre» en el idioma de la web
+const fechaLocal = (iso) => {
+  const [a, m, d] = iso.split('-').map(Number)
+  return new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'long' }).format(new Date(a, m - 1, d))
+}
+
 const verDetalles = (equipo) => { equipoSeleccionado.value = equipo; diasSeleccionados.value = []; estado.value = ''; cargarOcupacion(equipo.id) }
 
 // Días en que el instrumento está prestado o reservado (de la intranet, sin nombres)
@@ -162,6 +169,7 @@ const enviarSolicitud = async () => {
                     <span class="punto-azul">•</span>
                     <button type="button" class="enlace-wiki btn-enlace" @click="verDetalles(inst)" :title="$t('instrumentacion.verFicha')">{{ inst.nombre }}</button>
                     <span v-if="inst.marca" class="marca-wiki">({{ inst.marca }})</span>
+                    <span v-if="inst.prestadoHasta" class="etiqueta-prestamo">{{ $t('instrumentacion.enPrestamoHasta', { fecha: fechaLocal(inst.prestadoHasta) }) }}</span>
                   </div>
                   <div class="caja-gris-wiki">
                     <div v-if="inst.ultimaCalibracion"><strong>- {{ $t('instrumentacion.ultimaCalibracion') }}:</strong> {{ inst.ultimaCalibracion }}</div>
@@ -200,10 +208,12 @@ const enviarSolicitud = async () => {
             <div v-if="equipoSeleccionado" class="detalles-equipo">
               <div class="cabecera-estado">
                 <h2 class="titulo-fija">{{ equipoSeleccionado.nombre }}</h2>
-                <span :class="['badge-grande', equipoSeleccionado.estado.toLowerCase().replace(' ', '-')]">
+                <span v-if="equipoSeleccionado.prestadoHasta" class="badge-grande prestado">{{ $t('instrumentacion.enPrestamo') }}</span>
+                <span v-else :class="['badge-grande', equipoSeleccionado.estado.toLowerCase().replace(' ', '-')]">
                   {{ equipoSeleccionado.estado }}
                 </span>
               </div>
+              <p v-if="equipoSeleccionado.prestadoHasta" class="aviso-prestamo">{{ $t('instrumentacion.avisoPrestamo', { fecha: fechaLocal(equipoSeleccionado.prestadoHasta) }) }}</p>
               
               <div class="calendario-mini">
                 <h3 class="titulo-mini">{{ $t('instrumentacion.paso1') }}</h3>
@@ -321,6 +331,9 @@ const enviarSolicitud = async () => {
 .cabecera-estado { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;}
 .cabecera-estado .titulo-fija { border-bottom: none; margin-bottom: 0; padding-bottom: 0; font-size: 1.3rem;}
 .badge-grande { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+.badge-grande.prestado { background: #fff4e5; color: #b45d00; }
+.etiqueta-prestamo { margin-left: 8px; background: #fff4e5; color: #b45d00; border: 1px solid #f3c98b; border-radius: 10px; padding: 1px 8px; font-size: 0.78rem; font-weight: bold; white-space: nowrap; }
+.aviso-prestamo { background: #fff4e5; color: #7a4300; border-left: 3px solid #f0a640; padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; margin: 0 0 15px; }
 .badge-grande.disponible { background: #e6f4ea; color: #1e7e34; }
 .badge-grande.en-uso { background: #fff4e5; color: #b45d00; }
 .badge-grande.mantenimiento { background: #fdeaea; color: #c53030; }

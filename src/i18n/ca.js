@@ -162,6 +162,9 @@ export default {
   },
 
   instrumentacion: {
+    enPrestamo: 'En préstec',
+    enPrestamoHasta: 'En préstec fins al {fecha}',
+    avisoPrestamo: 'Ara està prestat o reservat fins al {fecha}. Pots sol·licitar-lo per a dies posteriors.',
     titulo: 'Instrumentació Oceanogràfica',
     subtitulo: 'Catàleg tècnic, calibratges i gestió de préstecs del SIO.',
     cargando: 'Connectant amb la base de dades del SIO...',

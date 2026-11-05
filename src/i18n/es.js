@@ -162,6 +162,9 @@ export default {
   },
 
   instrumentacion: {
+    enPrestamo: 'En préstamo',
+    enPrestamoHasta: 'En préstamo hasta el {fecha}',
+    avisoPrestamo: 'Ahora está prestado o reservado hasta el {fecha}. Puedes solicitarlo para días posteriores.',
     titulo: 'Instrumentación Oceanográfica',
     subtitulo: 'Catálogo técnico, calibraciones y gestión de préstamos del SIO.',
     cargando: 'Conectando con la base de datos del SIO...',
