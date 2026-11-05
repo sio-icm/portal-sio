@@ -43,7 +43,8 @@ const enviarContacto = async () => {
         <div class="tarjeta-dato datos-unificados">
           <h3>{{ $t('contacto.info') }}</h3>
           <p><strong>{{ $t('contacto.direccion') }}:</strong> Passeig Marítim de la Barceloneta, 37-49, 08003 Barcelona</p>
-          <p><strong>{{ $t('contacto.telefono') }}:</strong> +34 93 230 95 00</p>
+          <p><strong>{{ $t('contacto.telefono') }}:</strong> +34 93 230 95 00 ({{ $t('contacto.extension') }} 445601)</p>
+          <p><strong>{{ $t('contacto.despacho') }}:</strong> B-08</p>
           <p><strong>{{ $t('contacto.email') }}:</strong> <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a></p>
         </div>
 

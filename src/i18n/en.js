@@ -83,6 +83,8 @@ export default {
     info: 'SIO information',
     direccion: 'Address',
     telefono: 'Phone',
+    extension: 'ext.',
+    despacho: 'Office',
     email: 'Email',
     mapa: 'Map showing the location of the SIO',
     formTitulo: 'Send us your enquiry',

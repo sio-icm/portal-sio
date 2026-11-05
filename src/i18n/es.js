@@ -83,6 +83,8 @@ export default {
     info: 'Información del SIO',
     direccion: 'Dirección',
     telefono: 'Teléfono',
+    extension: 'ext.',
+    despacho: 'Despacho',
     email: 'Email',
     mapa: 'Mapa con la ubicación del SIO',
     formTitulo: 'Envíanos tu consulta',
