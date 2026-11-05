@@ -460,39 +460,118 @@ export default {
 
   bluelab: {
     lema: "Pioners en el futur de l'observació marina",
-    lineasTitulo: "Línies d'innovació",
-    lineas: [
-      { titulo: 'Plataformes autònomes', texto: "Mostreig adaptatiu i coordinació de flotes amb AUV, ASV i gliders. Operem com a nodes de comunicació en temps real per a la cartografia costanera i oceànica." },
-      { titulo: 'Robòtica bioinspirada', texto: "Disseny de vehicles bentònics amb potes (crawlers) per interactuar amb el fons marí minimitzant la pertorbació ambiental i la petjada acústica." },
-      { titulo: 'Biologging', texto: "Ús de megafauna marina (aus, tortugues, taurons) equipada amb sensors avançats com a plataformes d'observació in situ en zones molt dinàmiques." },
-      { titulo: 'Machine learning i IA', texto: "Algorismes d'aprenentatge per reforç multiagent (MARL), edge computing per classificar imatges in situ i automatització del processament de big data." }
+    queEsTitulo: "Què és BLUE Lab?",
+    queEs: [
+      "BLUE Lab és una nova instal·lació estratègica de l'ICM-CSIC, creada amb el suport del programa Severo Ochoa per accelerar l'adopció de la robòtica marina autònoma en l'observació de l'oceà. Està integrada al Servei d'Enginyeria Oceanogràfica (SIO) i ofereix al personal investigador de l'ICM i a usuaris externs capacitats avançades en sensors robòtics, plataformes autònomes, intel·ligència artificial i noves tecnologies d'observació.",
+      "El seu tret diferencial és tractar la robòtica marina com una disciplina científica i tecnològica: enginyers, biòlegs, físics, geòlegs i oceanògrafs treballen junts per desenvolupar, analitzar i aplicar nous sistemes robòtics, no només com a eina de suport sinó com a marc per a la recerca."
     ],
-    flotaTitulo: 'La nostra flota i infraestructura',
+    divisiones: [
+      { titulo: 'Desenvolupament', texto: "Disseny i enginyeria de nous sistemes robòtics, sensors i metodologies d'observació de baix cost." },
+      { titulo: 'Aplicació', texto: "Adaptació i desplegament de les tecnologies en casos científics reals de l'ICM-CSIC i de col·laboracions externes." },
+      { titulo: 'Validació', texto: 'Proves i comparatives al laboratori i en campanyes al mar, amb objectius científics i operatius ben definits.' }
+    ],
+    lineasTitulo: 'Línies de recerca',
+    lineas: [
+      { titulo: 'Plataformes robòtiques autònomes', texto: "Autonomia supervisada i mostreig adaptatiu amb AUV, ASV, gliders i drons aeris. Els vehicles de superfície fan de nodes de comunicació i de localització acústica, i permeten cartografiar amb alta resolució zones costaneres poc accessibles." },
+      { titulo: 'Disseny bioinspirat', texto: "Robots amb potes i noves formes de locomoció inspirades en crustacis i cefalòpodes per moure's i intervenir sobre el fons marí amb la mínima pertorbació ambiental i acústica." },
+      { titulo: 'Sensors en animals (biologging)', texto: "Aus, tortugues, cetacis o taurons equipats amb sensors com a plataformes d'observació mòbils, i la seva cooperació amb robots per cartografiar hàbitats i estudiar-ne el comportament." },
+      { titulo: 'Aprenentatge automàtic i IA', texto: "Aprenentatge per reforç multiagent per coordinar flotes, classificació d'imatges i senyals en temps real i gestió de grans volums de dades amb principis FAIR." }
+    ],
+    flotaTitulo: 'Flota i infraestructura',
     flota: [
       {
         titulo: 'Vehicles de superfície (ASV)',
         items: [
-          { nombre: 'ASV costaners (~1 m)', texto: "Dues unitats tipus SEABOTS SB100 PRO. Equipats amb ecosondes NORBIT i CTD, ideals per a batimetries ultracostaneres i desplegaments ràpids." },
-          { nombre: 'ASV oceànics (llarg abast)', texto: "Plataformes de gran autonomia propulsades per energia solar i de les onades, amb comunicació per satèl·lit i mòdems acústics per a missions en mar obert." }
+          { nombre: 'BlueBoat (2 unitats)', texto: "ASV compactes per a proves d'autonomia, seguiment acústic i desplegaments ràpids des de la costa o des d'embarcacions petites, amb càmera, GPS i comunicacions 4G i LoRaWAN. Primeres proves de camp l'abril del 2026." },
+          { nombre: 'SEABOTS SB100 PRO', texto: 'ASV costaner equipat amb ecosonda multifeix i CTD, pensat per a batimetries ultracostaneres i campanyes de resposta ràpida.' }
         ]
       },
       {
         titulo: 'Taller de fabricació i proves',
         items: [
-          { nombre: 'Fabricació ràpida', texto: "Parc d'impressió 3D avançat, amb sistemes de gran format i de resina (Creality K2 Plus Combo), fresadora i eines de precisió per al desenvolupament i la personalització de components robòtics i carcasses submarines." }
+          { nombre: 'Fabricació ràpida', texto: "Parc d'impressió 3D (inclosos sistemes de gran format i de resina), fresadora i eines de precisió per desenvolupar i adaptar components robòtics i carcasses submarines." },
+          { nombre: 'Properes incorporacions', texto: "Gliders de llarga autonomia, vehicles de superfície oceànics, drons aeris i noves eines d'IA, a través de convocatòries competitives (fase 3 del full de ruta)." }
         ]
       }
     ],
-    proyectosTitulo: 'Projectes destacats',
-    proyectos: [
-      { nombre: 'DIGI4ECO', texto: "Iniciativa pionera a escala europea per crear un bessó digital de l'oceà (Digital Twin)." },
-      { nombre: 'TECTUGA', texto: "Acoblament de dispositius a tortugues marines i coordinació amb ASV per estudiar-ne el comportament." },
-      { nombre: 'AVALON & MERLIN', texto: 'Comunicacions òptiques submarines i avenços en robòtica marina cooperativa.' }
+    galeriaTitulo: 'Primeres proves de camp',
+    galeriaPie: "Primera prova de camp dels BlueBoat, abril del 2026.",
+    fotos: [
+      'BlueBoat navegant al port',
+      'BlueBoat a l\'aigua durant la prova',
+      'BlueBoat al costat d\'un veler',
+      'Preparació del BlueBoat al moll',
+      'Seguiment del BlueBoat des de la neumàtica',
+      'Estació de control a terra',
+      'Equip de la prova de camp',
+      'BlueBoat a bord de la neumàtica'
     ],
-    equipoTitulo: "L'equip humà",
-    liderazgo: 'Lideratge científic',
-    equipoSio: 'Equip SIO',
-    predoctorales: 'Investigadors predoctorals'
+    proyectosTitulo: 'Projectes relacionats',
+    proyectosIntro: 'Projectes en curs el personal investigador dels quals col·labora amb BLUE Lab.',
+    gruposProyectos: [
+      {
+        titulo: 'Nacionals',
+        proyectos: [
+          { nombre: 'AI4SEA', ip: 'N. Bahamon', texto: "Robòtica submarina, sensors i intel·ligència artificial per monitorar, restaurar i modelitzar praderies marines, amb bessons digitals per a la gestió costanera." },
+          { nombre: 'SMART-ME', ip: 'N. Bahamon', texto: 'Nous mètodes per localitzar i seguir espècies marcades en aigües profundes amb plataformes robòtiques i marques acústiques.' },
+          { nombre: 'RyC (MARL)', ip: 'I. Masmitja', texto: 'Aprenentatge per reforç multiagent per millorar la coordinació i el seguiment amb vehicles autònoms.' },
+          { nombre: 'TECTUGA', ip: 'N. Robinson, I. Masmitja', texto: "Dispositius en tortugues marines acoblats amb ASV per estudiar-ne el comportament i cartografiar-ne l'hàbitat." },
+          { nombre: 'BEN-FLOW', ip: 'G. Picardi', texto: 'Locomoció bioinspirada sensible al flux i manipulació autònoma per intervenir al fons marí.' },
+          { nombre: 'SHIFT (MOMENTUM)', ip: 'F. Ramírez', texto: "Seguiment d'espècies marines i predicció de canvis en la seva distribució sota el canvi global." },
+          { nombre: 'PCBio', ip: 'F. Ramírez', texto: "Seguiment d'ocells marins i de la seva interacció amb les activitats humanes, inclosa la pesca." },
+          { nombre: 'COTI', ip: 'J. Navarro', texto: 'Seguiment de grans peixos pelàgics i de la seva interacció amb les pesqueries.' },
+          { nombre: 'ALLIES', ip: 'J. Navarro', texto: 'Dispositius GPS i acceleròmetres en depredadors marins urbans per entendre la seva interacció amb les activitats humanes.' },
+          { nombre: 'WhaleTelecom', ip: 'M. Romagosa (J. Navarro)', texto: 'Cables submarins de telecomunicacions per reduir les col·lisions entre balenes i vaixells a la Mediterrània.' },
+          { nombre: 'WOOS', ip: 'I. Afán', texto: "Wings Over Ocean Surveillance: ocells marins com a sentinelles de l'oceà." }
+        ]
+      },
+      {
+        titulo: 'Europeus',
+        proyectos: [
+          { nombre: 'AVALON', ip: 'I. Masmitja', texto: 'Noves metasuperfícies per millorar les comunicacions òptiques submarines.' },
+          { nombre: 'DIGI4ECO', ip: 'J. Aguzzi', texto: "Iniciativa pionera per crear un bessó digital de l'oceà." },
+          { nombre: 'MERLIN', ip: 'J. Aguzzi', texto: "Coordinació de vehicles submarins i de superfície per a l'observació oceànica." }
+        ]
+      },
+      {
+        titulo: 'Internacionals',
+        proyectos: [
+          { nombre: 'Fulbright–CSIC (MARL)', ip: 'I. Masmitja', texto: "Algorismes d'aprenentatge per reforç multiagent aplicats a una flota de vehicles del MBARI (Califòrnia)." }
+        ]
+      }
+    ],
+    rutaTitulo: 'Full de ruta',
+    rutaIntro: 'Pla per als propers 4 a 8 anys.',
+    enCurso: 'En curs',
+    ruta: [
+      { titulo: 'Construcció', texto: "Planificació, organigrama, procediments i necessitats d'infraestructura." },
+      { titulo: 'Arrencada', texto: 'Dos BlueBoat i un SEABOTS SB100 PRO amb sensors i batimetria, i un tècnic dedicat. Aplicacions costaneres, proves de concepte i posada en marxa de les línies de biologging i disseny bioinspirat.' },
+      { titulo: 'Creixement', texto: "Incorporació de gliders de llarga autonomia, drons aeris i eines d'IA amb finançament competitiu i aliances amb la indústria." },
+      { titulo: 'Consolidació', texto: "Servei autofinançat de l'ICM i referent europeu en observació oceànica autònoma, amb una flota ampliada." }
+    ],
+    impactoTitulo: 'Impacte',
+    impacto: [
+      { titulo: 'Per a la ciència', puntos: ["Sèries temporals d'alta resolució i baix cost, a la costa i en mar obert.", 'Noves metodologies: cartografia bentònica, seguiment de microplàstics, dinàmica submesoescalar.', "Noves tecnologies per observar la biodiversitat: marcatge, seguiment i classificació d'imatges amb IA.", "Suport a projectes ERC i Horizon que necessiten dades d'observació avançades."] },
+      { titulo: 'Per a la societat', puntos: ['Diagnòstics ambientals ràpids davant de contaminació o degradació d\'hàbitats.', "Sinergies amb l'oceanografia operacional i la pesca sostenible d'ICATMAR.", "Formació de la propera generació d'experts en tecnologia blava (doctorats industrials i acadèmics)."] },
+      { titulo: 'Per a la indústria', puntos: ['Banc de proves per validar robòtica i sensors marins en condicions reals.', "Oportunitats de transferència tecnològica des de l'ICM-CSIC."] }
+    ],
+    colaboracionesTitulo: 'Col·laboracions',
+    colaboraciones: [
+      { titulo: "Serveis de l'ICM-CSIC", texto: "Research Computing (computació d'alt rendiment) i Data Science (gestió i anàlisi de dades)." },
+      { titulo: 'Infraestructures i robòtica', texto: 'UTM-CSIC; grup VICOROB (CIRS, Universitat de Girona); IQUA Robotics; SEABOTS.' },
+      { titulo: 'Tecnologia submarina i IA', texto: 'Grup SARTI i centre IDEAI de la Universitat Politècnica de Catalunya.' },
+      { titulo: 'Internacionals', texto: 'MBARI, BAS-NERC, CNRS, IST i ISEN, entre d\'altres.' }
+    ],
+    equipoTitulo: "L'equip",
+    equipo: [
+      { titulo: 'Personal del SIO', personas: ['Raül Bardají', 'Raül Ferrando', 'Nina Hoareau', 'Brian Nicolás'] },
+      { titulo: 'Lideratge científic', personas: ['Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
+      { titulo: 'Recerca predoctoral i enginyeria', personas: ['Michele Ferrari: IA i edge computing (REC)', 'Pedro Agundez: robòtica i IA (DOFT)', 'Matteo Gallici: aprenentatge per reforç (DOFT)', 'Gerard Batet: biologging i comunicacions acústiques (DOFT)', 'Jorge Aguirregomezcorta: locomoció bioinspirada (REC)', 'Marisa González: biologging de megafauna (REC)', 'Antoni Sánchez-Márquez: seguiment acústic (REC)', 'Ainhoa Idiondo-Molina: IA per al monitoratge ecològic (REC)', 'Korneel Sommers: enginyeria robòtica (DOFT)'] },
+      { titulo: 'Investigadors associats', personas: ['Emili Garcia (DOFT / ICATMAR)', 'Jordi Isern (DOFT / ICATMAR)', 'Miriam Romagosa (DOFT)', 'Jorge Guillén (GEO)', 'Jacopo Aguzzi (REC)', 'Nixon Bahamon (REC)', 'Joan Navarro (REC)', 'Francisco Ramírez (REC)', 'Joaquim Garrabou (BIO)'] }
+    ],
+    ctaTitulo: 'Vols col·laborar amb BLUE Lab?',
+    ctaTexto: "Si ets investigador, empresa o institució i t'interessa fer servir o desenvolupar tecnologia d'observació marina amb nosaltres, escriu-nos.",
+    ctaBoton: 'Contacta amb nosaltres'
   },
 
   equipo: {

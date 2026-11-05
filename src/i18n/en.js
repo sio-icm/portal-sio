@@ -460,39 +460,118 @@ export default {
 
   bluelab: {
     lema: 'Pioneering the future of marine observation',
-    lineasTitulo: 'Innovation Lines',
-    lineas: [
-      { titulo: 'Autonomous Platforms', texto: 'Adaptive sampling and fleet coordination using AUVs, ASVs and gliders. We operate as real-time communication nodes for coastal and ocean mapping.' },
-      { titulo: 'Bio-inspired Robotics', texto: 'Design of legged benthic vehicles (crawlers) that interact with the seabed while minimising environmental disturbance and acoustic footprint.' },
-      { titulo: 'Biologging', texto: 'Using marine megafauna (birds, turtles, sharks) fitted with advanced sensors as in situ observation platforms in highly dynamic areas.' },
-      { titulo: 'Machine Learning & AI', texto: 'Multi-agent reinforcement learning (MARL) algorithms, edge computing for in situ image classification, and automated big data processing.' }
+    queEsTitulo: 'What is BLUE Lab?',
+    queEs: [
+      'BLUE Lab is a new strategic facility of ICM-CSIC, created with the support of the Severo Ochoa programme to accelerate the adoption of autonomous marine robotics for ocean observation. It is part of the Oceanographic Engineering Service (SIO) and provides ICM researchers and external users with advanced capabilities in robotic sensing, autonomous platforms, artificial intelligence and innovative observation technologies.',
+      'What sets it apart is its focus on marine robotics as a scientific and technological discipline: engineers, biologists, physicists, geologists and oceanographers work together to develop, analyse and apply new robotic systems, not only as a support tool but as a framework for research.'
     ],
-    flotaTitulo: 'Our Fleet and Infrastructure',
+    divisiones: [
+      { titulo: 'Development', texto: 'Design and engineering of new robotic systems, sensors and cost-effective observation methods.' },
+      { titulo: 'Application', texto: 'Adapting and deploying the technologies in real scientific use cases at ICM-CSIC and in external collaborations.' },
+      { titulo: 'Validation', texto: 'Testing and benchmarking in the lab and in sea campaigns, against clearly defined scientific and operational objectives.' }
+    ],
+    lineasTitulo: 'Research lines',
+    lineas: [
+      { titulo: 'Autonomous robotic platforms', texto: 'Supervised autonomy and adaptive sampling with AUVs, ASVs, gliders and aerial drones. Surface vehicles act as communication and acoustic positioning nodes, and enable high-resolution mapping of hard-to-reach coastal areas.' },
+      { titulo: 'Bioinspired design', texto: 'Legged robots and new forms of locomotion inspired by crustaceans and cephalopods, to move and work on the seabed with minimal environmental and acoustic disturbance.' },
+      { titulo: 'Animal-borne sensors (biologging)', texto: 'Seabirds, turtles, cetaceans or sharks fitted with sensors as mobile observation platforms, and their cooperation with robots to map habitats and study behaviour.' },
+      { titulo: 'Machine learning and AI', texto: 'Multi-agent reinforcement learning to coordinate fleets, real-time image and signal classification, and FAIR management of large datasets.' }
+    ],
+    flotaTitulo: 'Fleet and infrastructure',
     flota: [
       {
-        titulo: 'Surface Vehicles (ASVs)',
+        titulo: 'Surface vehicles (ASVs)',
         items: [
-          { nombre: 'Coastal ASVs (~1 m)', texto: 'Two SEABOTS SB100 PRO units. Equipped with NORBIT echo sounders and CTD, ideal for very shallow coastal bathymetry and rapid deployments.' },
-          { nombre: 'Ocean ASVs (long-range)', texto: 'Long-endurance platforms powered by solar and wave energy, with satellite communication and acoustic modems for open-sea missions.' }
+          { nombre: 'BlueBoat (2 units)', texto: 'Compact ASVs for autonomy tests, acoustic tracking and rapid deployment from the shore or from small boats, with camera, GPS and 4G and LoRaWAN communications. First field tests in April 2026.' },
+          { nombre: 'SEABOTS SB100 PRO', texto: 'Coastal ASV fitted with a multibeam echosounder and CTD, designed for very shallow bathymetry and rapid-response campaigns.' }
         ]
       },
       {
-        titulo: 'Manufacturing and Test Workshop',
+        titulo: 'Fabrication and testing workshop',
         items: [
-          { nombre: 'Rapid Manufacturing', texto: 'Advanced 3D printing facility, including large-format and resin systems (Creality K2 Plus Combo), a milling machine and precision tools for developing and customising robotic components and underwater housings.' }
+          { nombre: 'Rapid fabrication', texto: '3D printing facilities (including large-format and resin systems), a milling machine and precision tools to develop and adapt robotic components and underwater housings.' },
+          { nombre: 'Coming next', texto: 'Long-endurance gliders, ocean-going surface vehicles, aerial drones and new AI tools, through competitive funding (phase 3 of the roadmap).' }
         ]
       }
     ],
-    proyectosTitulo: 'Featured Projects',
-    proyectos: [
-      { nombre: 'DIGI4ECO', texto: 'Pioneering European initiative to create a Digital Twin of the Ocean.' },
-      { nombre: 'TECTUGA', texto: 'Attaching devices to sea turtles and coordinating with ASVs to study their behaviour.' },
-      { nombre: 'AVALON & MERLIN', texto: 'Underwater optical communications and advances in cooperative marine robotics.' }
+    galeriaTitulo: 'First field tests',
+    galeriaPie: 'First BlueBoat field test, April 2026.',
+    fotos: [
+      'BlueBoat sailing in the harbour',
+      'BlueBoat in the water during the test',
+      'BlueBoat next to a sailing ship',
+      'Preparing the BlueBoat on the quay',
+      'Following the BlueBoat from the inflatable boat',
+      'Shore control station',
+      'Field test team',
+      'BlueBoat on board the inflatable boat'
     ],
-    equipoTitulo: 'The Team',
-    liderazgo: 'Scientific Leadership',
-    equipoSio: 'SIO Team',
-    predoctorales: 'Predoctoral Researchers'
+    proyectosTitulo: 'Related projects',
+    proyectosIntro: 'Ongoing projects whose researchers collaborate with BLUE Lab.',
+    gruposProyectos: [
+      {
+        titulo: 'National',
+        proyectos: [
+          { nombre: 'AI4SEA', ip: 'N. Bahamon', texto: 'Underwater robotics, sensors and artificial intelligence to monitor, restore and model seagrass meadows, with digital twins for coastal management.' },
+          { nombre: 'SMART-ME', ip: 'N. Bahamon', texto: 'New methods to locate and track tagged species in deep waters with robotic platforms and acoustic tags.' },
+          { nombre: 'RyC (MARL)', ip: 'I. Masmitja', texto: 'Multi-agent reinforcement learning to improve coordination and tracking with autonomous vehicles.' },
+          { nombre: 'TECTUGA', ip: 'N. Robinson, I. Masmitja', texto: 'Coupling animal-borne devices on sea turtles with ASVs to study their behaviour and map their habitat.' },
+          { nombre: 'BEN-FLOW', ip: 'G. Picardi', texto: 'Bioinspired, flow-aware locomotion and autonomous manipulation for seabed intervention.' },
+          { nombre: 'SHIFT (MOMENTUM)', ip: 'F. Ramírez', texto: 'Tracking marine species and predicting distribution shifts under global change.' },
+          { nombre: 'PCBio', ip: 'F. Ramírez', texto: 'Tracking seabirds and their interactions with human activities, including fisheries.' },
+          { nombre: 'COTI', ip: 'J. Navarro', texto: 'Tracking large pelagic fish and their interaction with fisheries.' },
+          { nombre: 'ALLIES', ip: 'J. Navarro', texto: 'GPS and accelerometer devices on urban marine predators to understand their interaction with human activities.' },
+          { nombre: 'WhaleTelecom', ip: 'M. Romagosa (J. Navarro)', texto: 'Underwater telecommunication cables to reduce whale-ship collisions in the Mediterranean.' },
+          { nombre: 'WOOS', ip: 'I. Afán', texto: 'Wings Over Ocean Surveillance: seabirds as ocean sentinels.' }
+        ]
+      },
+      {
+        titulo: 'European',
+        proyectos: [
+          { nombre: 'AVALON', ip: 'I. Masmitja', texto: 'New metasurfaces to improve underwater optical communications.' },
+          { nombre: 'DIGI4ECO', ip: 'J. Aguzzi', texto: 'A pioneering initiative to create a digital twin of the ocean.' },
+          { nombre: 'MERLIN', ip: 'J. Aguzzi', texto: 'Coordinating underwater and surface vehicles for ocean observation.' }
+        ]
+      },
+      {
+        titulo: 'International',
+        proyectos: [
+          { nombre: 'Fulbright–CSIC (MARL)', ip: 'I. Masmitja', texto: 'Multi-agent reinforcement learning algorithms applied to a fleet of vehicles at MBARI (California).' }
+        ]
+      }
+    ],
+    rutaTitulo: 'Roadmap',
+    rutaIntro: 'Plan for the next 4 to 8 years.',
+    enCurso: 'In progress',
+    ruta: [
+      { titulo: 'Building', texto: 'Planning, organisation chart, procedures and infrastructure needs.' },
+      { titulo: 'Seed', texto: 'Two BlueBoats and one SEABOTS SB100 PRO with sensors and bathymetry, and a dedicated technician. Coastal applications, proofs of concept and launch of the biologging and bioinspired design lines.' },
+      { titulo: 'Scale', texto: 'Adding long-endurance gliders, aerial drones and AI tools through competitive funding and industry partnerships.' },
+      { titulo: 'Sustain', texto: 'A self-funded ICM service and a European benchmark for autonomous ocean observation, with an expanded fleet.' }
+    ],
+    impactoTitulo: 'Impact',
+    impacto: [
+      { titulo: 'For science', puntos: ['High-resolution, cost-effective time series in coastal and open-ocean waters.', 'New methods: benthic mapping, microplastic tracking, submesoscale dynamics.', 'New technologies for biodiversity observation: tagging, tracking and AI image classification.', 'Support for ERC and Horizon projects that need advanced observational data.'] },
+      { titulo: 'For society', puntos: ['Rapid environmental diagnostics for pollution events or habitat degradation.', "Synergies with ICATMAR's operational oceanography and sustainable fishing.", 'Training the next generation of blue-tech experts (industrial and academic PhDs).'] },
+      { titulo: 'For industry', puntos: ['A testbed to validate marine robotics and sensors in real-world conditions.', 'Technology transfer opportunities from ICM-CSIC.'] }
+    ],
+    colaboracionesTitulo: 'Collaborations',
+    colaboraciones: [
+      { titulo: 'ICM-CSIC services', texto: 'Research Computing (high-performance computing) and Data Science (data management and analysis).' },
+      { titulo: 'Infrastructure and robotics', texto: 'UTM-CSIC; VICOROB group (CIRS, University of Girona); IQUA Robotics; SEABOTS.' },
+      { titulo: 'Underwater technology and AI', texto: 'SARTI group and IDEAI centre at the Universitat Politècnica de Catalunya.' },
+      { titulo: 'International', texto: 'MBARI, BAS-NERC, CNRS, IST and ISEN, among others.' }
+    ],
+    equipoTitulo: 'The team',
+    equipo: [
+      { titulo: 'SIO staff', personas: ['Raül Bardají', 'Raül Ferrando', 'Nina Hoareau', 'Brian Nicolás'] },
+      { titulo: 'Scientific leadership', personas: ['Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
+      { titulo: 'Early-career researchers and engineering', personas: ['Michele Ferrari: AI and edge computing (REC)', 'Pedro Agundez: robotics and AI (DOFT)', 'Matteo Gallici: reinforcement learning (DOFT)', 'Gerard Batet: biologging and acoustic communications (DOFT)', 'Jorge Aguirregomezcorta: bioinspired locomotion (REC)', 'Marisa González: megafauna biologging (REC)', 'Antoni Sánchez-Márquez: acoustic tracking (REC)', 'Ainhoa Idiondo-Molina: AI for ecological monitoring (REC)', 'Korneel Sommers: robotics engineering (DOFT)'] },
+      { titulo: 'Associated researchers', personas: ['Emili Garcia (DOFT / ICATMAR)', 'Jordi Isern (DOFT / ICATMAR)', 'Miriam Romagosa (DOFT)', 'Jorge Guillén (GEO)', 'Jacopo Aguzzi (REC)', 'Nixon Bahamon (REC)', 'Joan Navarro (REC)', 'Francisco Ramírez (REC)', 'Joaquim Garrabou (BIO)'] }
+    ],
+    ctaTitulo: 'Want to collaborate with BLUE Lab?',
+    ctaTexto: "If you are a researcher, a company or an institution and would like to use or develop marine observation technology with us, get in touch.",
+    ctaBoton: 'Contact us'
   },
 
   equipo: {
