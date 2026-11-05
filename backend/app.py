@@ -238,6 +238,96 @@ def contacto():
     return jsonify({"mensaje": "Consulta enviada"}), 200
 
 
+# =======================================================
+# SOLICITUDES DE SERVICIOS (Pelagia, tanque, instrumentos...)
+# =======================================================
+# La web prepara el asunto y el texto en el idioma del usuario y el servidor los
+# envía a sio@icm.csic.es con Reply-To del solicitante: así no hace falta abrir
+# el programa de correo de quien la pide.
+
+TIPOS_SOLICITUD = {'pelagia', 'tanque', 'instrumento', 'salinidad', 'fondeo', 'prototipado', 'idi'}
+EXTENSIONES_ADJUNTO = {
+    '.pdf': ('application', 'pdf'),
+    '.doc': ('application', 'msword'),
+    '.docx': ('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document'),
+    '.odt': ('application', 'vnd.oasis.opendocument.text'),
+}
+MAX_ADJUNTO = 10 * 1024 * 1024
+MAX_SOLICITUDES_POR_HORA = 10
+solicitudes_por_ip = defaultdict(deque)
+
+
+def demasiadas_solicitudes(ip):
+    ahora = time.time()
+    envios = solicitudes_por_ip[ip]
+    while envios and ahora - envios[0] > 3600:
+        envios.popleft()
+    if len(envios) >= MAX_SOLICITUDES_POR_HORA:
+        return True
+    envios.append(ahora)
+    return False
+
+
+@app.route('/api/solicitud', methods=['POST'])
+def solicitud():
+    datos = request.form
+
+    # Campo trampa: los humanos no lo ven, los bots lo rellenan
+    if datos.get('web'):
+        return jsonify({"mensaje": "Solicitud enviada"}), 200
+
+    tipo = datos.get('tipo', '').strip()
+    nombre = datos.get('nombre', '').strip()
+    email = datos.get('email', '').strip()
+    asunto = datos.get('asunto', '').strip()
+    cuerpo = datos.get('cuerpo', '').strip()
+
+    if tipo not in TIPOS_SOLICITUD or not nombre or not asunto or not cuerpo or not PATRON_EMAIL.match(email):
+        return jsonify({"error": "Revisa el nombre, el email y los datos de la solicitud"}), 400
+    if (len(nombre) > 200 or len(email) > 254 or len(asunto) > 250 or len(cuerpo) > 10000
+            or any(c in campo for campo in (nombre, email, asunto) for c in '\r\n')):
+        return jsonify({"error": "Algún campo es demasiado largo"}), 400
+
+    adjunto = request.files.get('adjunto')
+    contenido_adjunto = None
+    if adjunto and adjunto.filename:
+        extension = os.path.splitext(adjunto.filename)[1].lower()
+        if extension not in EXTENSIONES_ADJUNTO:
+            return jsonify({"error": "El archivo adjunto debe ser PDF o Word"}), 415
+        contenido_adjunto = adjunto.read(MAX_ADJUNTO + 1)
+        if len(contenido_adjunto) > MAX_ADJUNTO:
+            return jsonify({"error": "El archivo adjunto ocupa más de 10 MB"}), 413
+    elif tipo == 'pelagia':
+        return jsonify({"error": "Falta el Plan de Campaña"}), 400
+
+    if not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+    if demasiadas_solicitudes(request.remote_addr):
+        return jsonify({"error": "Demasiadas solicitudes. Inténtalo más tarde"}), 429
+
+    mensaje = EmailMessage()
+    mensaje['Subject'] = f'[Web SIO] {asunto}'
+    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+    mensaje['To'] = CONTACTO_DESTINO
+    mensaje['Reply-To'] = email
+    mensaje.set_content(
+        f'Solicitud enviada desde la web del SIO.\n'
+        f'Nombre: {nombre}\nEmail: {email}\n'
+        f'(Para contestar, responde a este correo: va a {email}.)\n\n'
+        f'----------------------------------------\n\n{cuerpo}\n')
+    if contenido_adjunto is not None:
+        tipo_mime, subtipo = EXTENSIONES_ADJUNTO[os.path.splitext(adjunto.filename)[1].lower()]
+        nombre_archivo = os.path.basename(adjunto.filename.replace('\\', '/'))[:150] or 'adjunto'
+        mensaje.add_attachment(contenido_adjunto, maintype=tipo_mime, subtype=subtipo, filename=nombre_archivo)
+
+    try:
+        enviar_correo(mensaje)
+    except Exception as e:
+        print("Error enviando solicitud:", e)
+        return jsonify({"error": "No se ha podido enviar la solicitud"}), 502
+    return jsonify({"mensaje": "Solicitud enviada"}), 200
+
+
 # La base de datos se busca junto a este archivo, no en la carpeta desde la que se arranca
 DB_PATH = os.environ.get('SIO_DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sio_inventario.db'))
 

@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 const fondoInstrumentacion = '/instrumentacion.webp'
 
 const { t } = useI18n()
@@ -8,13 +11,13 @@ const { t } = useI18n()
 // Icono de cada tipo de instrumento (los textos están en fondeos.instrumentos)
 const iconosInstrumentos = ['🌊', '🌡️', '🧂', '🔵', '📊', '🟢', '🌿', '🧪', '🌀', '🪣']
 
-// Solicitud: abre el correo del usuario con los datos preparados
+// Solicitud: se envía al SIO desde la web (sin abrir el programa de correo)
 const solicitud = ref({ proyecto: '', inicio: '', retirada: '', descripcion: '' })
+const { nombre, email, web, estado, error, enviar } = useSolicitud('fondeo')
 
-const enviarSolicitud = () => {
+const enviarSolicitud = async () => {
   const { proyecto, inicio, retirada, descripcion } = solicitud.value
-  const asunto = encodeURIComponent(t('fondeos.correo.asunto', { proyecto }))
-  const cuerpo = encodeURIComponent(
+  const cuerpo = (
     `${t('fondeos.correo.saludo')}\n\n` +
     `${t('fondeos.correo.intro')}\n\n` +
     `${t('fondeos.correo.proyecto')}: ${proyecto}\n` +
@@ -23,7 +26,9 @@ const enviarSolicitud = () => {
     `${descripcion}\n\n` +
     `${t('fondeos.correo.despedida')}`
   )
-  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('fondeos.correo.asunto', { proyecto }), cuerpo })) {
+    solicitud.value = { proyecto: '', inicio: '', retirada: '', descripcion: '' }
+  }
 }
 </script>
 
@@ -88,8 +93,12 @@ const enviarSolicitud = () => {
               <label for="fnd-descripcion" class="solo-lectores">{{ $t('fondeos.descripcion') }}</label>
               <textarea id="fnd-descripcion" v-model="solicitud.descripcion" rows="4" :placeholder="$t('fondeos.descripcionPh')" required></textarea>
             </div>
-            <p class="aviso-correo">{{ $t('fondeos.avisoCorreo') }} <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
-            <button type="submit" class="btn-solicitar">{{ $t('fondeos.enviar') }}</button>
+            <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
+            <p class="aviso-correo">{{ $t('fondeos.avisoCorreo') }}</p>
+            <button type="submit" class="btn-solicitar" :disabled="estado === 'enviando'">
+              {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('fondeos.enviar') }}
+            </button>
+            <EstadoSolicitud :estado="estado" :error="error" />
           </form>
         </div>
 

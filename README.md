@@ -4,7 +4,8 @@ Web del Servicio de Ingeniería Oceanográfica (SIO) del ICM-CSIC.
 
 - **Frontend:** Vue 3 + Vite, con Vue Router y vue-i18n (catalán, castellano e inglés).
 - **Backend:** Flask + SQLite (`backend/`). Sirve el catálogo de instrumentos, los
-  proyectos, el login de la intranet y el formulario de contacto.
+  proyectos, el login de la intranet, el formulario de contacto y las solicitudes
+  de servicios (Pelagia, tanque, instrumentos...).
 
 ```
 src/                 Frontend (componentes en src/components, rutas en src/router.js)
@@ -253,6 +254,24 @@ sudo systemctl start sio-copia.service && ls -lh ~/sio-copias   # primera copia,
 - Las copias están en el mismo disco: protegen de errores y borrados, no de que
   se estropee el servidor. De vez en cuando, bájate la última a tu ordenador:
   `scp docker03.icm.csic.es:sio-copias/sio-$(date +%F).tgz ~/`
+
+## Solicitudes de servicios
+
+Los formularios de la Pelagia, el tanque de pruebas, el préstamo de
+instrumentos, el análisis de salinidad, los fondeos, el prototipado y la
+propuesta de I+D+I **se envían desde la propia web** (`/api/solicitud`): ya no
+abren Outlook ni el programa de correo de quien los rellena.
+
+- Llegan a `sio@icm.csic.es` con el asunto `[Web SIO] …`, enviados por el mismo
+  servidor y remitente que el formulario de contacto (`SIO_SMTP_*` en
+  `/etc/sio-portal/backend.env`). **«Responder» contesta al solicitante**
+  (va en `Reply-To`).
+- La solicitud de la Pelagia lleva obligatoriamente el Plan de Campaña firmado
+  adjunto (PDF o Word, hasta 10 MB).
+- Se piden nombre y correo; el navegador los recuerda para la siguiente vez.
+- Límite: 10 solicitudes por hora desde la misma IP. Si el envío falla, la web
+  muestra el error y la dirección sio@icm.csic.es como alternativa.
+- No se guardan en la base de datos: solo se envía el correo.
 
 ## Usuarios de la intranet y diario de actividad
 

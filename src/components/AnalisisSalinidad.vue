@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 
 const { t } = useI18n()
 
@@ -10,15 +13,15 @@ const numeroBotellas = ref('')
 const fechaRecogida = ref('')
 const fechaEntrega = ref('')
 
-// Abre el correo del usuario con la solicitud preparada
-const enviarSolicitud = () => {
+const { nombre, email, web, estado, error, enviar } = useSolicitud('salinidad')
+
+// Envía la solicitud al SIO desde la web (sin abrir el programa de correo)
+const enviarSolicitud = async () => {
   if (!proyecto.value || !numeroBotellas.value || !fechaRecogida.value || !fechaEntrega.value) {
     alert(t('salinidad.faltanDatos'))
     return
   }
-  const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent(t('salinidad.correo.asunto', { proyecto: proyecto.value }))
-  const cuerpo = encodeURIComponent(
+  const cuerpo = (
     `${t('salinidad.correo.saludo')}\n\n` +
     `${t('salinidad.correo.intro')}\n` +
     `${t('salinidad.correo.proyecto')}: ${proyecto.value}\n` +
@@ -26,7 +29,12 @@ const enviarSolicitud = () => {
     `${t('salinidad.correo.recogida')}: ${fechaRecogida.value}\n` +
     `${t('salinidad.correo.entrega')}: ${fechaEntrega.value}`
   )
-  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('salinidad.correo.asunto', { proyecto: proyecto.value }), cuerpo })) {
+    proyecto.value = ''
+    numeroBotellas.value = ''
+    fechaRecogida.value = ''
+    fechaEntrega.value = ''
+  }
 }
 </script>
 
@@ -90,7 +98,13 @@ const enviarSolicitud = () => {
                   <input type="date" id="sal-entrega" v-model="fechaEntrega" required>
                 </div>
               </div>
-              <button type="submit" class="btn-enviar mt-4">{{ $t('salinidad.enviar') }}</button>
+              <div class="mt-3">
+                <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
+              </div>
+              <button type="submit" class="btn-enviar mt-4" :disabled="estado === 'enviando'">
+                {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('salinidad.enviar') }}
+              </button>
+              <EstadoSolicitud :estado="estado" :error="error" />
             </form>
           </div>
         </div>

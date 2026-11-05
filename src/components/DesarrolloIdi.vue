@@ -1,25 +1,30 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 
 const { t } = useI18n()
 
-// Propuesta de colaboración: abre el correo del usuario con los datos preparados
+// Propuesta de colaboración: se envía al SIO desde la web (sin abrir el programa de correo)
 const ENTORNOS = ['costa', 'pelagico', 'profundo', 'laboratorio', 'otro']
-const propuesta = ref({ nombre: '', departamento: '', reto: '', entorno: 'costa' })
+const propuesta = ref({ departamento: '', reto: '', entorno: 'costa' })
+const { nombre, email, web, estado, error, enviar } = useSolicitud('idi')
 
-const enviarPropuesta = () => {
-  const { nombre, departamento, reto, entorno } = propuesta.value
-  const asunto = encodeURIComponent(t('idi.correo.asunto', { nombre }))
-  const cuerpo = encodeURIComponent(
+const enviarPropuesta = async () => {
+  const { departamento, reto, entorno } = propuesta.value
+  const cuerpo = (
     `${t('idi.correo.saludo')}\n\n` +
-    `${t('idi.correo.nombre')}: ${nombre}\n` +
+    `${t('idi.correo.nombre')}: ${nombre.value.trim()}\n` +
     `${t('idi.correo.departamento')}: ${departamento}\n` +
     `${t('idi.correo.entorno')}: ${t(`idi.entornos.${entorno}`)}\n\n` +
     `${reto}\n\n` +
     `${t('idi.correo.despedida')}`
   )
-  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('idi.correo.asunto', { nombre: nombre.value.trim() }), cuerpo })) {
+    propuesta.value = { departamento: '', reto: '', entorno: 'costa' }
+  }
 }
 </script>
 
@@ -50,10 +55,7 @@ const enviarPropuesta = () => {
 
           <form @submit.prevent="enviarPropuesta">
             
-            <div style="margin-bottom: 10px;">
-              <label for="nombre" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.nombre') }}</label>
-              <input type="text" id="nombre" name="nombre" v-model="propuesta.nombre" :placeholder="$t('idi.nombrePh')" style="width: 100%; padding: 10px; border: none; border-radius: 4px; box-sizing: border-box; background-color: rgba(255, 255, 255, 0.9);" required>
-            </div>
+            <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" oscuro />
 
             <div style="margin-bottom: 20px;">
               <label for="departamento" style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">{{ $t('idi.departamento') }}</label>
@@ -72,13 +74,14 @@ const enviarPropuesta = () => {
               </select>
             </div>
 
-            <p style="font-size: 0.85rem; color: #e0e6ed; margin: 0 0 15px;">{{ $t('idi.avisoCorreo') }} <a href="mailto:sio@icm.csic.es" style="color: white;">sio@icm.csic.es</a>.</p>
+            <p style="font-size: 0.85rem; color: #e0e6ed; margin: 0 0 15px;">{{ $t('idi.avisoCorreo') }}</p>
 
             <div style="text-align: center;">
-              <button type="submit" style="background-color: #8cc63f; color: #003366; border: none; padding: 12px 30px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 100%; max-width: 300px;">
-                🚀 {{ $t('idi.enviar') }}
+              <button type="submit" :disabled="estado === 'enviando'" style="background-color: #8cc63f; color: #003366; border: none; padding: 12px 30px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 100%; max-width: 300px;">
+                🚀 {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('idi.enviar') }}
               </button>
             </div>
+            <EstadoSolicitud :estado="estado" :error="error" />
             
           </form>
         </div>

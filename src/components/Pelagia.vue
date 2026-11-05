@@ -1,6 +1,10 @@
 <script setup>
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCalendarioReservas } from '../composables/useCalendarioReservas'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 import fondoPelagia from '../assets/Pelagia.webp'
 
 const { t } = useI18n()
@@ -9,19 +13,41 @@ const {
   diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
 } = useCalendarioReservas('pelagia')
 
-// Abre el correo del usuario con la solicitud preparada (sin servicios externos)
-const enviarSolicitud = () => {
+const { nombre, email, web, estado, error, enviar } = useSolicitud('pelagia')
+
+// Plan de Campaña firmado (PDF o Word, hasta 10 MB): va adjunto a la solicitud
+const MAX_PLAN = 10 * 1024 * 1024
+const plan = ref(null)
+const inputPlan = ref(null)
+const errorPlan = ref('')
+const elegirPlan = (evento) => {
+  const archivo = evento.target.files[0] || null
+  errorPlan.value = ''
+  if (archivo && (archivo.size > MAX_PLAN || !/\.(pdf|docx?|odt)$/i.test(archivo.name))) {
+    errorPlan.value = t('solicitud.errorAdjunto')
+    evento.target.value = ''
+    plan.value = null
+    return
+  }
+  plan.value = archivo
+}
+
+// Envía la solicitud al SIO desde la web (sin abrir el programa de correo)
+const enviarSolicitud = async () => {
   if (diasSeleccionados.value.length === 0) return
-  const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent(t('pelagia.correo.asunto'))
-  const cuerpo = encodeURIComponent(
+  if (!plan.value) { errorPlan.value = t('pelagia.faltaPlan'); return }
+  const cuerpo = (
     `${t('pelagia.correo.saludo')}\n\n` +
     `${t('pelagia.correo.intro')}\n` +
     `- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
     `${t('pelagia.correo.adjunto')}\n\n` +
     `${t('pelagia.correo.despedida')}`
   )
-  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('pelagia.correo.asunto'), cuerpo, adjunto: plan.value })) {
+    diasSeleccionados.value = []
+    plan.value = null
+    if (inputPlan.value) inputPlan.value.value = ''
+  }
 }
 </script>
 
@@ -110,25 +136,30 @@ const enviarSolicitud = () => {
             <p class="leyenda">{{ $t('pelagia.leyenda') }}</p>
           </div>
 
-          <div class="formulario-reserva">
+          <form class="formulario-reserva" @submit.prevent="enviarSolicitud">
             <h3 class="titulo-mini" style="margin-top: 20px;">{{ $t('pelagia.paso3') }}</h3>
-            <p style="font-size: 0.85rem; color: #666; margin: 0 0 10px;">
-              {{ $t('pelagia.explicacion') }}
-              <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.
-              <strong>{{ $t('pelagia.adjunta') }}</strong> {{ $t('pelagia.explicacionFin') }}
-            </p>
+            <p style="font-size: 0.85rem; color: #666; margin: 0 0 10px;">{{ $t('pelagia.explicacion') }}</p>
+
+            <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
+
+            <div class="campo-plan">
+              <label for="plan-campana">{{ $t('pelagia.adjunta') }}</label>
+              <input type="file" id="plan-campana" ref="inputPlan" accept=".pdf,.doc,.docx,.odt" @change="elegirPlan" required>
+              <small>{{ $t('pelagia.adjuntaAyuda') }}</small>
+              <p v-if="errorPlan" class="aviso-dias" role="alert">{{ errorPlan }}</p>
+            </div>
 
             <button 
-              type="button"
-              @click="enviarSolicitud"
-              :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
-              :disabled="diasSeleccionados.length === 0"
+              type="submit"
+              :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 || estado === 'enviando' }]"
+              :disabled="diasSeleccionados.length === 0 || estado === 'enviando'"
               :title="diasSeleccionados.length === 0 ? $t('pelagia.seleccionaDia') : ''"
             >
-              📧 {{ $t('pelagia.preparar') }}
+              {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('pelagia.preparar') }}
             </button>
-            <p v-if="diasSeleccionados.length === 0" class="aviso-dias">{{ $t('pelagia.avisoDias') }}</p>
-          </div>
+            <p v-if="diasSeleccionados.length === 0 && estado !== 'enviado'" class="aviso-dias">{{ $t('pelagia.avisoDias') }}</p>
+            <EstadoSolicitud :estado="estado" :error="error" />
+          </form>
 
         </div>
       </div>
@@ -207,6 +238,10 @@ const enviarSolicitud = () => {
 .btn-submit { width: 100%; background-color: #012169; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
 .btn-submit:hover:not(.btn-desactivado) { background-color: #0056b3; transform: translateY(-2px); }
 .btn-desactivado { background-color: #ccc; cursor: not-allowed; }
+.campo-plan { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
+.campo-plan label { font-size: 0.9rem; font-weight: bold; color: #003366; }
+.campo-plan input { font-size: 0.9rem; }
+.campo-plan small { font-size: 0.75rem; color: #666; }
 .aviso-dias { font-size: 0.75rem; color: #d32f2f; text-align: center; margin-top: 8px; font-weight: bold;}
 
 @media (max-width: 992px) { .grid-layout { grid-template-columns: 1fr; } }

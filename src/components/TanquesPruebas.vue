@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCalendarioReservas } from '../composables/useCalendarioReservas'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 import fondoTanques from '../assets/tanques.jpg'
 
 const { t } = useI18n()
@@ -14,16 +17,16 @@ const {
 const proposito = ref('')
 const necesitaGrua = ref('no')
 
-// Abre el correo del usuario con la solicitud preparada
-const enviarSolicitud = () => {
+const { nombre, email, web, estado, error, enviar } = useSolicitud('tanque')
+
+// Envía la solicitud al SIO desde la web (sin abrir el programa de correo)
+const enviarSolicitud = async () => {
   if (diasSeleccionados.value.length === 0 || proposito.value.trim() === '') {
     alert(t('tanques.faltanDatos'))
     return
   }
-  const destinatario = "sio@icm.csic.es"
-  const asunto = encodeURIComponent(t('tanques.correo.asunto'))
   const grua = necesitaGrua.value === 'si' ? t('tanques.correo.gruaSi') : t('tanques.correo.gruaNo')
-  const cuerpo = encodeURIComponent(
+  const cuerpo = (
     `${t('tanques.correo.saludo')}\n\n` +
     `${t('tanques.correo.intro')}\n\n` +
     `📅 ${t('tanques.correo.dias')}:\n- ${fechasSeleccionadas.value.join('\n- ')}\n\n` +
@@ -31,7 +34,11 @@ const enviarSolicitud = () => {
     `🏗️ ${t('tanques.correo.grua')}:\n${grua}\n\n` +
     `${t('tanques.correo.despedida')}`
   )
-  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('tanques.correo.asunto'), cuerpo })) {
+    diasSeleccionados.value = []
+    proposito.value = ''
+    necesitaGrua.value = 'no'
+  }
 }
 </script>
 
@@ -124,9 +131,16 @@ const enviarSolicitud = () => {
                   </select>
                 </div>
 
-                <button type="submit" class="btn-enviar mt-4">{{ $t('tanques.enviar') }}</button>
+                <div class="mt-3">
+                  <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
+                </div>
+
+                <button type="submit" class="btn-enviar mt-4" :disabled="estado === 'enviando'">
+                  {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('tanques.enviar') }}
+                </button>
               </form>
             </div>
+            <EstadoSolicitud :estado="estado" :error="error" />
 
           </div>
         </div>

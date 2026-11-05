@@ -1,17 +1,20 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 const fondoInstrumentacion = '/instrumentacion.webp'
 
 const { t } = useI18n()
 
-// Solicitud: abre el correo del usuario con los datos preparados
+// Solicitud: se envía al SIO desde la web (sin abrir el programa de correo)
 const solicitud = ref({ proyecto: '', pieza: '', requisitos: '' })
+const { nombre, email, web, estado, error, enviar } = useSolicitud('prototipado')
 
-const enviarSolicitud = () => {
+const enviarSolicitud = async () => {
   const { proyecto, pieza, requisitos } = solicitud.value
-  const asunto = encodeURIComponent(t('prototipado.correo.asunto', { pieza }))
-  const cuerpo = encodeURIComponent(
+  const cuerpo = (
     `${t('prototipado.correo.saludo')}\n\n` +
     `${t('prototipado.correo.intro')}\n\n` +
     `${t('prototipado.correo.proyecto')}: ${proyecto}\n` +
@@ -19,7 +22,9 @@ const enviarSolicitud = () => {
     `${requisitos}\n\n` +
     `${t('prototipado.correo.despedida')}`
   )
-  window.location.href = `mailto:sio@icm.csic.es?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('prototipado.correo.asunto', { pieza }), cuerpo })) {
+    solicitud.value = { proyecto: '', pieza: '', requisitos: '' }
+  }
 }
 </script>
 
@@ -66,8 +71,12 @@ const enviarSolicitud = () => {
               <label for="pro-requisitos" class="solo-lectores">{{ $t('prototipado.requisitos') }}</label>
               <textarea id="pro-requisitos" v-model="solicitud.requisitos" rows="4" :placeholder="$t('prototipado.requisitosPh')" required></textarea>
             </div>
-            <p class="aviso-correo">{{ $t('prototipado.avisoCorreo') }} <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>.</p>
-            <button type="submit" class="btn-solicitar">{{ $t('prototipado.enviar') }}</button>
+            <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
+            <p class="aviso-correo">{{ $t('prototipado.avisoCorreo') }}</p>
+            <button type="submit" class="btn-solicitar" :disabled="estado === 'enviando'">
+              {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('prototipado.enviar') }}
+            </button>
+            <EstadoSolicitud :estado="estado" :error="error" />
           </form>
         </div>
 

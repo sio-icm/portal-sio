@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { limpiarHtml } from '../utils/limpiarHtml'
+import { useSolicitud } from '../composables/useSolicitud'
+import DatosSolicitante from './DatosSolicitante.vue'
+import EstadoSolicitud from './EstadoSolicitud.vue'
 
 const { t, locale } = useI18n()
 
@@ -16,8 +19,8 @@ const categoriaActiva = ref('Física')
 const instrumentoExpandido = ref(null)
 const equipoSeleccionado = ref(null)
 const diasSeleccionados = ref([])
-const nombreInvestigador = ref('')
 const institucionInvestigador = ref('')
+const { nombre, email, web, estado, error, enviar } = useSolicitud('instrumento')
 
 // --- CÀRREGA DE DADES ---
 const cargarDatos = async () => {
@@ -60,7 +63,7 @@ const instrumentosAgrupados = computed(() => {
 })
 
 const cambiarCategoria = (cat) => { categoriaActiva.value = cat; equipoSeleccionado.value = null; instrumentoExpandido.value = null }
-const verDetalles = (equipo) => { equipoSeleccionado.value = equipo; diasSeleccionados.value = []; cargarOcupacion(equipo.id) }
+const verDetalles = (equipo) => { equipoSeleccionado.value = equipo; diasSeleccionados.value = []; estado.value = ''; cargarOcupacion(equipo.id) }
 
 // Días en que el instrumento está prestado o reservado (de la intranet, sin nombres)
 const ocupados = ref(new Set())
@@ -103,27 +106,27 @@ const toggleDia = (n) => {
 
 const diasOrdenadosTexto = computed(() => [...diasSeleccionados.value].sort((a, b) => a - b).join(', '))
 
-// Obre el correu de l'usuari amb la sol·licitud preparada (sense serveis externs)
-const enviarSolicitud = () => {
-  if (diasSeleccionados.value.length === 0 || !nombreInvestigador.value.trim()) {
+// Envia la sol·licitud al SIO des de la web (sense obrir el programa de correu)
+const enviarSolicitud = async () => {
+  if (diasSeleccionados.value.length === 0) {
     alert(t('instrumentacion.faltanDatos'))
     return
   }
-  const destinatario = "sio@icm.csic.es"
   const instrumento = equipoSeleccionado.value.nombre
   const dias = t('instrumentacion.correo.diasValor', { dias: diasOrdenadosTexto.value, mes: nombreMes.value })
   const institucion = institucionInvestigador.value.trim()
-  const asunto = encodeURIComponent(t('instrumentacion.correo.asunto', { instrumento }))
-  const cuerpo = encodeURIComponent(
+  const cuerpo = (
     `${t('instrumentacion.correo.saludo')}\n\n` +
     `${t('instrumentacion.correo.intro')}\n\n` +
     `${t('instrumentacion.correo.instrumento')}: ${instrumento}\n` +
     `${t('instrumentacion.correo.dias')}: ${dias}\n` +
-    `${t('instrumentacion.correo.nombre')}: ${nombreInvestigador.value.trim()}\n` +
+    `${t('instrumentacion.correo.nombre')}: ${nombre.value.trim()}\n` +
     (institucion ? `${t('instrumentacion.correo.institucion')}: ${institucion}\n` : '') +
     `\n${t('instrumentacion.correo.despedida')}`
   )
-  window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`
+  if (await enviar({ asunto: t('instrumentacion.correo.asunto', { instrumento }), cuerpo })) {
+    diasSeleccionados.value = []
+  }
 }
 </script>
 
@@ -219,31 +222,27 @@ const enviarSolicitud = () => {
                 <p class="leyenda">{{ $t('instrumentacion.leyenda') }}</p>
               </div>
 
-              <div class="formulario-reserva">
+              <form class="formulario-reserva" @submit.prevent="enviarSolicitud">
                 <h3 class="titulo-mini">{{ $t('instrumentacion.paso2') }}</h3>
                 <p class="txt-p" style="font-size: 0.85rem; margin-bottom: 15px;">
-                  {{ $t('instrumentacion.explicacion') }}
-                  <a href="mailto:sio@icm.csic.es">sio@icm.csic.es</a>. {{ $t('instrumentacion.explicacionFin') }}
+                  {{ $t('instrumentacion.explicacion') }} {{ $t('instrumentacion.explicacionFin') }}
                 </p>
 
-                <div class="form-grupo">
-                  <label for="nombre-investigador">{{ $t('instrumentacion.nombre') }}:</label>
-                  <input type="text" id="nombre-investigador" v-model="nombreInvestigador" :placeholder="$t('instrumentacion.nombrePh')" class="input-form">
-                </div>
+                <DatosSolicitante v-model:nombre="nombre" v-model:email="email" v-model:web="web" />
                 <div class="form-grupo">
                   <label for="institucion-investigador">{{ $t('instrumentacion.institucion') }}:</label>
                   <input type="text" id="institucion-investigador" v-model="institucionInvestigador" :placeholder="$t('instrumentacion.institucionPh')" class="input-form">
                 </div>
 
                 <button
-                  type="button"
-                  @click="enviarSolicitud"
-                  :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 }]"
-                  :disabled="diasSeleccionados.length === 0"
+                  type="submit"
+                  :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 || estado === 'enviando' }]"
+                  :disabled="diasSeleccionados.length === 0 || estado === 'enviando'"
                 >
-                  📧 {{ $t('instrumentacion.preparar') }}
+                  {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('instrumentacion.preparar') }}
                 </button>
-              </div>
+                <EstadoSolicitud :estado="estado" :error="error" />
+              </form>
               
               <button class="btn-cerrar" @click="equipoSeleccionado = null">{{ $t('instrumentacion.cerrar') }}</button>
             </div>
