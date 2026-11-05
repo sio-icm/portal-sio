@@ -325,7 +325,11 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 - **Avisos**: menos personas en el centro que el mínimo (por defecto 3; solo
   cuentan las marcadas como «Plantilla» en «Usuaris»), el mismo recurso
   reservado dos veces y la Pelagia reservada cuando el patrón (por defecto
-  `brian`) no está. Fines de semana y festivos no cuentan.
+  `brian`) no está; una persona con dos compromisos fuera a la vez (p. ej. una
+  campaña y un congreso), el responsable de una reserva ausente esos días y un
+  instrumento reservado que está en mantenimiento. Fines de semana y festivos no
+  cuentan. La pantalla principal mira las **próximas 12 semanas** y agrupa los
+  avisos por semana («Aquesta setmana», «Setmana del … · d'aquí a N setmanes»).
 - Los **festivos de Barcelona** de 2026 y 2027 se cargan la primera vez; los
   administradores los cambian en «Configuració» (los locales de 2027 están
   pendientes de confirmar cuando el Ayuntamiento los publique).

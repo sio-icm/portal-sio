@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { peticionIntranet, hoyIso } from '../utils/diario'
 import {
   tipoCalendario, recurso, nombreReserva, ICONOS_AVISO,
-  lunesDe, sumarDias, fechaLarga, fechaBreve, rangoTexto, resumenDia, nombreCorto
+  lunesDe, sumarDias, deIso, fechaLarga, fechaBreve, rangoTexto, resumenDia, nombreCorto
 } from '../utils/calendario'
 
 // Resum del calendari d'equip a la pantalla principal de la intranet: com es
@@ -15,8 +15,10 @@ const emit = defineEmits(['sesion-caducada', 'abrir'])
 const hoy = hoyIso()
 const lunes = lunesDe(hoy)
 const DIAS_MES = 30
+// Els avisos es miren amb més antelació: 12 setmanes
+const DIAS_AVISOS = 84
 const desde = lunes < hoy ? lunes : hoy
-const hasta = sumarDias(hoy, DIAS_MES)
+const hasta = sumarDias(hoy, DIAS_AVISOS)
 
 const datos = ref(null)
 const error = ref(false)
@@ -40,10 +42,42 @@ const avisosPendientes = computed(() => (datos.value?.avisos || []).filter(a => 
 // Pròxims 30 dies: el que comença (o ja ha començat) a partir d'avui
 const proximos = computed(() => {
   if (!datos.value) return []
-  const entradas = datos.value.entradas.filter(e => e.fin >= hoy).map(e => ({ clase: 'entrada', ...e }))
-  const reservas = datos.value.reservas.filter(r => r.fin >= hoy).map(r => ({ clase: 'reserva', ...r }))
+  const limite = sumarDias(hoy, DIAS_MES)
+  const enMes = (x) => x.fin >= hoy && x.inicio <= limite
+  const entradas = datos.value.entradas.filter(enMes).map(e => ({ clase: 'entrada', ...e }))
+  const reservas = datos.value.reservas.filter(enMes).map(r => ({ clase: 'reserva', ...r }))
   return [...entradas, ...reservas].sort((a, b) => a.inicio.localeCompare(b.inicio))
 })
+
+// Avisos agrupats per setmanes, per veure amb temps quina setmana hi haurà problemes.
+// Els dies amb poc personal d'una mateixa setmana surten junts en una línia.
+const avisosPorSemana = computed(() => {
+  const lunesHoy = lunesDe(hoy)
+  const semanas = new Map()
+  for (const a of avisosPendientes.value) {
+    const lunes = lunesDe(a.fecha < hoy ? hoy : a.fecha)
+    if (!semanas.has(lunes)) semanas.set(lunes, [])
+    semanas.get(lunes).push(a)
+  }
+  return [...semanas.entries()].sort(([x], [y]) => x.localeCompare(y)).map(([lunes, avisos]) => {
+    const n = Math.round((deIso(lunes) - deIso(lunesHoy)) / (7 * 86400000))
+    const titulo = n === 0 ? 'Aquesta setmana' : n === 1 ? 'La setmana que ve'
+      : `Setmana del ${fechaBreve(lunes)} · d'aquí a ${n} setmanes`
+    const personal = avisos.filter(a => a.tipo === 'personal')
+    const resto = avisos.filter(a => a.tipo !== 'personal').map(a => ({
+      ids: [a.id], icono: ICONOS_AVISO[a.tipo], cuando: rangoTexto(a.fecha, a.fin || a.fecha), texto: a.texto
+    }))
+    if (personal.length) {
+      const dias = personal.map(a => {
+        const m = a.texto.match(/(\d+) de (\d+)/)
+        return `${fechaBreve(a.fecha)}${m ? ` (${m[1]} de ${m[2]})` : ''}`
+      })
+      resto.unshift({ ids: personal.map(a => a.id), icono: ICONOS_AVISO.personal, cuando: '', texto: `Poc personal al centre: ${dias.join(', ')}` })
+    }
+    return { lunes, titulo, urgente: n <= 1, items: resto }
+  })
+})
+const esNuevo = (item) => !!visto.value.fecha && item.ids.some(id => !(visto.value.avisos || []).includes(id))
 
 // ---------- «✓ Vist» ----------
 // Es recorda al navegador per a cada usuari: el dia i els avisos que ja s'han vist
@@ -83,11 +117,15 @@ const etiquetaEntrada = (e) => `${tipoCalendario(e.tipo).icono} ${e.persona ? co
         </div>
       </div>
 
-      <!-- Avisos dels pròxims dies: sempre a dalt, sigui quina sigui la pestanya -->
-      <div v-if="avisosPendientes.length" class="avisos" role="status">
-        <p v-for="a in avisosPendientes" :key="a.id" class="aviso" :class="{ nuevo: !(visto.avisos || []).includes(a.id) && visto.fecha }">
-          {{ ICONOS_AVISO[a.tipo] }} <b>{{ rangoTexto(a.fecha, a.fin || a.fecha) }}</b> · {{ a.texto }}
-        </p>
+      <!-- Avisos de les pròximes 12 setmanes, per setmanes: sempre a dalt, sigui quina sigui la pestanya -->
+      <div v-if="avisosPorSemana.length" class="avisos" role="status">
+        <p class="avisos-titulo">⚠️ Problemes previstos (pròximes {{ DIAS_AVISOS / 7 }} setmanes)</p>
+        <div v-for="s in avisosPorSemana" :key="s.lunes" class="semana-avisos" :class="{ urgente: s.urgente }">
+          <p class="semana-titulo">{{ s.titulo }}</p>
+          <p v-for="it in s.items" :key="it.ids[0]" class="aviso" :class="{ nuevo: esNuevo(it) }">
+            {{ it.icono }} <b v-if="it.cuando">{{ it.cuando }}</b><template v-if="it.cuando"> · </template>{{ it.texto }}
+          </p>
+        </div>
       </div>
 
       <!-- AVUI -->
@@ -179,6 +217,10 @@ h3::first-letter { text-transform: uppercase; }
 .aviso { background: #fff4e5; border-left: 3px solid #f0a640; padding: 6px 10px; margin: 6px 0; color: #7a4300; }
 .aviso.nuevo::after { content: 'nou'; background: #f0a640; color: white; border-radius: 8px; padding: 0 6px; margin-left: 8px; font-size: 0.72rem; font-weight: bold; }
 .avisos { margin-bottom: 8px; }
+.avisos-titulo { margin: 0 0 4px; font-weight: bold; color: #7a4300; font-size: 0.9rem; }
+.semana-avisos { margin: 6px 0 8px; }
+.semana-titulo { margin: 0; font-size: 0.8rem; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 0.03em; }
+.semana-avisos.urgente .semana-titulo { color: #b02a37; }
 .gris { color: #666; }
 .lista { list-style: none; padding: 0; margin: 6px 0 0; }
 .lista li { padding: 5px 0; border-bottom: 1px solid #eef1f4; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

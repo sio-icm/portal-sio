@@ -1163,17 +1163,22 @@ def puede_editar_calendario(fila):
 
 
 def calcular_avisos(conexion, desde, hasta):
-    """Avisos del periode: falta de personal, recursos reservats dues vegades i
-    Pelagia reservada quan el patró no hi és. Caps de setmana i festius no compten."""
+    """Avisos del periode: falta de personal, recursos reservats dues vegades,
+    Pelagia reservada quan el patró no hi és, una persona amb dos compromisos alhora,
+    el responsable d'una reserva absent i instruments en manteniment reservats.
+    Caps de setmana i festius no compten."""
     ajustes = leer_ajustes(conexion)
     festius = {f['fecha'] for f in conexion.execute(
         'SELECT fecha FROM festius WHERE fecha BETWEEN ? AND ?', (desde, hasta))}
     plantilla = {f['id']: f['nombre'] for f in conexion.execute(
         'SELECT id, nombre FROM usuarios WHERE activo = 1 AND plantilla = 1')}
     entradas = conexion.execute(
-        'SELECT usuario_id, tipo, inicio, fin FROM calendario WHERE inicio <= ? AND fin >= ?', (hasta, desde)).fetchall()
+        '''SELECT c.id, c.usuario_id, c.tipo, c.inicio, c.fin, c.nota, u.nombre AS persona FROM calendario c
+           LEFT JOIN usuarios u ON u.id = c.usuario_id WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''',
+        (hasta, desde)).fetchall()
     reservas = conexion.execute(
-        '''SELECT r.*, i.nombre AS instrumento FROM reservas r LEFT JOIN instrumentos i ON i.id = r.instrumento_id
+        '''SELECT r.*, i.nombre AS instrumento, i.estado AS estado_instrumento, u.nombre AS persona FROM reservas r
+           LEFT JOIN instrumentos i ON i.id = r.instrumento_id LEFT JOIN usuarios u ON u.id = r.usuario_id
            WHERE r.inicio <= ? AND r.fin >= ? ORDER BY r.inicio, r.id''', (hasta, desde)).fetchall()
     patron = conexion.execute('SELECT id, nombre FROM usuarios WHERE usuario = ? AND activo = 1',
                               (ajustes['patro_pelagia'],)).fetchone()
@@ -1222,10 +1227,47 @@ def calcular_avisos(conexion, desde, hasta):
         if dias:
             avisos.append({'id': f"patro:{r['id']}:{dias[0]}", 'tipo': 'patro', 'fecha': dias[0], 'fin': dias[-1],
                            'texto': f"Pelagia reservada però {patron['nombre']} (patró) no hi és"})
+    # 4. Una persona amb dos compromisos fora del centre els mateixos dies
+    #    (p. ex. una campanya i un congrés, o dues campanyes diferents)
+    fuera_de = [e for e in entradas if e['usuario_id'] is not None and e['tipo'] in FUERA_DEL_CENTRO]
+    for i, a in enumerate(fuera_de):
+        for b in fuera_de[i + 1:]:
+            if a['usuario_id'] != b['usuario_id']:
+                continue
+            if a['tipo'] == b['tipo'] and (a['nota'] or '').strip().lower() == (b['nota'] or '').strip().lower():
+                continue  # la mateixa cosa apuntada dues vegades
+            inicio, fin = max(a['inicio'], b['inicio'], desde), min(a['fin'], b['fin'], hasta)
+            if inicio > fin:
+                continue
+            que = lambda e: ETIQUETAS_CALENDARIO[e['tipo']] + (f" ({e['nota']})" if e['nota'] else '')
+            avisos.append({'id': f"persona:{a['id']}-{b['id']}", 'tipo': 'persona', 'fecha': inicio, 'fin': fin,
+                           'texto': f"{a['persona']}: {que(a)} i {que(b)} coincideixen"})
+
+    # 5. El responsable d'una reserva no hi és (a la Pelagia, una campanya pot ser la mateixa sortida)
+    for r in reservas:
+        if r['usuario_id'] is None or (r['recurso'] == 'pelagia' and patron and r['usuario_id'] == patron['id']):
+            continue  # sense responsable de l'equip, o ja ho cobreix l'avís del patró
+        tipos = FUERA_DEL_CENTRO - ({'campanya'} if r['recurso'] == 'pelagia' else set())
+        dias = [d for d in dias_entre(max(r['inicio'], desde), min(r['fin'], hasta))
+                if laborable(d) and fuera(r['usuario_id'], d, tipos)]
+        if dias:
+            nombre = (r['instrumento'] or 'Instrument') if r['recurso'] == 'instrument' else NOMBRE_RECURSO[r['recurso']]
+            avisos.append({'id': f"responsable:{r['id']}:{dias[0]}", 'tipo': 'responsable', 'fecha': dias[0], 'fin': dias[-1],
+                           'texto': f"{nombre}: reservat per {r['persona']}, que no hi serà"})
+
+    # 6. Instrument reservat que està en manteniment o reparació
+    for r in reservas:
+        estado = (r['estado_instrumento'] or '').lower()
+        if r['recurso'] == 'instrument' and ('manten' in estado or 'repar' in estado):
+            avisos.append({'id': f"estat:{r['id']}", 'tipo': 'estat', 'fecha': max(r['inicio'], desde), 'fin': min(r['fin'], hasta),
+                           'texto': f"{r['instrumento']}: reservat però està en «{r['estado_instrumento']}»"})
+
     avisos.sort(key=lambda a: (a['fecha'], a['tipo']))
     return avisos
 
 
+ETIQUETAS_CALENDARIO = {'teletreball': 'teletreball', 'campanya': 'campanya', 'vacances': 'vacances',
+                        'baixa': 'baixa', 'formacio': 'formació', 'reunio': 'reunió', 'altres': 'altres'}
 NOMBRE_RECURSO = {'pelagia': 'Pelagia', 'tanc': 'Tanc de proves', 'instrument': 'Instrument'}
 
 

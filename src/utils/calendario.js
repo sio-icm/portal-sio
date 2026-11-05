@@ -20,7 +20,7 @@ export const RECURSOS = [
 export const recurso = (valor) => RECURSOS.find(r => r.valor === valor) || RECURSOS[2]
 export const nombreReserva = (r) => r.recurso === 'instrument' ? (r.instrumento || 'Instrument') : recurso(r.recurso).etiqueta
 
-export const ICONOS_AVISO = { personal: '👥', conflicte: '⚠️', patro: '⛵' }
+export const ICONOS_AVISO = { personal: '👥', conflicte: '⚠️', patro: '⛵', persona: '🔀', responsable: '🔑', estat: '🔧' }
 
 // Dates en format AAAA-MM-DD, sempre en hora local
 export const aIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
