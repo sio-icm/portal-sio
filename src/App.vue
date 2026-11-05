@@ -162,7 +162,7 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .header-inner { display: flex; justify-content: space-between; align-items: center; }
 .header-left { display: flex; align-items: center; }
 
-.logo-principal { height: 48px; cursor: pointer; transition: transform 0.3s; }
+.logo-principal { height: 51px; cursor: pointer; transition: transform 0.3s; }
 .logo-principal:hover { transform: scale(1.05); } 
 
 .divider { width: 1px; height: 36px; background: rgba(255,255,255,0.4); margin: 0 20px; }
@@ -222,7 +222,7 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
   .header-inner { flex-direction: column; gap: 15px; }
   .header-left { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 12px; width: 100%; }
   .divider { display: none; }
-  .logo-principal { height: 31px; flex-shrink: 0; }
+  .logo-principal { height: 33px; flex-shrink: 0; }
   .logos-grupo { display: flex; flex-direction: row; align-items: center; gap: 6px; }
   .logo-pequeno { height: 18px; flex-shrink: 0; }
   .nav-menu { flex-wrap: wrap; justify-content: center; gap: 12px; }
