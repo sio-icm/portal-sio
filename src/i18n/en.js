@@ -541,10 +541,25 @@ export default {
     resumen: 'Activity Summary {anio}',
     intro: 'The Oceanographic Engineering Service has continued to support marine research, expanding its operational and rapid prototyping capabilities. The key indicators for the year are highlighted below.',
     metricas: {
-      campanas: 'Campaigns Supported',
-      sensores: 'Sensors Calibrated',
-      fondeos: 'Moorings Installed',
-      proyectos: 'R&D&I Projects'
+      actividades: 'Recorded activities',
+      proyectos: 'Projects with activity',
+      diasCampanya: 'Days at sea campaigns',
+      diasPelagia: 'Days with the Pelagia',
+      diasTanque: 'Days of test tank use',
+      prestamos: 'Instrument loans',
+      horasSoporte: 'Hours of support and requests'
+    },
+    encargos: '{n} request | {n} requests',
+    elegirAnio: 'Choose year',
+    cargando: 'Loading data…',
+    error: 'The report data could not be loaded.',
+    sinDatos: 'No activity has been recorded for this year yet.',
+    porTipo: 'Activity by type',
+    destacadas: 'Highlighted activity',
+    verDiario: 'See the whole campaign log',
+    tipos: {
+      campanya: 'Sea campaigns', desenvolupament: 'Development', manteniment: 'Maintenance', calibratge: 'Calibration',
+      divulgacio: 'Outreach', formacio: 'Training', gestio: 'Management', altres: 'Other'
     },
     completa: 'Full SIO Annual Report {anio}',
     completaTexto: 'Detailed document with the annual review, list of projects and service metrics (PDF).',

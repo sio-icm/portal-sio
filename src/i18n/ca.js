@@ -541,10 +541,25 @@ export default {
     resumen: "Resum d'activitat {anio}",
     intro: "El Servei d'Enginyeria Oceanogràfica ha continuat la seva tasca de suport a la recerca marina i ha ampliat les seves capacitats operatives i de prototipatge ràpid. A continuació es destaquen els indicadors clau de l'any.",
     metricas: {
-      campanas: 'Campanyes amb suport',
-      sensores: 'Sensors calibrats',
-      fondeos: 'Fondejos instal·lats',
-      proyectos: 'Projectes R+D+I'
+      actividades: 'Activitats registrades',
+      proyectos: 'Projectes amb activitat',
+      diasCampanya: 'Dies de campanya',
+      diasPelagia: 'Dies amb la Pelagia',
+      diasTanque: "Dies d'ús del tanc de proves",
+      prestamos: "Préstecs d'instruments",
+      horasSoporte: 'Hores de suport i encàrrecs'
+    },
+    encargos: '{n} encàrrec | {n} encàrrecs',
+    elegirAnio: 'Triar any',
+    cargando: 'Carregant les dades…',
+    error: "No s'han pogut carregar les dades de la memòria.",
+    sinDatos: 'Encara no hi ha activitat registrada per a aquest any.',
+    porTipo: "Activitat per tipus",
+    destacadas: 'Activitat destacada',
+    verDiario: 'Veure tot el diari de campanya',
+    tipos: {
+      campanya: 'Campanyes de mar', desenvolupament: 'Desenvolupament', manteniment: 'Manteniment', calibratge: 'Calibratge',
+      divulgacio: 'Divulgació', formacio: 'Formació', gestio: 'Gestió', altres: 'Altres'
     },
     completa: 'Memòria completa SIO {anio}',
     completaTexto: "Document detallat amb el balanç anual, la llista de projectes i les mètriques del servei (PDF).",

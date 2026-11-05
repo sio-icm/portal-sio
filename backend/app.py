@@ -1636,6 +1636,59 @@ def mi_cuenta():
     conexion.close()
     return jsonify({"email": fila['email'] if fila else None})
 
+# ---------------------------------------------------------------------------
+# Memòria anual pública: xifres de l'any a partir del diari i del calendari
+# ---------------------------------------------------------------------------
+# Només xifres globals: cap nom, cap text de notes internes, ni teletreball,
+# vacances o baixes. Les activitats destacades són les notes ja aprovades per
+# a la web (/api/diario).
+@app.route('/api/memoria', methods=['GET'])
+def memoria_anual():
+    hoy = date.today()
+    try:
+        anio = int(request.args.get('anio', hoy.year))
+    except ValueError:
+        return jsonify({"error": "Año no válido"}), 400
+    if not 2000 <= anio <= hoy.year:
+        return jsonify({"error": "Año no válido"}), 400
+    desde, hasta = f'{anio}-01-01', f'{anio}-12-31'
+    conexion = conectar_bd()
+    notas = conexion.execute('SELECT tipo, proyecto_id, horas FROM notas WHERE fecha BETWEEN ? AND ?',
+                             (desde, hasta)).fetchall()
+    por_tipo = {}
+    for n in notas:
+        por_tipo[n['tipo']] = por_tipo.get(n['tipo'], 0) + 1
+    sin_proyecto = [n for n in notas if n['proyecto_id'] is None]
+    horas = [INTERVALOS_HORAS[n['horas']] for n in sin_proyecto if n['horas'] in INTERVALOS_HORAS]
+
+    def dias_distintos(filas):
+        dias = set()
+        for f in filas:
+            dias.update(d for d in dias_entre(max(f['inicio'], desde), min(f['fin'], hasta)))
+        return len(dias)
+
+    campanyas = conexion.execute("SELECT inicio, fin FROM calendario WHERE tipo = 'campanya' AND inicio <= ? AND fin >= ?",
+                                 (hasta, desde)).fetchall()
+    reservas = {r: conexion.execute('SELECT inicio, fin FROM reservas WHERE recurso = ? AND inicio <= ? AND fin >= ?',
+                                    (r, hasta, desde)).fetchall() for r in RECURSOS}
+    primero = conexion.execute(
+        'SELECT MIN(f) FROM (SELECT MIN(fecha) AS f FROM notas UNION SELECT MIN(inicio) FROM calendario '
+        'UNION SELECT MIN(inicio) FROM reservas)').fetchone()[0]
+    conexion.close()
+    return jsonify({
+        'anio': anio,
+        'anios': list(range(hoy.year, int(primero[:4]) - 1, -1)) if primero else [hoy.year],
+        'actividades': len(notas),
+        'por_tipo': por_tipo,
+        'proyectos': len({n['proyecto_id'] for n in notas if n['proyecto_id'] is not None}),
+        'encargos_sin_proyecto': len(sin_proyecto),
+        'horas_sin_proyecto': {'min': sum(h[0] for h in horas), 'max': sum(h[1] for h in horas)},
+        'dias_campanya': dias_distintos(campanyas),
+        'dias_pelagia': dias_distintos(reservas['pelagia']),
+        'dias_tanque': dias_distintos(reservas['tanc']),
+        'prestamos': len(reservas['instrument']),
+    })
+
 
 if __name__ == '__main__':
     if not login_configurado():

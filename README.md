@@ -300,6 +300,19 @@ abren Outlook ni el programa de correo de quien los rellena.
 - Las tablas `usuarios` y `notas` se crean solas en la base de datos al arrancar
   el backend.
 
+## Memoria anual (página pública /memoria)
+
+Se rellena sola con el diario de actividad y el calendari d'equip
+(`/api/memoria?anio=AAAA`), con selector de año:
+
+- Cifras: actividades registradas, proyectos con actividad, días de campaña,
+  días con la Pelagia, días de uso del tanque, préstamos de instrumentos y horas
+  de soporte (notas sin proyecto con «Temps dedicat»), y actividad por tipo.
+- «Actividad destacada»: las notas **públicas y aprobadas** del año (como /diario).
+- Nunca salen nombres, notas internas, teletrabajo, vacaciones ni bajas.
+- El PDF de la memoria completa se añade en `pdfsMemoria` de
+  `src/components/MemoriaAnual.vue` (archivo dentro de `public/`).
+
 ## Calendari d'equip
 
 - Cada persona apunta sus días de teletrabajo, campaña, vacaciones, baja,

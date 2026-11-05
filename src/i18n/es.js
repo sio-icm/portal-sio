@@ -541,10 +541,25 @@ export default {
     resumen: 'Resumen de Actividad {anio}',
     intro: 'El Servicio de Ingeniería Oceanográfica ha continuado su labor de soporte a la investigación marina, ampliando sus capacidades operativas y de prototipado rápido. A continuación, se destacan los indicadores clave del año.',
     metricas: {
-      campanas: 'Campañas Soportadas',
-      sensores: 'Sensores Calibrados',
-      fondeos: 'Fondeos Instalados',
-      proyectos: 'Proyectos I+D+I'
+      actividades: 'Actividades registradas',
+      proyectos: 'Proyectos con actividad',
+      diasCampanya: 'Días de campaña',
+      diasPelagia: 'Días con la Pelagia',
+      diasTanque: 'Días de uso del tanque de pruebas',
+      prestamos: 'Préstamos de instrumentos',
+      horasSoporte: 'Horas de soporte y encargos'
+    },
+    encargos: '{n} encargo | {n} encargos',
+    elegirAnio: 'Elegir año',
+    cargando: 'Cargando los datos…',
+    error: 'No se han podido cargar los datos de la memoria.',
+    sinDatos: 'Todavía no hay actividad registrada para este año.',
+    porTipo: 'Actividad por tipo',
+    destacadas: 'Actividad destacada',
+    verDiario: 'Ver todo el diario de campaña',
+    tipos: {
+      campanya: 'Campañas de mar', desenvolupament: 'Desarrollo', manteniment: 'Mantenimiento', calibratge: 'Calibración',
+      divulgacio: 'Divulgación', formacio: 'Formación', gestio: 'Gestión', altres: 'Otros'
     },
     completa: 'Memoria Completa SIO {anio}',
     completaTexto: 'Documento detallado con el balance anual, listado de proyectos y métricas de servicio (PDF).',
