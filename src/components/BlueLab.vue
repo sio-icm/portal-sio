@@ -180,10 +180,10 @@ const FASE_ACTUAL = 1
   /* Eliminamos la línea background que tenías antes con la URL externa */
   background-size: cover;
   background-position: center;
-  padding: 160px 0 60px 0;
+  padding: 125px 0 25px 0;
   text-align: left;
   color: white;
-  margin-bottom: 50px;
+  margin-bottom: 35px;
 }
 
 .titulo-hero {
@@ -361,7 +361,7 @@ const FASE_ACTUAL = 1
 
 .logo-hero {
   /* Si antes tenías 100px, 150% serían 150px */
-  height: 150px;          
+  height: 100px;
   width: auto;
   transition: transform 0.3s ease;
 }
@@ -433,9 +433,10 @@ const FASE_ACTUAL = 1
 .btn-cta:hover { background: #a5d65f; }
 
 @media (max-width: 768px) {
-  .hero-flex { flex-direction: column; gap: 15px; text-align: center; }
+  .hero-bluelab { padding-top: 150px; }
+  .hero-flex { flex-direction: column; gap: 12px; text-align: center; }
   .hero-text-group { align-items: center; }
-  .logo-hero { height: 110px; }
+  .logo-hero { height: 75px; }
   .subtitle-hero { font-size: 1.15rem !important; text-align: center; }
   .bg-ligero { padding: 20px; }
   .grid-2-cols { grid-template-columns: 1fr; }
