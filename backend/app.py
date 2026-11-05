@@ -533,6 +533,8 @@ def modificar_proyecto(id):
 TIPOS_NOTA = ['campanya', 'desenvolupament', 'manteniment', 'calibratge',
               'divulgacio', 'formacio', 'gestio', 'altres']
 VISIBILIDADES = ['interna', 'publica']
+# Temps dedicat a una nota: intervals d'hores (el mateix a src/utils/diario.js)
+INTERVALOS_HORAS = {'0-1': (0, 1), '1-3': (1, 3), '3-5': (3, 5), '5-8': (5, 8), '8+': (8, 16)}
 PATRON_FECHA = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 PATRON_USUARIO = re.compile(r'^[a-z0-9._-]{3,30}$')
 FOTOS_DIR = os.environ.get('SIO_FOTOS_DIR', os.path.join(os.path.dirname(DB_PATH), 'fotos'))
@@ -581,6 +583,13 @@ def crear_tablas():
         conexion.execute('ALTER TABLE notas ADD COLUMN publicada INTEGER NOT NULL DEFAULT 0')
     if 'publicada_por' not in columnas:
         conexion.execute('ALTER TABLE notas ADD COLUMN publicada_por TEXT')
+    # Temps dedicat (interval d'hores) i per a qui és la feina (p. ex. Comunicació)
+    for columna in ('horas', 'para'):
+        if columna not in columnas:
+            try:
+                conexion.execute(f'ALTER TABLE notas ADD COLUMN {columna} TEXT')
+            except sqlite3.OperationalError:
+                pass  # l'altre procés de gunicorn l'ha afegit alhora
     # Usuarios que tienen que cambiar la contraseña al entrar
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
     if 'debe_cambiar' not in columnas:
@@ -627,6 +636,17 @@ def validar_nota(datos):
     return (fecha, titulo, texto, tipo, visibilidad, proyecto_id), None
 
 
+def extras_nota(datos):
+    """Temps dedicat i «per a» (opcionals). Retorna ((horas, para), error)."""
+    horas = datos.get('horas') or None
+    para = str(datos.get('para') or '').strip() or None
+    if horas is not None and horas not in INTERVALOS_HORAS:
+        return None, "Tiempo dedicado no válido"
+    if para is not None and len(para) > 100:
+        return None, "«Para» es demasiado largo (máximo 100 caracteres)"
+    return (horas, para), None
+
+
 def puede_editar(nota):
     if session.get('es_admin'):
         return True
@@ -666,14 +686,17 @@ def gestionar_notas():
         conexion.close()
         return jsonify(notas)
 
-    valores, error = validar_nota(request.get_json(silent=True) or {})
+    datos = request.get_json(silent=True) or {}
+    valores, error = validar_nota(datos)
+    if not error:
+        extras, error = extras_nota(datos)
     if error:
         return jsonify({"error": error}), 400
     conexion = conectar_bd()
     cursor = conexion.execute(
-        'INSERT INTO notas (fecha, titulo, texto, tipo, visibilidad, proyecto_id, usuario_id, autor) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        valores + (session.get('usuario_id'), session.get('nombre') or ADMIN_USER))
+        'INSERT INTO notas (fecha, titulo, texto, tipo, visibilidad, proyecto_id, horas, para, usuario_id, autor) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        valores + extras + (session.get('usuario_id'), session.get('nombre') or ADMIN_USER))
     conexion.commit()
     nuevo_id = cursor.lastrowid
     conexion.close()
@@ -701,7 +724,10 @@ def modificar_nota(id):
         conexion.close()
         return '', 204
 
-    valores, error = validar_nota(request.get_json(silent=True) or {})
+    datos = request.get_json(silent=True) or {}
+    valores, error = validar_nota(datos)
+    if not error:
+        extras, error = extras_nota(datos)
     if error:
         conexion.close()
         return jsonify({"error": error}), 400
@@ -710,7 +736,8 @@ def modificar_nota(id):
     publicada = nota['publicada'] and valores[4] == 'publica' and session.get('es_admin')
     conexion.execute(
         'UPDATE notas SET fecha = ?, titulo = ?, texto = ?, tipo = ?, visibilidad = ?, proyecto_id = ?, '
-        "publicada = ?, actualizado = datetime('now') WHERE id = ?", valores + (1 if publicada else 0, id))
+        "horas = ?, para = ?, publicada = ?, actualizado = datetime('now') WHERE id = ?",
+        valores + extras + (1 if publicada else 0, id))
     conexion.commit()
     conexion.close()
     return jsonify({"id": id})

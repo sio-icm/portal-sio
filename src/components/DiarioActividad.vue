@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { TIPOS_NOTA, tipoNota, fechaCorta, hoyIso, peticionIntranet } from '../utils/diario'
+import { TIPOS_NOTA, tipoNota, fechaCorta, hoyIso, peticionIntranet, INTERVALOS_HORAS, intervaloHoras } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
 
 // Diario de actividad del equipo: cada nota es algo que se ha hecho (fecha,
@@ -18,7 +18,7 @@ const cargando = ref(true)
 const error = ref('')
 
 const filtros = ref({ desde: '', hasta: '', proyecto: '', tipo: '', autor: '' })
-const notaVacia = () => ({ id: null, fecha: hoyIso(), titulo: '', tipo: 'altres', proyecto_id: '', visibilidad: 'interna', texto: '' })
+const notaVacia = () => ({ id: null, fecha: hoyIso(), titulo: '', tipo: 'altres', proyecto_id: '', visibilidad: 'interna', texto: '', horas: '', para: '' })
 const formulario = ref(null) // null = cerrado; si no, la nota que se está escribiendo
 const guardando = ref(false)
 const errorFormulario = ref('')
@@ -30,6 +30,9 @@ const opcionsEditor = [
   ['link'],
   ['clean']
 ]
+
+// «Per a»: els que ja s'han fet servir, per no haver-los d'escriure cada vegada
+const destinatarios = computed(() => [...new Set(notas.value.map(n => n.para).filter(Boolean))].sort((a, b) => a.localeCompare(b)))
 
 const autores = computed(() => [...new Set(notas.value.map(n => n.autor))].sort())
 
@@ -139,7 +142,7 @@ const editarNota = (nota) => {
   formulario.value = {
     id: nota.id, fecha: nota.fecha, titulo: nota.titulo, tipo: nota.tipo,
     proyecto_id: nota.proyecto_id === null ? '' : String(nota.proyecto_id),
-    visibilidad: nota.visibilidad, texto: nota.texto
+    visibilidad: nota.visibilidad, texto: nota.texto, horas: nota.horas || '', para: nota.para || ''
   }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -260,6 +263,19 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
             <option v-for="p in proyectos" :key="p.id" :value="String(p.id)">{{ p.titulo }}</option>
           </select>
         </label>
+        <label>Temps dedicat
+          <select v-model="formulario.horas">
+            <option value="">(no ho indico)</option>
+            <option v-for="i in INTERVALOS_HORAS" :key="i.valor" :value="i.valor">{{ i.etiqueta }}</option>
+          </select>
+        </label>
+        <label class="ancho">Per a (opcional)
+          <input type="text" v-model="formulario.para" maxlength="100" list="diari-destinataris" placeholder="Ex.: Comunicació, Direcció, Dept. de Física">
+          <datalist id="diari-destinataris"><option v-for="d in destinatarios" :key="d" :value="d"></option></datalist>
+        </label>
+      </div>
+      <p v-if="!formulario.proyecto_id && !formulario.horas" class="nota-ayuda">💡 Si no és d'un projecte, indica el temps dedicat: així a la memòria es veu la feina de suport (reparacions, encàrrecs...).</p>
+      <div class="fila">
         <label>Visibilitat
           <select v-model="formulario.visibilidad">
             <option value="interna">Interna (només l'equip)</option>
@@ -353,7 +369,9 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
         <span class="autor">{{ nota.autor }}</span>
       </div>
       <h4>{{ nota.titulo }}</h4>
-      <p class="proyecto">{{ nota.proyecto_titulo || 'Sense projecte' }}</p>
+      <p class="proyecto">{{ nota.proyecto_titulo || 'Sense projecte' }}
+        <span v-if="nota.horas" class="horas"> · ⏱ {{ intervaloHoras(nota.horas)?.etiqueta }}</span>
+        <span v-if="nota.para" class="horas"> · per a {{ nota.para }}</span></p>
       <div v-if="nota.texto" class="texto" v-html="limpiarHtml(nota.texto)"></div>
       <div v-if="nota.fotos.length" class="fotos">
         <div v-for="f in nota.fotos" :key="f" class="foto">
@@ -444,6 +462,7 @@ input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: 
 label.btn-mini { display: inline-block; font-weight: normal; color: inherit; }
 label.btn-mini.ocupado { opacity: 0.6; cursor: wait; }
 .autor { margin-left: auto; color: #666; }
+.horas { color: #555; font-weight: normal; }
 .nota h4 { margin: 8px 0 2px; color: #222; }
 .proyecto { margin: 0 0 8px; font-size: 0.85rem; color: #0086c0; }
 .texto { font-size: 0.92rem; color: #333; line-height: 1.5; }

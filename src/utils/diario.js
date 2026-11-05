@@ -12,6 +12,23 @@ export const TIPOS_NOTA = [
   { valor: 'altres', etiqueta: 'Altres', color: '#495057' }
 ]
 
+// Temps dedicat a una nota (el mateix que INTERVALOS_HORAS a backend/app.py).
+// min/max serveixen per sumar: els totals surten com «entre X i Y hores».
+export const INTERVALOS_HORAS = [
+  { valor: '0-1', etiqueta: 'Menys d\'1 h', min: 0, max: 1 },
+  { valor: '1-3', etiqueta: '1–3 h', min: 1, max: 3 },
+  { valor: '3-5', etiqueta: '3–5 h', min: 3, max: 5 },
+  { valor: '5-8', etiqueta: '5–8 h', min: 5, max: 8 },
+  { valor: '8+', etiqueta: 'Més de 8 h (diversos dies)', min: 8, max: 16 }
+]
+export const intervaloHoras = (valor) => INTERVALOS_HORAS.find(i => i.valor === valor)
+// Suma d'intervals -> { min, max } en hores
+export const sumaHoras = (notas) => notas.reduce((t, n) => {
+  const i = intervaloHoras(n.horas)
+  return i ? { min: t.min + i.min, max: t.max + i.max } : t
+}, { min: 0, max: 0 })
+export const textoHoras = ({ min, max }) => max === 0 ? '' : (min === 0 ? `fins a ${max} h` : `entre ${min} i ${max} h`)
+
 export const tipoNota = (valor) => TIPOS_NOTA.find(t => t.valor === valor) || TIPOS_NOTA[TIPOS_NOTA.length - 1]
 
 // "2026-10-20" -> "20/10/2026"

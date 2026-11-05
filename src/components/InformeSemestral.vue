@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { TIPOS_NOTA, tipoNota, fechaCorta, peticionIntranet } from '../utils/diario'
+import { TIPOS_NOTA, tipoNota, fechaCorta, peticionIntranet, intervaloHoras, sumaHoras, textoHoras } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
 import { tipoCalendario, recurso, nombreReserva, deIso } from '../utils/calendario'
 
@@ -95,6 +95,16 @@ const personasActivas = computed(() => {
   for (const g of actividadesCalendario.value) g.personas.forEach(n => n !== "Tot l'equip" && nombres.add(n))
   for (const r of reservasInforme.value) if (r.persona) nombres.add(r.persona)
   return nombres.size
+})
+
+// Feina sense projecte amb temps indicat (reparacions, encàrrecs...): total i per a qui
+const notasSinProyecto = computed(() => notas.value.filter(n => n.proyecto_id === null))
+const horasSinProyecto = computed(() => sumaHoras(notasSinProyecto.value))
+const porDestinatario = computed(() => {
+  const grupos = {}
+  for (const n of notasSinProyecto.value) if (n.para) (grupos[n.para] ||= []).push(n)
+  return Object.entries(grupos).map(([para, ns]) => ({ para, encargos: ns.length, horas: textoHoras(sumaHoras(ns)) }))
+    .sort((a, b) => b.encargos - a.encargos)
 })
 
 const numProyectos = computed(() => porProyecto.value.filter(g => g.titulo !== 'Activitat general (sense projecte)').length)
@@ -196,6 +206,7 @@ const imprimir = () => window.print()
           <div class="cifra"><span class="numero">{{ notas.length }}</span><span>activitats registrades</span></div>
           <div class="cifra"><span class="numero">{{ numProyectos }}</span><span>projectes amb activitat</span></div>
           <div class="cifra"><span class="numero">{{ personasActivas }}</span><span>persones de l'equip</span></div>
+          <div v-if="horasSinProyecto.max" class="cifra"><span class="numero hores">{{ horasSinProyecto.min }}–{{ horasSinProyecto.max }} h</span><span>de feina sense projecte (suport, reparacions...)</span></div>
           <div v-if="diasCampanya" class="cifra"><span class="numero">{{ diasCampanya }}</span><span>dies de campanya</span></div>
           <div v-if="cifraRecurso('pelagia')" class="cifra"><span class="numero">{{ cifraRecurso('pelagia').dias }}</span><span>dies amb la Pelagia</span></div>
           <div v-if="cifraRecurso('tanc')" class="cifra"><span class="numero">{{ cifraRecurso('tanc').dias }}</span><span>dies d'ús del tanc</span></div>
@@ -208,9 +219,13 @@ const imprimir = () => window.print()
 
         <h2 v-if="porProyecto.length">Activitat per projecte</h2>
         <section v-for="grupo in porProyecto" :key="grupo.titulo" class="grupo">
-          <h3>{{ grupo.titulo }} <span class="cuenta">({{ grupo.notas.length }})</span></h3>
+          <h3>{{ grupo.titulo }} <span class="cuenta">({{ grupo.notas.length }}<template v-if="textoHoras(sumaHoras(grupo.notas))">, {{ textoHoras(sumaHoras(grupo.notas)) }}</template>)</span></h3>
+          <table v-if="grupo.titulo === 'Activitat general (sense projecte)' && porDestinatario.length" class="tabla destinataris">
+            <thead><tr><th>Per a</th><th>Encàrrecs</th><th>Temps</th></tr></thead>
+            <tbody><tr v-for="d in porDestinatario" :key="d.para"><td>{{ d.para }}</td><td>{{ d.encargos }}</td><td>{{ d.horas || '—' }}</td></tr></tbody>
+          </table>
           <article v-for="n in grupo.notas" :key="n.id" class="entrada">
-            <p class="entrada-cabecera"><strong>{{ fechaCorta(n.fecha) }}</strong> · {{ tipoNota(n.tipo).etiqueta }} · {{ n.autor }}</p>
+            <p class="entrada-cabecera"><strong>{{ fechaCorta(n.fecha) }}</strong> · {{ tipoNota(n.tipo).etiqueta }} · {{ n.autor }}<template v-if="n.horas"> · ⏱ {{ intervaloHoras(n.horas)?.etiqueta }}</template><template v-if="n.para"> · per a {{ n.para }}</template></p>
             <p class="entrada-titulo">{{ n.titulo }}</p>
             <div v-if="n.texto" class="entrada-texto" v-html="limpiarHtml(n.texto)"></div>
             <div v-if="n.fotos && n.fotos.length" class="entrada-fotos">
@@ -284,6 +299,8 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .tabla th, .tabla td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left; }
 .tabla th { background: #f4f7f9; }
 .grupo { margin-bottom: 18px; }
+.cifra .numero.hores { font-size: 1.4rem; }
+.destinataris { margin-bottom: 10px; font-size: 0.9rem; }
 .grupo h3 { color: #0086c0; margin-bottom: 8px; }
 .cuenta { color: #888; font-weight: normal; font-size: 0.9rem; }
 .entrada { border-left: 3px solid #d0d7de; padding: 4px 0 4px 12px; margin-bottom: 10px; break-inside: avoid; }
