@@ -167,7 +167,7 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 
 .divider { width: 1px; height: 36px; background: rgba(255,255,255,0.4); margin: 0 20px; }
 .logos-grupo { display: flex; align-items: center; gap: 15px; }
-.logo-pequeno { height: 28px; opacity: 0.9; transition: transform 0.3s; }
+.logo-pequeno { height: 34px; opacity: 0.9; transition: transform 0.3s; }
 .logo-pequeno:hover { transform: scale(1.05); opacity: 1; }
 .filter-white { filter: brightness(0) invert(1); }
 
@@ -224,7 +224,7 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
   .divider { display: none; }
   .logo-principal { height: 31px; flex-shrink: 0; }
   .logos-grupo { display: flex; flex-direction: row; align-items: center; gap: 6px; }
-  .logo-pequeno { height: 15px; flex-shrink: 0; }
+  .logo-pequeno { height: 18px; flex-shrink: 0; }
   .nav-menu { flex-wrap: wrap; justify-content: center; gap: 12px; }
   .nav-item { font-size: 12px; }
   .contacto-unacolumna { padding: 0 10px; }
