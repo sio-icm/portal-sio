@@ -1099,6 +1099,12 @@ def crear_tablas_calendario():
         );
     """)
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
+    columnas_cal = [fila['name'] for fila in conexion.execute('PRAGMA table_info(calendario)')]
+    if 'proyecto_id' not in columnas_cal:
+        try:  # projecte de l'entrada (p. ex. la campanya de SALADET)
+            conexion.execute('ALTER TABLE calendario ADD COLUMN proyecto_id INTEGER REFERENCES proyectos(id)')
+        except sqlite3.OperationalError:
+            pass
     if 'plantilla' not in columnas:
         # 1 = compta per a l'avís de falta de personal
         try:
@@ -1173,8 +1179,9 @@ def calcular_avisos(conexion, desde, hasta):
     plantilla = {f['id']: f['nombre'] for f in conexion.execute(
         'SELECT id, nombre FROM usuarios WHERE activo = 1 AND plantilla = 1')}
     entradas = conexion.execute(
-        '''SELECT c.id, c.usuario_id, c.tipo, c.inicio, c.fin, c.nota, u.nombre AS persona FROM calendario c
-           LEFT JOIN usuarios u ON u.id = c.usuario_id WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''',
+        '''SELECT c.id, c.usuario_id, c.tipo, c.inicio, c.fin, c.nota, u.nombre AS persona, p.titulo AS proyecto
+           FROM calendario c LEFT JOIN usuarios u ON u.id = c.usuario_id LEFT JOIN proyectos p ON p.id = c.proyecto_id
+           WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''',
         (hasta, desde)).fetchall()
     reservas = conexion.execute(
         '''SELECT r.*, i.nombre AS instrumento, i.estado AS estado_instrumento, u.nombre AS persona FROM reservas r
@@ -1239,7 +1246,7 @@ def calcular_avisos(conexion, desde, hasta):
             inicio, fin = max(a['inicio'], b['inicio'], desde), min(a['fin'], b['fin'], hasta)
             if inicio > fin:
                 continue
-            que = lambda e: ETIQUETAS_CALENDARIO[e['tipo']] + (f" ({e['nota']})" if e['nota'] else '')
+            que = lambda e: ETIQUETAS_CALENDARIO[e['tipo']] + ''.join(f" ({x})" for x in (e['nota'], e['proyecto']) if x)
             avisos.append({'id': f"persona:{a['id']}-{b['id']}", 'tipo': 'persona', 'fecha': inicio, 'fin': fin,
                            'texto': f"{a['persona']}: {que(a)} i {que(b)} coincideixen"})
 
@@ -1281,7 +1288,8 @@ def ver_calendario():
     desde, hasta = desde.isoformat(), hasta.isoformat()
     conexion = conectar_bd()
     entradas = conexion.execute(
-        '''SELECT c.*, u.nombre AS persona FROM calendario c LEFT JOIN usuarios u ON u.id = c.usuario_id
+        '''SELECT c.*, u.nombre AS persona, p.titulo AS proyecto FROM calendario c
+           LEFT JOIN usuarios u ON u.id = c.usuario_id LEFT JOIN proyectos p ON p.id = c.proyecto_id
            WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''', (hasta, desde)).fetchall()
     reservas = conexion.execute(
         '''SELECT r.*, u.nombre AS persona, i.nombre AS instrumento FROM reservas r
@@ -1328,7 +1336,17 @@ def validar_entrada(conexion, datos):
             return None, "La persona no existe"
         if not session.get('es_admin') and usuario_id != session.get('usuario_id'):
             return None, "Solo puedes apuntar tus propios días"
-    return (usuario_id, tipo, inicio, fin, nota), None
+    proyecto_id = datos.get('proyecto_id')
+    if proyecto_id in ('', None):
+        proyecto_id = None
+    else:
+        try:
+            proyecto_id = int(proyecto_id)
+        except (TypeError, ValueError):
+            return None, "Proyecto no válido"
+        if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
+            return None, "El proyecto no existe"
+    return (usuario_id, tipo, inicio, fin, nota, proyecto_id), None
 
 
 @app.route('/api/calendario/entradas', methods=['POST'])
@@ -1340,7 +1358,7 @@ def crear_entrada_calendario():
         conexion.close()
         return jsonify({"error": error}), 400
     cursor = conexion.execute(
-        'INSERT INTO calendario (usuario_id, tipo, inicio, fin, nota, creado_por) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO calendario (usuario_id, tipo, inicio, fin, nota, proyecto_id, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?)',
         valores + (session.get('usuario_id'),))
     conexion.commit()
     conexion.close()
@@ -1363,11 +1381,12 @@ def modificar_entrada_calendario(id):
     else:
         datos = request.get_json(silent=True) or {}
         datos.setdefault('usuario_id', fila['usuario_id'])
+        datos.setdefault('proyecto_id', fila['proyecto_id'])
         valores, error = validar_entrada(conexion, datos)
         if error:
             conexion.close()
             return jsonify({"error": error}), 400
-        conexion.execute('UPDATE calendario SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, nota = ? WHERE id = ?',
+        conexion.execute('UPDATE calendario SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, nota = ?, proyecto_id = ? WHERE id = ?',
                          valores + (id,))
     conexion.commit()
     conexion.close()

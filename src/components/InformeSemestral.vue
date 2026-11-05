@@ -132,8 +132,8 @@ const actividadesCalendario = computed(() => {
   for (const e of calendario.value.entradas) {
     if (!TIPOS_INFORME.includes(e.tipo)) continue
     if (['reunio', 'altres'].includes(e.tipo) && !e.nota) continue
-    const clave = `${e.tipo}|${e.inicio}|${e.fin}|${(e.nota || '').trim().toLowerCase()}`
-    if (!grupos.has(clave)) grupos.set(clave, { clave, tipo: e.tipo, inicio: e.inicio, fin: e.fin, nota: e.nota, personas: [] })
+    const clave = `${e.tipo}|${e.inicio}|${e.fin}|${(e.nota || '').trim().toLowerCase()}|${e.proyecto_id ?? ''}`
+    if (!grupos.has(clave)) grupos.set(clave, { clave, tipo: e.tipo, inicio: e.inicio, fin: e.fin, nota: e.nota, proyecto: e.proyecto, personas: [] })
     grupos.get(clave).personas.push(e.persona || "Tot l'equip")
   }
   return [...grupos.values()].filter(g => !ocultos.value.has(g.clave)).sort((a, b) => a.inicio.localeCompare(b.inicio))
@@ -243,6 +243,7 @@ const imprimir = () => window.print()
                 <strong>{{ rangoFechas(a) }}</strong>
                 <span v-if="a.tipo === 'campanya'" class="cuenta"> ({{ diasEnPeriodo(a) }} {{ diasEnPeriodo(a) === 1 ? 'dia' : 'dies' }})</span>
                 <span v-if="a.nota"> · {{ a.nota }}</span>
+                <span v-if="a.proyecto"> · <em>{{ a.proyecto }}</em></span>
                 · <span class="personas">{{ a.personas.join(', ') }}</span>
                 <button type="button" class="quitar no-imprimir" title="Treure de l'informe" :aria-label="`Treure ${a.nota || g.etiqueta} de l'informe`" @click="ocultar(a.clave)">✕</button>
               </li>

@@ -19,6 +19,7 @@ const mesVisible = ref(new Date(deIso(hoy).getFullYear(), deIso(hoy).getMonth(),
 const diaSeleccionado = ref(hoy)
 const datos = ref({ entradas: [], reservas: [], festius: [], equipo: [], avisos: [], ajustes: { minim_presents: 3, patro_pelagia: '' } })
 const instrumentos = ref([])
+const proyectos = ref([])
 const cargando = ref(true)
 const error = ref('')
 const mensaje = ref('')
@@ -66,9 +67,10 @@ watch(mesVisible, cargar)
 onMounted(async () => {
   cargar()
   try {
-    const r = await api('/api/instrumentos')
+    const [r, rp] = await Promise.all([api('/api/instrumentos'), api('/api/proyectos')])
     if (r.ok) instrumentos.value = (await r.json()).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
-  } catch { /* la llista d'instruments és opcional */ }
+    if (rp.ok) proyectos.value = (await rp.json()).sort((a, b) => (a.titulo || '').localeCompare(b.titulo || ''))
+  } catch { /* les llistes són opcionals */ }
 })
 
 const moverMes = (salto) => {
@@ -92,7 +94,7 @@ const chips = (r) => [
   ...r.entradas.map(e => ({
     clave: `e${e.id}`, color: tipoCalendario(e.tipo).color,
     texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : "Equip"}`,
-    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || "tot l'equip"}${e.nota ? ' · ' + e.nota : ''}`
+    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || "tot l'equip"}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
   })),
   ...r.reservas.map(x => ({
     clave: `r${x.id}`, color: '#012169',
@@ -108,7 +110,7 @@ const guardando = ref(false)
 
 const nuevaEntrada = () => {
   errorFormulario.value = ''
-  formulario.value = { clase: 'entrada', id: null, tipo: 'teletreball', usuario_id: props.sesion.usuario_id ?? '', inicio: diaSeleccionado.value, fin: diaSeleccionado.value, nota: '' }
+  formulario.value = { clase: 'entrada', id: null, tipo: 'teletreball', usuario_id: props.sesion.usuario_id ?? '', inicio: diaSeleccionado.value, fin: diaSeleccionado.value, nota: '', proyecto_id: '' }
 }
 const nuevaReserva = () => {
   errorFormulario.value = ''
@@ -117,7 +119,7 @@ const nuevaReserva = () => {
 const editar = (clase, x) => {
   errorFormulario.value = ''
   formulario.value = clase === 'entrada'
-    ? { clase, id: x.id, tipo: x.tipo, usuario_id: x.usuario_id ?? '', inicio: x.inicio, fin: x.fin, nota: x.nota }
+    ? { clase, id: x.id, tipo: x.tipo, usuario_id: x.usuario_id ?? '', inicio: x.inicio, fin: x.fin, nota: x.nota, proyecto_id: x.proyecto_id ?? '' }
     : { clase, id: x.id, recurso: x.recurso, instrumento_id: x.instrumento_id ?? '', usuario_id: x.usuario_id ?? '', para: x.para, inicio: x.inicio, fin: x.fin, proposito: x.proposito }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -286,6 +288,12 @@ const treureFestiu = async (f) => {
         <label v-if="formulario.clase === 'reserva'" class="ancho">Per a / préstec a
           <input v-model="formulario.para" maxlength="200" :required="formulario.usuario_id === ''" placeholder="ex.: Grup d'ecologia, UB (opcional si és per a l'equip)">
         </label>
+        <label v-if="formulario.clase === 'entrada' && !['teletreball', 'vacances', 'baixa'].includes(formulario.tipo)">Projecte (opcional)
+          <select v-model="formulario.proyecto_id">
+            <option value="">Cap</option>
+            <option v-for="p in proyectos" :key="p.id" :value="p.id">{{ p.titulo }}</option>
+          </select>
+        </label>
         <label class="ancho">{{ formulario.clase === 'entrada' ? 'Nota (opcional)' : 'Motiu (opcional)' }}
           <input v-if="formulario.clase === 'entrada'" v-model="formulario.nota" maxlength="500" placeholder="ex.: Campanya MOOSE, Congrés a Brest...">
           <input v-else v-model="formulario.proposito" maxlength="500" placeholder="ex.: Proves del CTD">
@@ -350,6 +358,7 @@ const treureFestiu = async (f) => {
           <b>{{ e.persona || "Tot l'equip" }}</b>
           <span class="rango">{{ rangoTexto(e.inicio, e.fin) }}</span>
           <span v-if="e.nota" class="nota">· {{ e.nota }}</span>
+          <span v-if="e.proyecto" class="nota">· 📁 {{ e.proyecto }}</span>
           <span v-if="e.editable" class="acciones">
             <button class="btn-mini" @click="editar('entrada', e)">✏️</button>
             <button class="btn-mini peligro" @click="borrar('entrada', e)" aria-label="Esborrar">🗑️</button>

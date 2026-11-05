@@ -139,7 +139,7 @@ const etiquetaEntrada = (e) => `${tipoCalendario(e.tipo).icono} ${e.persona ? co
         <ul v-if="dia.entradas.length || dia.reservas.length" class="lista">
           <li v-for="e in dia.entradas" :key="'e' + e.id">
             <span class="tag" :style="{ background: tipoCalendario(e.tipo).color }">{{ tipoCalendario(e.tipo).icono }} {{ tipoCalendario(e.tipo).etiqueta }}</span>
-            {{ e.persona || "Tot l'equip" }}<span v-if="e.fin !== hoy" class="gris"> · fins {{ fechaBreve(e.fin) }}</span><span v-if="e.nota" class="gris"> · {{ e.nota }}</span>
+            {{ e.persona || "Tot l'equip" }}<span v-if="e.fin !== hoy" class="gris"> · fins {{ fechaBreve(e.fin) }}</span><span v-if="e.nota" class="gris"> · {{ e.nota }}</span><span v-if="e.proyecto" class="gris"> · 📁 {{ e.proyecto }}</span>
           </li>
           <li v-for="r in dia.reservas" :key="'r' + r.id">
             <span class="tag reserva">{{ recurso(r.recurso).icono }} {{ nombreReserva(r) }}</span>
