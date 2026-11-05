@@ -16,7 +16,7 @@ import logoBlueLab from '../assets/logobluelab.png'
 
         <RouterLink :to="{ name: 'memoria' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgRoig})` }">
           <div class="contenido">
-            <h3>{{ $t('inicio.fichas.memoria') }}</h3>
+            <h3 class="una-linea">{{ $t('inicio.fichas.memoria') }}</h3>
           </div>
         </RouterLink>
 
@@ -28,7 +28,7 @@ import logoBlueLab from '../assets/logobluelab.png'
 
         <RouterLink :to="{ name: 'equipo' }" class="ficha-sio text-white" :style="{ backgroundImage: `url(${bgGroc})` }">
           <div class="contenido">
-            <h3>{{ $t('inicio.fichas.equipo') }}</h3>
+            <h3 class="una-linea">{{ $t('inicio.fichas.equipo') }}</h3>
           </div>
         </RouterLink>
 
@@ -116,6 +116,13 @@ import logoBlueLab from '../assets/logobluelab.png'
   transition: transform 0.3s ease;
 }
 
+/* «Memoria anual» y «Equipo SIO» en una sola línea, un punto más pequeñas */
+.contenido h3.una-linea {
+  width: auto;
+  white-space: nowrap;
+  font-size: 1.5rem;
+}
+
 /* Que el texto crezca un pelín al pasar el ratón */
 .ficha-sio:hover .contenido h3 {
   transform: scale(1.05);
@@ -140,6 +147,10 @@ import logoBlueLab from '../assets/logobluelab.png'
   .contenido h3 {
     font-size: 1.25rem;
     padding: 0 8px;
+  }
+
+  .contenido h3.una-linea {
+    font-size: 1.05rem;
   }
 
   .seccion-fichas-sio {

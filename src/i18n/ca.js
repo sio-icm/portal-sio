@@ -74,7 +74,7 @@ export default {
     fichas: {
       memoria: 'Memòria anual',
       noticias: 'Notícies',
-      equipo: 'Equip SIO'
+      equipo: 'Equip SEO'
     }
   },
 

@@ -74,7 +74,7 @@ export default {
     fichas: {
       memoria: 'Annual report',
       noticias: 'News',
-      equipo: 'SIO team'
+      equipo: 'OES Team'
     }
   },
 
