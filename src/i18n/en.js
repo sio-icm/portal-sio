@@ -565,7 +565,7 @@ export default {
     equipoTitulo: 'The team',
     equipo: [
       { titulo: 'SIO staff', personas: ['Raül Bardají', 'Raül Ferrando', 'Nina Hoareau', 'Brian Nicolás'] },
-      { titulo: 'Scientific leadership', personas: ['Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
+      { titulo: 'Scientific leadership', personas: ['Raül Bardají (SIO)', 'Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
       { titulo: 'Early-career researchers and engineering', personas: ['Michele Ferrari: AI and edge computing (REC)', 'Pedro Agundez: robotics and AI (DOFT)', 'Matteo Gallici: reinforcement learning (DOFT)', 'Gerard Batet: biologging and acoustic communications (DOFT)', 'Jorge Aguirregomezcorta: bioinspired locomotion (REC)', 'Marisa González: megafauna biologging (REC)', 'Antoni Sánchez-Márquez: acoustic tracking (REC)', 'Ainhoa Idiondo-Molina: AI for ecological monitoring (REC)', 'Korneel Sommers: robotics engineering (DOFT)'] },
       { titulo: 'Associated researchers', personas: ['Emili Garcia (DOFT / ICATMAR)', 'Jordi Isern (DOFT / ICATMAR)', 'Miriam Romagosa (DOFT)', 'Jorge Guillén (GEO)', 'Jacopo Aguzzi (REC)', 'Nixon Bahamon (REC)', 'Joan Navarro (REC)', 'Francisco Ramírez (REC)', 'Joaquim Garrabou (BIO)'] }
     ],

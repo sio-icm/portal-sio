@@ -565,7 +565,7 @@ export default {
     equipoTitulo: 'El equipo',
     equipo: [
       { titulo: 'Personal del SIO', personas: ['Raül Bardají', 'Raül Ferrando', 'Nina Hoareau', 'Brian Nicolás'] },
-      { titulo: 'Liderazgo científico', personas: ['Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
+      { titulo: 'Liderazgo científico', personas: ['Raül Bardají (SIO)', 'Ivan Masmitja (DOFT)', 'Giacomo Picardi (REC)', 'Isabel Afán (REC)', 'Ruth Durán (GEO)'] },
       { titulo: 'Investigación predoctoral e ingeniería', personas: ['Michele Ferrari: IA y edge computing (REC)', 'Pedro Agundez: robótica e IA (DOFT)', 'Matteo Gallici: aprendizaje por refuerzo (DOFT)', 'Gerard Batet: biologging y comunicaciones acústicas (DOFT)', 'Jorge Aguirregomezcorta: locomoción bioinspirada (REC)', 'Marisa González: biologging de megafauna (REC)', 'Antoni Sánchez-Márquez: seguimiento acústico (REC)', 'Ainhoa Idiondo-Molina: IA para monitorización ecológica (REC)', 'Korneel Sommers: ingeniería robótica (DOFT)'] },
       { titulo: 'Investigadores asociados', personas: ['Emili Garcia (DOFT / ICATMAR)', 'Jordi Isern (DOFT / ICATMAR)', 'Miriam Romagosa (DOFT)', 'Jorge Guillén (GEO)', 'Jacopo Aguzzi (REC)', 'Nixon Bahamon (REC)', 'Joan Navarro (REC)', 'Francisco Ramírez (REC)', 'Joaquim Garrabou (BIO)'] }
     ],
