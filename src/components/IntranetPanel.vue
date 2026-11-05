@@ -611,7 +611,7 @@ const eliminarProyecto = async (id) => {
 .sidebar-usuario { color: #8cc63f; font-size: 0.85rem; margin: -5px 0 15px; }
 .sidebar-nav a { display: block; color: #ccc; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
 .sidebar-nav a.active { color: white; font-weight: bold; border-left: 3px solid #8cc63f; background: rgba(255, 255, 255, 0.05); }
-.btn-logout { margin-top: auto; background: none; border: 1px solid white; color: white; padding: 10px; cursor: pointer; border-radius: 4px; }
+.btn-logout { margin-top: 12px; background: none; border: 1px solid white; color: white; padding: 10px; cursor: pointer; border-radius: 4px; }
 
 .main-content { flex-grow: 1; padding: 40px; background: #f4f7f9; }
 .grid-form { display: grid; gap: 10px; max-width: 800px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
