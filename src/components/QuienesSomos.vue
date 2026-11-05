@@ -32,8 +32,8 @@ import logoBlueLab from '../assets/logobluelab.png'
           </div>
         </RouterLink>
 
-        <RouterLink :to="{ name: 'bluelab' }" class="ficha-sio" style="background-image: none; padding: 0; display: flex; justify-content: center; align-items: center; background-color: #02097c;">
-          <img :src="logoBlueLab" alt="BLUE Lab" style="max-width: 100%; max-height: 110%; object-fit: cover;">
+        <RouterLink :to="{ name: 'bluelab' }" class="ficha-sio ficha-bluelab">
+          <img :src="logoBlueLab" alt="BLUE Lab">
         </RouterLink>
 
       </div>
@@ -88,6 +88,26 @@ import logoBlueLab from '../assets/logobluelab.png'
   background-blend-mode: normal;
   background-color: transparent;
 }
+
+/* BLUE Lab: sin dibujo de fondo; se ilumina igual que las demás */
+.ficha-bluelab {
+  background-image: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #02097c;
+}
+.ficha-bluelab img {
+  max-width: 100%;
+  max-height: 110%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+/* El logo lleva su propio fondo: se ilumina la ficha entera (fondo y logo a la vez) */
+.ficha-sio.ficha-bluelab { filter: brightness(0.85); }
+.ficha-sio.ficha-bluelab:hover { filter: brightness(1.25); background-color: #02097c; }
+.ficha-bluelab:hover img { transform: scale(1.05); }
 
 .ficha-sio:focus-visible {
   outline: 3px solid #0086c0;
