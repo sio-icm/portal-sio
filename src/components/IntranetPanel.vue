@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import BibliotecaDocs from './BibliotecaDocs.vue'
@@ -11,6 +12,7 @@ import MiCuenta from './MiCuenta.vue'
 import CalendariEquip from './CalendariEquip.vue'
 import ResumenCalendario from './ResumenCalendario.vue'
 
+const router = useRouter()
 const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
 const apiUrlProyectos = `${apiBase}/proyectos`
@@ -189,6 +191,7 @@ const iniciarSesion = async () => {
 const cerrarSesion = async () => {
   try { await peticionApi(`${apiBase}/logout`, { method: 'POST' }) } catch (error) { console.error(error) }
   estaLogueado.value = false
+  router.push('/') // en sortir, a la pàgina principal de la web
 }
 
 const volverDashboard = () => {
