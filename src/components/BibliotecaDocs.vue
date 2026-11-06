@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { traducirValor } from '../i18n'
+const { t } = useI18n()
 
 // Llista COMPLETA de documents amb rutes reals apuntant a public/manuals/
 const documentos = ref([
@@ -115,7 +118,7 @@ const toggleCategoria = (categoria) => {
 
 const agregarDocumento = () => {
   if (!nuevoDoc.value.titulo || !nuevoDoc.value.categoria || !nuevoDoc.value.fabricante) {
-    alert("Por favor, rellena los campos obligatorios")
+    alert(t('intranet.docs.faltan'))
     return
   }
   documentos.value.push({
@@ -130,7 +133,7 @@ const agregarDocumento = () => {
   acordeonesAbiertos.value[nuevoDoc.value.categoria] = true
   nuevoDoc.value = { titulo: '', descripcion: '', categoria: '', fabricante: '', formato: 'PDF', enlace: '#' }
   mostrarFormulario.value = false
-  alert("✅ Document afegit correctament a la biblioteca!")
+  alert(t('intranet.docs.anadido'))
 }
 
 const getIconoFormato = (formato) => {
@@ -145,82 +148,78 @@ const getIconoFormato = (formato) => {
   <div class="panel-biblioteca">
     <div class="cabecera-panel">
       <div>
-        <h2>📚 Biblioteca Tècnica i Manuals SIO</h2>
-        <p class="subtitulo-panel">Repositori de documentació d'equips del servei.</p>
+        <h2>{{ $t('intranet.docs.titulo') }}</h2>
+        <p class="subtitulo-panel">{{ $t('intranet.docs.subtitulo') }}</p>
       </div>
       <div class="acciones-cabecera">
-        <input v-model="buscador" type="text" class="buscador-docs" placeholder="🔍 Cercar manual o fabricant...">
+        <input v-model="buscador" type="text" class="buscador-docs" :placeholder="$t('intranet.docs.buscar')">
         <button @click="mostrarFormulario = !mostrarFormulario" class="btn-nou-doc">
-          {{ mostrarFormulario ? '❌ Cancel·lar' : '+ Pujar Document' }}
+          {{ $t(mostrarFormulario ? 'intranet.docs.cancelar' : 'intranet.docs.subir') }}
         </button>
       </div>
     </div>
 
     <div v-if="mostrarFormulario" class="formulario-doc-box">
-      <h3>➕ Afegir Nou Document a la Biblioteca</h3>
+      <h3>{{ $t('intranet.docs.nuevoTitulo') }}</h3>
       <form @submit.prevent="agregarDocumento" class="grid-form-docs">
         <div class="campo">
-          <label>Títol del Document / Manual: *</label>
+          <label>{{ $t('intranet.docs.tituloDoc') }}</label>
           <input v-model="nuevoDoc.titulo" placeholder="Ex: Manual Técnico WorkHorse ADCP" required>
         </div>
         <div class="campo-doble">
           <div class="subcampo">
-            <label>Categoria del Sistema: *</label>
+            <label>{{ $t('intranet.docs.categoria') }}</label>
             <select v-model="nuevoDoc.categoria" required>
-              <option value="" disabled selected>Selecciona Categoria</option>
-              <option value="Sondes CTD">Sondes CTD</option>
-              <option value="Perfiladors Acústics (ADCP)">Perfiladors Acústics (ADCP)</option>
-              <option value="Estacions Meteorològiques">Estacions Meteorològiques</option>
-              <option value="Sensors Òptics">Sensors Òptics</option>
-              <option value="Material Didàctic">Material Didàctic</option>
+              <option value="" disabled selected>{{ $t('intranet.docs.eligeCategoria') }}</option>
+              <option v-for="c in ['Sondes CTD', 'Perfiladors Acústics (ADCP)', 'Estacions Meteorològiques', 'Sensors Òptics', 'Material Didàctic']" :key="c" :value="c">{{ traducirValor(c) }}</option>
             </select>
           </div>
           <div class="subcampo">
-            <label>Fabricant / Proveïdor: *</label>
+            <label>{{ $t('intranet.docs.fabricante') }}</label>
             <input v-model="nuevoDoc.fabricante" placeholder="Ex: Teledyne RDI, Sea-Bird, Davis">
           </div>
         </div>
         <div class="campo-doble">
           <div class="subcampo">
-            <label>Format de l'arxiu:</label>
+            <label>{{ $t('intranet.docs.formato') }}</label>
             <select v-model="nuevoDoc.formato">
               <option value="PDF">PDF</option>
-              <option value="JPG">JPG / Imatge</option>
+              <option value="JPG">{{ $t('intranet.docs.imagen') }}</option>
               <option value="DOC">DOC / Word</option>
               <option value="ZIP">ZIP / Rar</option>
             </select>
           </div>
           <div class="subcampo">
-            <label>Ruta de l'arxiu o Enllaç (Opcional):</label>
+            <label>{{ $t('intranet.docs.ruta') }}</label>
             <input v-model="nuevoDoc.enlace" placeholder="Ex: /manuals/manual_adcp.pdf">
           </div>
         </div>
         <div class="campo">
-          <label>Descripció del contingut (Estil WikiSIO):</label>
-          <textarea v-model="nuevoDoc.descripcion" rows="3" placeholder="Escriu els punts clau..."></textarea>
+          <label>{{ $t('intranet.docs.descripcion') }}</label>
+          <textarea v-model="nuevoDoc.descripcion" rows="3" :placeholder="$t('intranet.docs.descripcionPh')"></textarea>
         </div>
-        <button type="submit" class="btn-guardar-doc">💾 Desar a la Biblioteca</button>
+        <button type="submit" class="btn-guardar-doc">{{ $t('intranet.docs.guardar') }}</button>
       </form>
     </div>
 
     <div class="contenedor-biblioteca">
       <div v-for="(fabricantes, categoria) in bibliotecaAgrupada" :key="categoria" class="grupo-categoria">
         <div class="header-categoria" @click="toggleCategoria(categoria)">
-          <h3>📁 {{ categoria }}</h3>
+          <h3>📁 {{ traducirValor(categoria) }}</h3>
           <span class="icono-desplegable">{{ acordeonesAbiertos[categoria] !== false ? '▼' : '▶' }}</span>
         </div>
         <div v-show="acordeonesAbiertos[categoria] !== false" class="cuerpo-categoria">
           <div v-for="(docs, fabricante) in fabricantes" :key="fabricante" class="grupo-fabricante">
-            <h4 class="titulo-fabricante">🛠️ {{ fabricante }}</h4>
+            <h4 class="titulo-fabricante">🛠️ {{ traducirValor(fabricante) }}</h4>
             <div class="grid-documentos">
               <div v-for="doc in docs" :key="doc.id" class="tarjeta-documento">
                 <div class="icono-doc">{{ getIconoFormato(doc.formato) }}</div>
                 <div class="info-doc">
                   <h5>{{ doc.titulo }}</h5>
-                  <p class="desc-wiki">{{ doc.descripcion || 'Sense descripció disponible.' }}</p>
+                  <p class="desc-wiki">{{ doc.descripcion || $t('intranet.docs.sinDescripcion') }}</p>
                   <div class="pie-tarjeta">
                     <span class="badge-formato">{{ doc.formato }}</span>
-                    <a :href="doc.enlace" target="_blank" class="btn-descargar">Descarregar</a>
+                    <a :href="doc.enlace" target="_blank" class="btn-descargar">{{ $t('intranet.docs.descargar') }}</a>
                   </div>
                 </div>
               </div>
@@ -230,7 +229,7 @@ const getIconoFormato = (formato) => {
       </div>
 
       <div v-if="Object.keys(bibliotecaAgrupada).length === 0" class="mensaje-vacio">
-        No s'ha trobat cap document que coincideixi amb la cerca.
+        {{ $t('intranet.docs.sinResultados') }}
       </div>
     </div>
   </div>

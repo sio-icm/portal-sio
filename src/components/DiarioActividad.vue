@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { traducirError } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { TIPOS_NOTA, tipoNota, fechaCorta, hoyIso, peticionIntranet, INTERVALOS_HORAS, intervaloHoras } from '../utils/diario'
@@ -9,6 +11,7 @@ import { limpiarHtml } from '../utils/limpiarHtml'
 // proyecto opcional, tipo y texto). Sirve para la memoria semestral y, las
 // marcadas como públicas, más adelante para el diario de campaña de la web.
 const props = defineProps({ sesion: { type: Object, required: true } })
+const { t, locale } = useI18n()
 const emit = defineEmits(['sesion-caducada'])
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
 
@@ -67,14 +70,14 @@ const mesVisible = ref(primerDiaMes(hoy))
 const diaSeleccionado = ref(hoy)
 
 const nombreMes = computed(() => {
-  const t = new Intl.DateTimeFormat('ca', { month: 'long', year: 'numeric' }).format(mesVisible.value)
-  return t.charAt(0).toUpperCase() + t.slice(1)
+  const texto = new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(mesVisible.value)
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 })
 const fechaLarga = (iso) => {
   const [a, m, d] = iso.split('-').map(Number)
-  return new Intl.DateTimeFormat('ca', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(a, m - 1, d))
+  return new Intl.DateTimeFormat(locale.value, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(a, m - 1, d))
 }
-const DIAS_SEMANA = ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg']
+const DIAS_SEMANA = computed(() => t('intranet.comun.diasSemana').split(','))
 
 const moverMes = (salto) => {
   const d = mesVisible.value
@@ -122,7 +125,7 @@ const cargar = async () => {
     notas.value = await rn.json()
     proyectos.value = (await rp.json()).sort((a, b) => a.titulo.localeCompare(b.titulo))
   } catch {
-    error.value = "No s'han pogut carregar les notes."
+    error.value = t('intranet.diario.errorCarga')
   } finally {
     cargando.value = false
   }
@@ -150,7 +153,7 @@ const editarNota = (nota) => {
 const guardar = async () => {
   errorFormulario.value = ''
   if (!formulario.value.titulo.trim()) {
-    errorFormulario.value = 'Cal posar un títol.'
+    errorFormulario.value = t('intranet.diario.faltaTitulo')
     return
   }
   guardando.value = true
@@ -163,7 +166,7 @@ const guardar = async () => {
     })
     if (!respuesta.ok) {
       const d = await respuesta.json().catch(() => ({}))
-      errorFormulario.value = d.error || "No s'ha pogut desar la nota."
+      errorFormulario.value = traducirError(d.error) || t('intranet.diario.noGuardada')
       return
     }
     // En el calendario, se va al día de la nota guardada
@@ -172,17 +175,17 @@ const guardar = async () => {
     formulario.value = null
     await cargar()
   } catch {
-    errorFormulario.value = "No s'ha pogut connectar amb el servidor."
+    errorFormulario.value = t('intranet.panel.sinConexion')
   } finally {
     guardando.value = false
   }
 }
 
 const borrar = async (nota) => {
-  if (!confirm(`Segur que vols esborrar la nota «${nota.titulo}»?`)) return
+  if (!confirm(t('intranet.diario.confirmarBorrar', { titulo: nota.titulo }))) return
   const respuesta = await api(`/api/notas/${nota.id}`, { method: 'DELETE' })
   if (respuesta.ok) await cargar()
-  else alert("No s'ha pogut esborrar la nota.")
+  else alert(t('intranet.diario.noBorrada'))
 }
 
 // Aprobar o retirar de la web (solo administradores)
@@ -193,7 +196,7 @@ const cambiarPublicacion = async (nota, publicada) => {
     body: JSON.stringify({ publicada })
   })
   if (respuesta.ok) await cargar()
-  else alert("No s'ha pogut canviar la publicació.")
+  else alert(t('intranet.diario.noPublicacion'))
 }
 
 // Fotos: se añaden a una nota ya guardada
@@ -208,8 +211,8 @@ const subirFotos = async (nota, evento) => {
   try {
     const respuesta = await api(`/api/notas/${nota.id}/fotos`, { method: 'POST', body: datos })
     const d = await respuesta.json().catch(() => ({}))
-    if (!respuesta.ok) alert(d.error || (respuesta.status === 413 ? 'Les fotos pesen massa (màxim 40 MB en total).' : "No s'han pogut pujar les fotos."))
-    else if (d.rechazadas?.length) alert(`Aquests fitxers no són imatges i no s'han pujat: ${d.rechazadas.join(', ')}`)
+    if (!respuesta.ok) alert(traducirError(d.error) || (respuesta.status === 413 ? t('intranet.diario.fotosPesadas') : t('intranet.diario.fotosNoSubidas')))
+    else if (d.rechazadas?.length) alert(t('intranet.diario.fotosRechazadas', { lista: d.rechazadas.join(', ') }))
     await cargar()
   } finally {
     subiendoFotos.value = null
@@ -217,10 +220,10 @@ const subirFotos = async (nota, evento) => {
 }
 
 const borrarFoto = async (fotoId) => {
-  if (!confirm('Esborrar aquesta foto?')) return
+  if (!confirm(t('intranet.diario.confirmarBorrarFoto'))) return
   const respuesta = await api(`/api/fotos/${fotoId}`, { method: 'DELETE' })
   if (respuesta.ok) await cargar()
-  else alert("No s'ha pogut esborrar la foto.")
+  else alert(t('intranet.diario.fotoNoBorrada'))
 }
 
 const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto: '', tipo: '', autor: '' } }
@@ -229,116 +232,116 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
 <template>
   <div class="diario">
     <div class="cabecera">
-      <h2>📓 Diari d'activitat</h2>
+      <h2>{{ $t('intranet.diario.titulo') }}</h2>
       <div class="cabecera-botones">
-        <div class="selector-vista" role="group" aria-label="Vista">
-          <button type="button" :class="{ activo: vista === 'calendario' }" :aria-pressed="vista === 'calendario'" @click="cambiarVista('calendario')">📅 Calendari</button>
-          <button type="button" :class="{ activo: vista === 'lista' }" :aria-pressed="vista === 'lista'" @click="cambiarVista('lista')">☰ Llista</button>
+        <div class="selector-vista" role="group" :aria-label="$t('intranet.diario.vista')">
+          <button type="button" :class="{ activo: vista === 'calendario' }" :aria-pressed="vista === 'calendario'" @click="cambiarVista('calendario')">{{ $t('intranet.diario.calendario') }}</button>
+          <button type="button" :class="{ activo: vista === 'lista' }" :aria-pressed="vista === 'lista'" @click="cambiarVista('lista')">{{ $t('intranet.diario.lista') }}</button>
         </div>
-        <button v-if="!formulario" class="btn-principal" @click="nuevaNota(vista === 'calendario' ? diaSeleccionado : undefined)">+ Nova nota</button>
+        <button v-if="!formulario" class="btn-principal" @click="nuevaNota(vista === 'calendario' ? diaSeleccionado : undefined)">{{ $t('intranet.diario.nueva') }}</button>
       </div>
     </div>
-    <p class="ayuda">Apunta aquí el que fem: campanyes, desenvolupaments, manteniments, calibratges... Les notes serveixen per fer la memòria semestral.</p>
+    <p class="ayuda">{{ $t('intranet.diario.ayuda') }}</p>
 
     <!-- FORMULARIO -->
     <form v-if="formulario" class="formulario" @submit.prevent="guardar">
-      <h3>{{ formulario.id ? 'Editar nota' : 'Nova nota' }}</h3>
+      <h3>{{ $t(formulario.id ? 'intranet.diario.editar' : 'intranet.diario.nuevaTitulo') }}</h3>
       <div class="fila">
-        <label>Data
+        <label>{{ $t('intranet.diario.fecha') }}
           <input type="date" v-model="formulario.fecha" required>
         </label>
-        <label class="ancho">Títol
-          <input type="text" v-model="formulario.titulo" maxlength="200" placeholder="Ex.: Preparació del material per a la campanya a l'Antàrtida" required>
+        <label class="ancho">{{ $t('intranet.diario.tituloCampo') }}
+          <input type="text" v-model="formulario.titulo" maxlength="200" :placeholder="$t('intranet.diario.tituloPh')" required>
         </label>
       </div>
       <div class="fila">
-        <label>Tipus
+        <label>{{ $t('intranet.diario.tipo') }}
           <select v-model="formulario.tipo">
             <option v-for="t in TIPOS_NOTA" :key="t.valor" :value="t.valor">{{ t.etiqueta }}</option>
           </select>
         </label>
-        <label class="ancho">Projecte
+        <label class="ancho">{{ $t('intranet.diario.proyecto') }}
           <select v-model="formulario.proyecto_id">
-            <option value="">Sense projecte (general)</option>
+            <option value="">{{ $t('intranet.diario.sinProyectoGeneral') }}</option>
             <option v-for="p in proyectos" :key="p.id" :value="String(p.id)">{{ p.titulo }}</option>
           </select>
         </label>
-        <label>Temps dedicat
+        <label>{{ $t('intranet.diario.tiempo') }}
           <select v-model="formulario.horas">
-            <option value="">(no ho indico)</option>
+            <option value="">{{ $t('intranet.diario.noIndico') }}</option>
             <option v-for="i in INTERVALOS_HORAS" :key="i.valor" :value="i.valor">{{ i.etiqueta }}</option>
           </select>
         </label>
-        <label class="ancho">Per a (opcional)
-          <input type="text" v-model="formulario.para" maxlength="100" list="diari-destinataris" placeholder="Ex.: Comunicació, Direcció, Dept. de Física">
+        <label class="ancho">{{ $t('intranet.diario.para') }}
+          <input type="text" v-model="formulario.para" maxlength="100" list="diari-destinataris" :placeholder="$t('intranet.diario.paraPh')">
           <datalist id="diari-destinataris"><option v-for="d in destinatarios" :key="d" :value="d"></option></datalist>
         </label>
       </div>
-      <p v-if="!formulario.proyecto_id && !formulario.horas" class="nota-ayuda">💡 Si no és d'un projecte, indica el temps dedicat: així a la memòria es veu la feina de suport (reparacions, encàrrecs...).</p>
+      <p v-if="!formulario.proyecto_id && !formulario.horas" class="nota-ayuda">{{ $t('intranet.diario.consejoHoras') }}</p>
       <div class="fila">
-        <label>Visibilitat
+        <label>{{ $t('intranet.diario.visibilidad') }}
           <select v-model="formulario.visibilidad">
-            <option value="interna">Interna (només l'equip)</option>
-            <option value="publica">Pública (pot sortir a la web)</option>
+            <option value="interna">{{ $t('intranet.diario.interna') }}</option>
+            <option value="publica">{{ $t('intranet.diario.publica') }}</option>
           </select>
         </label>
       </div>
-      <label>Text</label>
+      <label>{{ $t('intranet.diario.texto') }}</label>
       <QuillEditor theme="snow" v-model:content="formulario.texto" contentType="html" :toolbar="opcionsEditor" class="editor" />
-      <p class="nota-ayuda">Les fotos s'afegeixen des de la nota, un cop desada.
-        <span v-if="formulario.visibilidad === 'publica'"> Les notes públiques només surten a la web quan un administrador les aprova.</span></p>
+      <p class="nota-ayuda">{{ $t('intranet.diario.fotosDespues') }}
+        <span v-if="formulario.visibilidad === 'publica'"> {{ $t('intranet.diario.publicasAprobacion') }}</span></p>
       <p v-if="errorFormulario" class="error">{{ errorFormulario }}</p>
       <div class="botones">
-        <button type="submit" class="btn-principal" :disabled="guardando">{{ guardando ? 'Desant...' : '💾 Desar nota' }}</button>
-        <button type="button" class="btn-secundario" @click="formulario = null">Cancel·lar</button>
+        <button type="submit" class="btn-principal" :disabled="guardando">{{ $t(guardando ? 'intranet.diario.guardando' : 'intranet.diario.guardar') }}</button>
+        <button type="button" class="btn-secundario" @click="formulario = null">{{ $t('intranet.comun.cancelar') }}</button>
       </div>
     </form>
 
     <!-- FILTROS -->
     <div class="filtros">
       <template v-if="vista === 'lista'">
-        <label>Des de <input type="date" v-model="filtros.desde"></label>
-        <label>Fins a <input type="date" v-model="filtros.hasta"></label>
+        <label>{{ $t('intranet.diario.desde') }} <input type="date" v-model="filtros.desde"></label>
+        <label>{{ $t('intranet.diario.hasta') }} <input type="date" v-model="filtros.hasta"></label>
       </template>
-      <label>Projecte
+      <label>{{ $t('intranet.diario.proyecto') }}
         <select v-model="filtros.proyecto">
-          <option value="">Tots</option>
-          <option value="ninguno">Sense projecte</option>
+          <option value="">{{ $t('intranet.diario.todos') }}</option>
+          <option value="ninguno">{{ $t('intranet.diario.sinProyecto') }}</option>
           <option v-for="p in proyectos" :key="p.id" :value="String(p.id)">{{ p.titulo }}</option>
         </select>
       </label>
-      <label>Tipus
+      <label>{{ $t('intranet.diario.tipo') }}
         <select v-model="filtros.tipo">
-          <option value="">Tots</option>
+          <option value="">{{ $t('intranet.diario.todos') }}</option>
           <option v-for="t in TIPOS_NOTA" :key="t.valor" :value="t.valor">{{ t.etiqueta }}</option>
         </select>
       </label>
-      <label>Autor
+      <label>{{ $t('intranet.diario.autor') }}
         <select v-model="filtros.autor">
-          <option value="">Tothom</option>
+          <option value="">{{ $t('intranet.diario.todoElMundo') }}</option>
           <option v-for="a in autores" :key="a" :value="a">{{ a }}</option>
         </select>
       </label>
-      <button type="button" class="btn-secundario" @click="limpiarFiltros">Netejar</button>
+      <button type="button" class="btn-secundario" @click="limpiarFiltros">{{ $t('intranet.diario.limpiar') }}</button>
     </div>
 
-    <p v-if="cargando" class="aviso">Carregant notes...</p>
+    <p v-if="cargando" class="aviso">{{ $t('intranet.diario.cargando') }}</p>
     <p v-else-if="error" class="error">{{ error }}</p>
 
     <!-- CALENDARIO -->
     <template v-else-if="vista === 'calendario'">
       <div class="calendario">
         <div class="cal-cabecera">
-          <button type="button" class="btn-mes" aria-label="Mes anterior" @click="moverMes(-1)">‹</button>
+          <button type="button" class="btn-mes" :aria-label="$t('intranet.comun.mesAnterior')" @click="moverMes(-1)">‹</button>
           <span class="cal-mes">{{ nombreMes }}</span>
-          <button type="button" class="btn-mes" aria-label="Mes següent" @click="moverMes(1)">›</button>
-          <button type="button" class="btn-secundario btn-hoy" @click="irAHoy">Avui</button>
+          <button type="button" class="btn-mes" :aria-label="$t('intranet.comun.mesSiguiente')" @click="moverMes(1)">›</button>
+          <button type="button" class="btn-secundario btn-hoy" @click="irAHoy">{{ $t('intranet.comun.hoy') }}</button>
         </div>
         <div class="cal-grid">
           <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
           <button v-for="c in celdas" :key="c.iso" type="button" class="cal-celda"
                   :class="{ fuera: !c.delMes, hoy: c.iso === hoy, elegido: c.iso === diaSeleccionado }"
-                  :aria-label="`${fechaLarga(c.iso)}: ${c.notas.length} notes`" @click="seleccionarDia(c)">
+                  :aria-label="$t('intranet.diario.notasDia', { fecha: fechaLarga(c.iso), n: c.notas.length })" @click="seleccionarDia(c)">
             <span class="cal-numero">{{ c.dia }}</span>
             <span v-for="n in c.notas.slice(0, 3)" :key="n.id" class="cal-chip" :style="{ background: tipoNota(n.tipo).color }" :title="n.titulo">{{ n.titulo }}</span>
             <span v-if="c.notas.length > 3" class="cal-mas">+{{ c.notas.length - 3 }}</span>
@@ -347,50 +350,50 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
       </div>
       <div class="dia-cabecera">
         <h3>{{ fechaLarga(diaSeleccionado) }}</h3>
-        <button v-if="!formulario" class="btn-secundario" @click="nuevaNota(diaSeleccionado)">+ Nova nota per a aquest dia</button>
+        <button v-if="!formulario" class="btn-secundario" @click="nuevaNota(diaSeleccionado)">{{ $t('intranet.diario.nuevaDia') }}</button>
       </div>
-      <p v-if="notasMostradas.length === 0" class="aviso">Cap nota aquest dia.</p>
+      <p v-if="notasMostradas.length === 0" class="aviso">{{ $t('intranet.diario.ningunaDia') }}</p>
     </template>
 
     <!-- LISTA -->
     <template v-else>
       <p v-if="notasFiltradas.length === 0" class="aviso">
-        {{ notas.length === 0 ? 'Encara no hi ha cap nota. Comença amb «+ Nova nota».' : 'Cap nota coincideix amb els filtres.' }}
+        {{ $t(notas.length === 0 ? 'intranet.diario.ningunaAun' : 'intranet.diario.ningunaFiltro') }}
       </p>
-      <p v-else class="contador">{{ notasFiltradas.length }} {{ notasFiltradas.length === 1 ? 'nota' : 'notes' }}</p>
+      <p v-else class="contador">{{ $t('intranet.diario.contador', { n: notasFiltradas.length }, notasFiltradas.length) }}</p>
     </template>
 
     <article v-for="nota in (cargando || error ? [] : notasMostradas)" :key="nota.id" class="nota">
       <div class="nota-cabecera">
         <span class="fecha">{{ fechaCorta(nota.fecha) }}</span>
         <span class="etiqueta" :style="{ background: tipoNota(nota.tipo).color }">{{ tipoNota(nota.tipo).etiqueta }}</span>
-        <span v-if="nota.visibilidad === 'publica' && nota.publicada" class="etiqueta publica">Publicada a la web</span>
-        <span v-else-if="nota.visibilidad === 'publica'" class="etiqueta pendiente">Pública · pendent d'aprovació</span>
+        <span v-if="nota.visibilidad === 'publica' && nota.publicada" class="etiqueta publica">{{ $t('intranet.diario.publicada') }}</span>
+        <span v-else-if="nota.visibilidad === 'publica'" class="etiqueta pendiente">{{ $t('intranet.diario.pendiente') }}</span>
         <span class="autor">{{ nota.autor }}</span>
       </div>
       <h4>{{ nota.titulo }}</h4>
-      <p class="proyecto">{{ nota.proyecto_titulo || 'Sense projecte' }}
+      <p class="proyecto">{{ nota.proyecto_titulo || $t('intranet.diario.sinProyecto') }}
         <span v-if="nota.horas" class="horas"> · ⏱ {{ intervaloHoras(nota.horas)?.etiqueta }}</span>
-        <span v-if="nota.para" class="horas"> · per a {{ nota.para }}</span></p>
+        <span v-if="nota.para" class="horas"> · {{ $t('intranet.diario.paraQuien', { para: nota.para }) }}</span></p>
       <div v-if="nota.texto" class="texto" v-html="limpiarHtml(nota.texto)"></div>
       <div v-if="nota.fotos.length" class="fotos">
         <div v-for="f in nota.fotos" :key="f" class="foto">
           <a :href="`/api/fotos/${f}`" target="_blank" rel="noopener"><img :src="`/api/fotos/${f}?mini=1`" alt="" loading="lazy"></a>
-          <button v-if="puedeEditar(nota)" class="foto-borrar" title="Esborrar la foto" @click="borrarFoto(f)">✕</button>
+          <button v-if="puedeEditar(nota)" class="foto-borrar" :title="$t('intranet.diario.borrarFoto')" @click="borrarFoto(f)">✕</button>
         </div>
       </div>
       <div class="acciones">
         <template v-if="puedeEditar(nota)">
-          <button class="btn-mini" @click="editarNota(nota)">✏️ Editar</button>
+          <button class="btn-mini" @click="editarNota(nota)">{{ $t('intranet.comun.editar') }}</button>
           <label class="btn-mini" :class="{ ocupado: subiendoFotos === nota.id }">
-            {{ subiendoFotos === nota.id ? 'Pujant...' : '📷 Afegir fotos' }}
+            {{ $t(subiendoFotos === nota.id ? 'intranet.diario.subiendo' : 'intranet.diario.anadirFotos') }}
             <input type="file" accept="image/*" multiple hidden :disabled="subiendoFotos !== null" @change="subirFotos(nota, $event)">
           </label>
-          <button class="btn-mini peligro" @click="borrar(nota)">🗑️ Esborrar</button>
+          <button class="btn-mini peligro" @click="borrar(nota)">{{ $t('intranet.comun.borrar') }}</button>
         </template>
         <template v-if="sesion.es_admin && nota.visibilidad === 'publica'">
-          <button v-if="!nota.publicada" class="btn-mini aprobar" @click="cambiarPublicacion(nota, true)">✅ Publicar a la web</button>
-          <button v-else class="btn-mini" @click="cambiarPublicacion(nota, false)">↩️ Retirar de la web</button>
+          <button v-if="!nota.publicada" class="btn-mini aprobar" @click="cambiarPublicacion(nota, true)">{{ $t('intranet.diario.publicar') }}</button>
+          <button v-else class="btn-mini" @click="cambiarPublicacion(nota, false)">{{ $t('intranet.diario.retirar') }}</button>
         </template>
       </div>
     </article>

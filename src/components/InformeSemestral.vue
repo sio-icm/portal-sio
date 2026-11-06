@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { TIPOS_NOTA, tipoNota, fechaCorta, peticionIntranet, intervaloHoras, sumaHoras, textoHoras } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
 import { tipoCalendario, recurso, nombreReserva, deIso } from '../utils/calendario'
@@ -10,15 +11,16 @@ import { tipoCalendario, recurso, nombreReserva, deIso } from '../utils/calendar
 // tanque, préstamos), listo para imprimir o guardar en PDF.
 // Del calendario NO salen teletrabajo, vacaciones ni bajas (datos personales).
 const emit = defineEmits(['sesion-caducada'])
+const { t } = useI18n()
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
 
 const hoy = new Date()
 const anio = hoy.getFullYear()
 const periodos = [
-  { id: `${anio}-2`, nombre: `2n semestre ${anio}`, desde: `${anio}-07-01`, hasta: `${anio}-12-31` },
-  { id: `${anio}-1`, nombre: `1r semestre ${anio}`, desde: `${anio}-01-01`, hasta: `${anio}-06-30` },
-  { id: `${anio - 1}-2`, nombre: `2n semestre ${anio - 1}`, desde: `${anio - 1}-07-01`, hasta: `${anio - 1}-12-31` },
-  { id: `${anio - 1}-1`, nombre: `1r semestre ${anio - 1}`, desde: `${anio - 1}-01-01`, hasta: `${anio - 1}-06-30` }
+  { id: `${anio}-2`, get nombre() { return t('intranet.informe.semestre2', { anio }) }, desde: `${anio}-07-01`, hasta: `${anio}-12-31` },
+  { id: `${anio}-1`, get nombre() { return t('intranet.informe.semestre1', { anio }) }, desde: `${anio}-01-01`, hasta: `${anio}-06-30` },
+  { id: `${anio - 1}-2`, get nombre() { return t('intranet.informe.semestre2', { anio: anio - 1 }) }, desde: `${anio - 1}-07-01`, hasta: `${anio - 1}-12-31` },
+  { id: `${anio - 1}-1`, get nombre() { return t('intranet.informe.semestre1', { anio: anio - 1 }) }, desde: `${anio - 1}-01-01`, hasta: `${anio - 1}-06-30` }
 ]
 const periodoActual = periodos.find(p => p.id === `${anio}-${hoy.getMonth() < 6 ? 1 : 2}`)
 
@@ -52,11 +54,11 @@ const generar = async () => {
     if (rc.ok) calendario.value = await rc.json()
     else {
       calendario.value = { entradas: [], reservas: [], festius: [] }
-      avisoCalendario.value = "No s'ha pogut afegir el calendari d'equip (el període pot ser massa llarg: màxim un any)."
+      avisoCalendario.value = t('intranet.informe.errorCalendario')
     }
     generado.value = true
   } catch {
-    error.value = "No s'han pogut carregar les notes."
+    error.value = t('intranet.diario.errorCarga')
   } finally {
     cargando.value = false
   }
@@ -69,7 +71,7 @@ const porProyecto = computed(() => {
   const grupos = new Map()
   for (const n of notas.value) {
     const clave = n.proyecto_id ?? 'ninguno'
-    if (!grupos.has(clave)) grupos.set(clave, { titulo: n.proyecto_titulo || 'Activitat general (sense projecte)', notas: [] })
+    if (!grupos.has(clave)) grupos.set(clave, { clave, general: clave === 'ninguno', titulo: n.proyecto_titulo, notas: [] })
     grupos.get(clave).notas.push(n)
   }
   const sin = grupos.get('ninguno')
@@ -92,7 +94,7 @@ const personas = computed(() => {
 // reuniones o reservas del calendario («Tot l'equip» no cuenta)
 const personasActivas = computed(() => {
   const nombres = new Set(notas.value.map(n => n.autor))
-  for (const g of actividadesCalendario.value) g.personas.forEach(n => n !== "Tot l'equip" && nombres.add(n))
+  for (const g of actividadesCalendario.value) g.personas.forEach(n => n && nombres.add(n))
   for (const r of reservasInforme.value) if (r.persona) nombres.add(r.persona)
   return nombres.size
 })
@@ -107,7 +109,7 @@ const porDestinatario = computed(() => {
     .sort((a, b) => b.encargos - a.encargos)
 })
 
-const numProyectos = computed(() => porProyecto.value.filter(g => g.titulo !== 'Activitat general (sense projecte)').length)
+const numProyectos = computed(() => porProyecto.value.filter(g => !g.general).length)
 
 // ---------- Del calendario de equipo ----------
 // Días de una entrada o reserva dentro del periodo (recortada a desde/hasta)
@@ -134,7 +136,7 @@ const actividadesCalendario = computed(() => {
     if (['reunio', 'altres'].includes(e.tipo) && !e.nota) continue
     const clave = `${e.tipo}|${e.inicio}|${e.fin}|${(e.nota || '').trim().toLowerCase()}|${e.proyecto_id ?? ''}`
     if (!grupos.has(clave)) grupos.set(clave, { clave, tipo: e.tipo, inicio: e.inicio, fin: e.fin, nota: e.nota, proyecto: e.proyecto, personas: [] })
-    grupos.get(clave).personas.push(e.persona || "Tot l'equip")
+    grupos.get(clave).personas.push(e.persona || null)   // null = tot l'equip
   }
   return [...grupos.values()].filter(g => !ocultos.value.has(g.clave)).sort((a, b) => a.inicio.localeCompare(b.inicio))
 })
@@ -159,7 +161,7 @@ const recursosInforme = computed(() => ['pelagia', 'tanc', 'instrument']
         dias.add(iso)
       }
     }
-    return { valor: v, etiqueta: v === 'instrument' ? "Préstecs d'instruments" : recurso(v).etiqueta, icono: recurso(v).icono, items, dias: dias.size }
+    return { valor: v, get etiqueta() { return v === 'instrument' ? t('intranet.informe.prestamosTitulo') : recurso(v).etiqueta }, icono: recurso(v).icono, items, dias: dias.size }
   })
   .filter(g => g.items.length))
 
@@ -174,18 +176,17 @@ const imprimir = () => window.print()
 <template>
   <div class="informe-panel">
     <div class="controles no-imprimir">
-      <h2>🧾 Informe semestral</h2>
-      <p class="ayuda">Tria el període i genera l'informe a partir del diari d'activitat i del calendari d'equip (campanyes, formació, reunions i ús de recursos; mai teletreball, vacances ni baixes).
-        Amb la ✕ pots treure del calendari el que no interessi. Per desar-lo en PDF: «Imprimir» i després «Desar com a PDF».</p>
+      <h2>{{ $t('intranet.informe.titulo') }}</h2>
+      <p class="ayuda">{{ $t('intranet.informe.ayuda') }}</p>
       <div class="periodos">
         <button v-for="p in periodos" :key="p.id" type="button" class="btn-periodo"
                 :class="{ activo: desde === p.desde && hasta === p.hasta }" @click="elegirPeriodo(p)">{{ p.nombre }}</button>
       </div>
       <div class="fila">
-        <label>Des de <input type="date" v-model="desde" @change="generado = false"></label>
-        <label>Fins a <input type="date" v-model="hasta" @change="generado = false"></label>
-        <button type="button" class="btn-principal" @click="generar" :disabled="cargando">{{ cargando ? 'Generant...' : 'Generar informe' }}</button>
-        <button v-if="generado && hayAlgo" type="button" class="btn-secundario" @click="imprimir">🖨️ Imprimir / Desar PDF</button>
+        <label>{{ $t('intranet.informe.desde') }} <input type="date" v-model="desde" @change="generado = false"></label>
+        <label>{{ $t('intranet.informe.hasta') }} <input type="date" v-model="hasta" @change="generado = false"></label>
+        <button type="button" class="btn-principal" @click="generar" :disabled="cargando">{{ $t(cargando ? 'intranet.informe.generando' : 'intranet.informe.generar') }}</button>
+        <button v-if="generado && hayAlgo" type="button" class="btn-secundario" @click="imprimir">{{ $t('intranet.informe.imprimir') }}</button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="avisoCalendario" class="error">{{ avisoCalendario }}</p>
@@ -193,39 +194,39 @@ const imprimir = () => window.print()
 
     <section v-if="generado" class="informe-imprimible">
       <header class="informe-cabecera">
-        <p class="institucion">Servei d'Enginyeria Oceanogràfica (SIO) · ICM-CSIC</p>
-        <h1>Memòria d'activitat</h1>
-        <p class="periodo">Del {{ fechaCorta(desde) }} al {{ fechaCorta(hasta) }}</p>
+        <p class="institucion">{{ $t('intranet.informe.institucion') }}</p>
+        <h1>{{ $t('intranet.informe.memoria') }}</h1>
+        <p class="periodo">{{ $t('intranet.informe.periodo', { desde: fechaCorta(desde), hasta: fechaCorta(hasta) }) }}</p>
       </header>
 
-      <p v-if="!hayAlgo" class="aviso">No hi ha res registrat en aquest període.</p>
+      <p v-if="!hayAlgo" class="aviso">{{ $t('intranet.informe.nada') }}</p>
 
       <template v-else>
-        <h2>Resum</h2>
+        <h2>{{ $t('intranet.informe.resumen') }}</h2>
         <div class="cifras">
-          <div class="cifra"><span class="numero">{{ notas.length }}</span><span>activitats registrades</span></div>
-          <div class="cifra"><span class="numero">{{ numProyectos }}</span><span>projectes amb activitat</span></div>
-          <div class="cifra"><span class="numero">{{ personasActivas }}</span><span>persones de l'equip</span></div>
-          <div v-if="horasSinProyecto.max" class="cifra"><span class="numero hores">{{ horasSinProyecto.min }}–{{ horasSinProyecto.max }} h</span><span>de feina sense projecte (suport, reparacions...)</span></div>
-          <div v-if="diasCampanya" class="cifra"><span class="numero">{{ diasCampanya }}</span><span>dies de campanya</span></div>
-          <div v-if="cifraRecurso('pelagia')" class="cifra"><span class="numero">{{ cifraRecurso('pelagia').dias }}</span><span>dies amb la Pelagia</span></div>
-          <div v-if="cifraRecurso('tanc')" class="cifra"><span class="numero">{{ cifraRecurso('tanc').dias }}</span><span>dies d'ús del tanc</span></div>
-          <div v-if="cifraRecurso('instrument')" class="cifra"><span class="numero">{{ cifraRecurso('instrument').items.length }}</span><span>préstecs d'instruments</span></div>
+          <div class="cifra"><span class="numero">{{ notas.length }}</span><span>{{ $t('intranet.informe.actividades') }}</span></div>
+          <div class="cifra"><span class="numero">{{ numProyectos }}</span><span>{{ $t('intranet.informe.proyectos') }}</span></div>
+          <div class="cifra"><span class="numero">{{ personasActivas }}</span><span>{{ $t('intranet.informe.personas') }}</span></div>
+          <div v-if="horasSinProyecto.max" class="cifra"><span class="numero hores">{{ horasSinProyecto.min }}–{{ horasSinProyecto.max }} h</span><span>{{ $t('intranet.informe.horasSoporte') }}</span></div>
+          <div v-if="diasCampanya" class="cifra"><span class="numero">{{ diasCampanya }}</span><span>{{ $t('intranet.informe.diasCampanya') }}</span></div>
+          <div v-if="cifraRecurso('pelagia')" class="cifra"><span class="numero">{{ cifraRecurso('pelagia').dias }}</span><span>{{ $t('intranet.informe.diasPelagia') }}</span></div>
+          <div v-if="cifraRecurso('tanc')" class="cifra"><span class="numero">{{ cifraRecurso('tanc').dias }}</span><span>{{ $t('intranet.informe.diasTanque') }}</span></div>
+          <div v-if="cifraRecurso('instrument')" class="cifra"><span class="numero">{{ cifraRecurso('instrument').items.length }}</span><span>{{ $t('intranet.informe.prestamos') }}</span></div>
         </div>
         <table v-if="cifrasTipo.length" class="tabla">
-          <thead><tr><th>Tipus d'activitat</th><th>Nombre</th></tr></thead>
+          <thead><tr><th>{{ $t('intranet.informe.tipoActividad') }}</th><th>{{ $t('intranet.informe.numero') }}</th></tr></thead>
           <tbody><tr v-for="t in cifrasTipo" :key="t.valor"><td>{{ t.etiqueta }}</td><td>{{ t.total }}</td></tr></tbody>
         </table>
 
-        <h2 v-if="porProyecto.length">Activitat per projecte</h2>
-        <section v-for="grupo in porProyecto" :key="grupo.titulo" class="grupo">
-          <h3>{{ grupo.titulo }} <span class="cuenta">({{ grupo.notas.length }}<template v-if="textoHoras(sumaHoras(grupo.notas))">, {{ textoHoras(sumaHoras(grupo.notas)) }}</template>)</span></h3>
-          <table v-if="grupo.titulo === 'Activitat general (sense projecte)' && porDestinatario.length" class="tabla destinataris">
-            <thead><tr><th>Per a</th><th>Encàrrecs</th><th>Temps</th></tr></thead>
+        <h2 v-if="porProyecto.length">{{ $t('intranet.informe.porProyecto') }}</h2>
+        <section v-for="grupo in porProyecto" :key="grupo.clave" class="grupo">
+          <h3>{{ grupo.general ? $t('intranet.informe.general') : grupo.titulo }} <span class="cuenta">({{ grupo.notas.length }}<template v-if="textoHoras(sumaHoras(grupo.notas))">, {{ textoHoras(sumaHoras(grupo.notas)) }}</template>)</span></h3>
+          <table v-if="grupo.general && porDestinatario.length" class="tabla destinataris">
+            <thead><tr><th>{{ $t('intranet.informe.para') }}</th><th>{{ $t('intranet.informe.encargos') }}</th><th>{{ $t('intranet.informe.tiempo') }}</th></tr></thead>
             <tbody><tr v-for="d in porDestinatario" :key="d.para"><td>{{ d.para }}</td><td>{{ d.encargos }}</td><td>{{ d.horas || '—' }}</td></tr></tbody>
           </table>
           <article v-for="n in grupo.notas" :key="n.id" class="entrada">
-            <p class="entrada-cabecera"><strong>{{ fechaCorta(n.fecha) }}</strong> · {{ tipoNota(n.tipo).etiqueta }} · {{ n.autor }}<template v-if="n.horas"> · ⏱ {{ intervaloHoras(n.horas)?.etiqueta }}</template><template v-if="n.para"> · per a {{ n.para }}</template></p>
+            <p class="entrada-cabecera"><strong>{{ fechaCorta(n.fecha) }}</strong> · {{ tipoNota(n.tipo).etiqueta }} · {{ n.autor }}<template v-if="n.horas"> · ⏱ {{ intervaloHoras(n.horas)?.etiqueta }}</template><template v-if="n.para"> · {{ $t('intranet.informe.paraQuien', { para: n.para }) }}</template></p>
             <p class="entrada-titulo">{{ n.titulo }}</p>
             <div v-if="n.texto" class="entrada-texto" v-html="limpiarHtml(n.texto)"></div>
             <div v-if="n.fotos && n.fotos.length" class="entrada-fotos">
@@ -235,34 +236,34 @@ const imprimir = () => window.print()
         </section>
 
         <template v-if="actividadesPorTipo.length">
-          <h2>Campanyes, formació i reunions</h2>
+          <h2>{{ $t('intranet.informe.campanasFormacion') }}</h2>
           <section v-for="g in actividadesPorTipo" :key="g.tipo" class="grupo">
             <h3>{{ g.etiqueta }} <span class="cuenta">({{ g.items.length }})</span></h3>
             <ul class="lista-cal">
               <li v-for="a in g.items" :key="a.clave">
                 <strong>{{ rangoFechas(a) }}</strong>
-                <span v-if="a.tipo === 'campanya'" class="cuenta"> ({{ diasEnPeriodo(a) }} {{ diasEnPeriodo(a) === 1 ? 'dia' : 'dies' }})</span>
+                <span v-if="a.tipo === 'campanya'" class="cuenta"> ({{ $t('intranet.informe.dias', { n: diasEnPeriodo(a) }, diasEnPeriodo(a)) }})</span>
                 <span v-if="a.nota"> · {{ a.nota }}</span>
                 <span v-if="a.proyecto"> · <em>{{ a.proyecto }}</em></span>
-                · <span class="personas">{{ a.personas.join(', ') }}</span>
-                <button type="button" class="quitar no-imprimir" title="Treure de l'informe" :aria-label="`Treure ${a.nota || g.etiqueta} de l'informe`" @click="ocultar(a.clave)">✕</button>
+                · <span class="personas">{{ a.personas.map(p => p || $t('intranet.comun.todoEquipo')).join(', ') }}</span>
+                <button type="button" class="quitar no-imprimir" :title="$t('intranet.informe.quitar')" :aria-label="$t('intranet.informe.quitarElemento', { que: a.nota || g.etiqueta })" @click="ocultar(a.clave)">✕</button>
               </li>
             </ul>
           </section>
         </template>
 
         <template v-if="recursosInforme.length">
-          <h2>Ús de recursos</h2>
+          <h2>{{ $t('intranet.informe.usoRecursos') }}</h2>
           <section v-for="g in recursosInforme" :key="g.valor" class="grupo">
             <h3>{{ g.icono }} {{ g.etiqueta }}
-              <span class="cuenta">({{ g.items.length }} {{ g.items.length === 1 ? 'reserva' : 'reserves' }}, {{ g.dias }} {{ g.dias === 1 ? 'dia' : 'dies' }})</span></h3>
+              <span class="cuenta">({{ $t('intranet.informe.reservas', { n: g.items.length }, g.items.length) }}, {{ $t('intranet.informe.dias', { n: g.dias }, g.dias) }})</span></h3>
             <ul class="lista-cal">
               <li v-for="r in g.items" :key="r.id">
                 <strong>{{ rangoFechas(r) }}</strong>
                 <span v-if="g.valor === 'instrument'"> · {{ nombreReserva(r) }}</span>
                 · {{ r.persona || r.para }}<span v-if="r.persona && r.para"> → {{ r.para }}</span>
                 <span v-if="r.proposito"> · {{ r.proposito }}</span>
-                <button type="button" class="quitar no-imprimir" title="Treure de l'informe" aria-label="Treure aquesta reserva de l'informe" @click="ocultar(`r${r.id}`)">✕</button>
+                <button type="button" class="quitar no-imprimir" :title="$t('intranet.informe.quitar')" :aria-label="$t('intranet.informe.quitarReserva')" @click="ocultar(`r${r.id}`)">✕</button>
               </li>
             </ul>
           </section>

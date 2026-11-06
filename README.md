@@ -48,6 +48,14 @@ interpreta: para escribir una arroba hay que poner `{'@'}`.
 Lo que viene de la base de datos (nombres y descripciones de instrumentos y
 proyectos) se muestra tal cual, sin traducir.
 
+Los textos de la **intranet** están en `src/i18n/intranet.js`, con cada frase
+en sus tres idiomas juntos (`{ ca, es, en }`), y siguen el idioma elegido arriba
+a la derecha. Los errores que devuelve el servidor (en castellano) se traducen
+con `traducirError`, y las categorías y estados guardados de proyectos e
+instrumentos («En Curs», «Contrato»…) con `traducirValor`: los valores de la
+base de datos no cambian. Si se añade un error nuevo en `backend/app.py`, hay que
+añadirlo también en `intranet.js → errores`.
+
 ## Instalar en el servidor (docker03.icm.csic.es)
 
 El portal corre en Docker en el servidor `docker03` (10.100.201.12):

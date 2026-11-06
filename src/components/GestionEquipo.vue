@@ -1,5 +1,7 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 // --- DATOS DEL EQUIPO REALES EXTRAÍDOS DEL PANTALLAZO ---
 const equip = ref([
@@ -90,7 +92,7 @@ const guardarMembre = () => {
 }
 
 const eliminarMembre = (id) => {
-  if (confirm("¿Seguro que quieres eliminar a este integrante del equipo?")) {
+  if (confirm(t('intranet.equipo.confirmarBorrar'))) {
     equip.value = equip.value.filter(m => m.id !== id)
   }
 }
@@ -100,46 +102,47 @@ const eliminarMembre = (id) => {
   <div class="panel-admin">
     <div class="cabecera-panel">
       <div>
-        <h2>👥 Gestión del Equipo SIO</h2>
-        <p class="subtitulo-panel">Añade, edita o elimina los perfiles del personal del servicio.</p>
+        <h2>{{ $t('intranet.equipo.titulo') }}</h2>
+        <p class="subtitulo-panel">{{ $t('intranet.equipo.subtitulo') }}</p>
+        <p class="aviso-no-guarda">{{ $t('intranet.equipo.noGuarda') }}</p>
       </div>
-      <button @click="nouMembre" class="btn-accio">+ Añadir Integrante</button>
+      <button @click="nouMembre" class="btn-accio">{{ $t('intranet.equipo.anadir') }}</button>
     </div>
 
     <div v-if="mostrarFormulari" class="caja-formulari">
-      <h3>{{ modeEdicio ? '✏️ Editar Integrante' : '➕ Nuevo Integrante' }}</h3>
+      <h3>{{ $t(modeEdicio ? 'intranet.equipo.editar' : 'intranet.equipo.nuevo') }}</h3>
       <form @submit.prevent="guardarMembre" class="grid-form">
         
         <div class="campo-doble">
           <div class="campo">
-            <label>Nombre y Apellidos:</label>
+            <label>{{ $t('intranet.equipo.nombre') }}</label>
             <input v-model="membreActual.nom" required placeholder="Ej: Dra. Cristina Romera Castillo">
           </div>
           <div class="campo">
-            <label>Cargo / Rol:</label>
+            <label>{{ $t('intranet.equipo.cargo') }}</label>
             <input v-model="membreActual.carrec" required placeholder="Ej: Personal de Investigación Técnica (PIT)">
           </div>
         </div>
 
         <div class="campo-doble">
           <div class="campo">
-            <label>Correo Electrónico (ICM):</label>
+            <label>{{ $t('intranet.equipo.correo') }}</label>
             <input v-model="membreActual.email" type="email" required placeholder="usuario@icm.csic.es">
           </div>
           <div class="campo">
-            <label>Nombre de la foto (Ruta):</label>
+            <label>{{ $t('intranet.equipo.foto') }}</label>
             <input v-model="membreActual.foto" placeholder="Ej: /fotos/cristina.jpg">
           </div>
         </div>
 
         <div class="campo">
-          <label>Biografía Corta / Responsabilidades:</label>
-          <textarea v-model="membreActual.bio" rows="4" required placeholder="Explica brevemente las tareas, especialidades y formación..."></textarea>
+          <label>{{ $t('intranet.equipo.bio') }}</label>
+          <textarea v-model="membreActual.bio" rows="4" required :placeholder="$t('intranet.equipo.bioPh')"></textarea>
         </div>
 
         <div class="accions-form">
-          <button type="submit" class="btn-guardar">💾 Guardar Perfil</button>
-          <button type="button" @click="mostrarFormulari = false" class="btn-cancelar">❌ Cancelar</button>
+          <button type="submit" class="btn-guardar">{{ $t('intranet.equipo.guardar') }}</button>
+          <button type="button" @click="mostrarFormulari = false" class="btn-cancelar">{{ $t('intranet.equipo.cancelar') }}</button>
         </div>
       </form>
     </div>
@@ -153,13 +156,13 @@ const eliminarMembre = (id) => {
           <p class="bio-membre">{{ membre.bio }}</p>
         </div>
         <div class="accions-membre">
-          <button @click="editarMembre(membre)" class="btn-editar">✏️ Editar</button>
+          <button @click="editarMembre(membre)" class="btn-editar">{{ $t('intranet.comun.editar') }}</button>
           <button @click="eliminarMembre(membre.id)" class="btn-eliminar">🗑️</button>
         </div>
       </div>
       
       <div v-if="equip.length === 0" class="mensaje-vacio">
-        No hay ningún integrante configurado todavía. Haz clic en "+ Añadir Integrante" para empezar.
+        {{ $t('intranet.equipo.vacio') }}
       </div>
     </div>
 
@@ -172,6 +175,7 @@ const eliminarMembre = (id) => {
 .cabecera-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
 .cabecera-panel h2 { color: #012169; margin: 0 0 5px 0; font-size: 1.6rem; }
 .subtitulo-panel { color: #666; margin: 0; font-size: 0.95rem; }
+.aviso-no-guarda { color: #b45d00; background: #fff4e5; border-radius: 4px; padding: 4px 8px; margin: 8px 0 0; font-size: 0.85rem; }
 .btn-accio { background: #17a2b8; color: white; padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
 .btn-accio:hover { background: #117a8b; }
 
