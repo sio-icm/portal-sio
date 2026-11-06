@@ -1,21 +1,47 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t, locale } = useI18n()
 const fondoInstrumentacion = '/instrumentacion.webp'
 
 const backgroundStyle = computed(() => {
   return `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('${fondoInstrumentacion}')`
 })
 
-// 📋 DATOS DEL EQUIPO (las fotos se leen de public/fotos/equipo/;
-// el cargo y la descripción de cada persona están en src/i18n: equipo.personas.<id>)
-const equipo = [
-  { id: 'rbardaji', nombre: 'Raül Bardají', tagClase: 'lider', etiqueta: 'liderazgo', fotoSrc: '/fotos/equipo/rbardaji.jpg' },
-  { id: 'rferrando', nombre: 'Raül Ferrando', tagClase: 'tecnico', etiqueta: 'ingenieria', fotoSrc: '/fotos/equipo/rferrando.jpg' },
-  { id: 'nhoareau', nombre: 'Nina Hoareau', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/nhoareau.jpg' },
-  { id: 'bnicolas', nombre: 'Brian Nicolás', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/bnicolas.jpg' },
-  { id: 'ksalvador', nombre: 'Kintxo Salvador', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/ksalvador.jpg' },
-  { id: 'mlloret', nombre: 'Maribel Lloret', tagClase: 'tecnico', etiqueta: 'soporte', fotoSrc: '/fotos/equipo/mlloret.jpg' }
+// 📋 DATOS DEL EQUIPO: se editan desde la intranet («Gestión del equipo») y llegan de /api/equipo.
+// Si el servidor no responde, se enseña esta lista de reserva (cargo y descripción en src/i18n: equipo.personas.<id>)
+const reserva = [
+  { id: 'rbardaji', nombre: 'Raül Bardají', etiqueta: 'liderazgo' },
+  { id: 'rferrando', nombre: 'Raül Ferrando', etiqueta: 'ingenieria' },
+  { id: 'nhoareau', nombre: 'Nina Hoareau', etiqueta: 'soporte' },
+  { id: 'bnicolas', nombre: 'Brian Nicolás', etiqueta: 'soporte' },
+  { id: 'ksalvador', nombre: 'Kintxo Salvador', etiqueta: 'soporte' },
+  { id: 'mlloret', nombre: 'Maribel Lloret', etiqueta: 'soporte' }
 ]
+const delServidor = ref(null)
+
+onMounted(async () => {
+  try {
+    const r = await fetch('/api/equipo')
+    if (r.ok) delServidor.value = await r.json()
+  } catch { /* se queda la lista de reserva */ }
+})
+
+// Texto en el idioma de la web; si falta, en castellano
+const enIdioma = (p, campo) => p[`${campo}_${locale.value}`] || p[`${campo}_es`] || p[`${campo}_ca`] || p[`${campo}_en`] || ''
+
+const equipo = computed(() => {
+  if (delServidor.value) {
+    return delServidor.value.map(p => ({
+      id: p.id, nombre: p.nombre, etiqueta: p.etiqueta, fotoSrc: p.foto || '/fotos/equipo/perfil-default.svg',
+      cargo: enIdioma(p, 'cargo'), descripcion: enIdioma(p, 'descripcion')
+    }))
+  }
+  return reserva.map(p => ({
+    ...p, fotoSrc: `/fotos/equipo/${p.id}.jpg`,
+    cargo: t(`equipo.personas.${p.id}.cargo`), descripcion: t(`equipo.personas.${p.id}.descripcion`)
+  }))
+})
 </script>
 
 <template>
@@ -36,11 +62,11 @@ const equipo = [
             <img :src="persona.fotoSrc" :alt="persona.nombre" class="foto-perfil" onerror="this.onerror=null; this.src='/fotos/equipo/perfil-default.svg'">
           </div>
 
-          <div :class="['rol-tag', persona.tagClase]">{{ $t(`equipo.etiquetas.${persona.etiqueta}`) }}</div>
+          <div :class="['rol-tag', persona.etiqueta === 'liderazgo' ? 'lider' : 'tecnico']">{{ $t(`equipo.etiquetas.${persona.etiqueta}`) }}</div>
           <h3>{{ persona.nombre }}</h3>
-          <p class="cargo">{{ $t(`equipo.personas.${persona.id}.cargo`) }}</p>
-          <div v-if="$t(`equipo.personas.${persona.id}.descripcion`)" class="descripcion-personal">
-            {{ $t(`equipo.personas.${persona.id}.descripcion`) }}
+          <p class="cargo">{{ persona.cargo }}</p>
+          <div v-if="persona.descripcion" class="descripcion-personal">
+            {{ persona.descripcion }}
           </div>
         </div>
 

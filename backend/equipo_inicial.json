@@ -1,0 +1,80 @@
+[
+  {
+    "orden": 1,
+    "nombre": "Raül Bardají",
+    "etiqueta": "liderazgo",
+    "email": "rbardaji@icm.csic.es",
+    "foto": "/fotos/equipo/rbardaji.jpg",
+    "cargo_ca": "Responsable del Servei d'Enginyeria i Oceanografia",
+    "descripcion_ca": "Coordinació general d'infraestructures, gestió de campanyes oceanogràfiques i direcció del suport tecnològic a l'ICM-CSIC.",
+    "cargo_es": "Responsable del Servicio de Ingeniería y Oceanografía",
+    "descripcion_es": "Coordinación general de infraestructuras, gestión de campañas oceanográficas y dirección del soporte tecnológico en el ICM-CSIC.",
+    "cargo_en": "Head of the Engineering and Oceanography Service",
+    "descripcion_en": "Overall coordination of infrastructure, management of oceanographic campaigns and leadership of technological support at ICM-CSIC."
+  },
+  {
+    "orden": 2,
+    "nombre": "Raül Ferrando",
+    "etiqueta": "ingenieria",
+    "email": "rferrando@icm.csic.es",
+    "foto": "/fotos/equipo/rferrando.jpg",
+    "cargo_ca": "Personal tècnic de recerca (PIT)",
+    "descripcion_ca": "Disseny industrial, desenvolupament de sistemes encastats, prototipatge ràpid (mecanitzat/impressió 3D) i manteniment de la flota autònoma.",
+    "cargo_es": "Personal Técnico de Investigación (PIT)",
+    "descripcion_es": "Diseño industrial, desarrollo de sistemas embebidos, prototipado rápido (mecanizado/impresión 3D) y mantenimiento de la flota autónoma.",
+    "cargo_en": "Research Technical Staff (PIT)",
+    "descripcion_en": "Industrial design, embedded systems development, rapid prototyping (machining/3D printing) and maintenance of the autonomous fleet."
+  },
+  {
+    "orden": 3,
+    "nombre": "Nina Hoareau",
+    "etiqueta": "soporte",
+    "email": "nhoareau@icm.csic.es",
+    "foto": "/fotos/equipo/nhoareau.jpg",
+    "cargo_ca": "Especialista en instrumentació",
+    "descripcion_ca": "Calibratge de sensors oceanogràfics, anàlisi fisicoquímica de mostres d'aigua (salinitat) i assistència tècnica a les campanyes.",
+    "cargo_es": "Especialista en Instrumentación",
+    "descripcion_es": "Calibración de sensores oceanográficos, análisis físico-químico de muestras de agua (salinidad) y asistencia técnica en campañas.",
+    "cargo_en": "Instrumentation Specialist",
+    "descripcion_en": "Calibration of oceanographic sensors, physico-chemical analysis of water samples (salinity) and technical assistance during campaigns."
+  },
+  {
+    "orden": 4,
+    "nombre": "Brian Nicolás",
+    "etiqueta": "soporte",
+    "email": "bnicolas@icm.csic.es",
+    "foto": "/fotos/equipo/bnicolas.jpg",
+    "cargo_ca": "Tècnic en electrònica i sistemes",
+    "descripcion_ca": "Manteniment preventiu i correctiu de sistemes de telemetria, comunicacions submarines i electrònica analògica/digital.",
+    "cargo_es": "Técnico en Electrónica y Sistemas",
+    "descripcion_es": "Mantenimiento preventivo y correctivo de sistemas de telemetría, comunicaciones submarinas y electrónica analógica/digital.",
+    "cargo_en": "Electronics and Systems Technician",
+    "descripcion_en": "Preventive and corrective maintenance of telemetry systems, underwater communications and analogue/digital electronics."
+  },
+  {
+    "orden": 5,
+    "nombre": "Kintxo Salvador",
+    "etiqueta": "soporte",
+    "email": "ksalvador@icm.csic.es",
+    "foto": "/fotos/equipo/ksalvador.jpg",
+    "cargo_ca": "Tècnic de suport",
+    "descripcion_ca": "",
+    "cargo_es": "Técnico de Soporte",
+    "descripcion_es": "",
+    "cargo_en": "Support Technician",
+    "descripcion_en": ""
+  },
+  {
+    "orden": 6,
+    "nombre": "Maribel Lloret",
+    "etiqueta": "soporte",
+    "email": "mlloret@icm.csic.es",
+    "foto": "/fotos/equipo/mlloret.jpg",
+    "cargo_ca": "Tècnica de suport",
+    "descripcion_ca": "",
+    "cargo_es": "Técnica de Soporte",
+    "descripcion_es": "",
+    "cargo_en": "Support Technician",
+    "descripcion_en": ""
+  }
+]

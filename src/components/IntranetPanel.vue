@@ -391,12 +391,8 @@ const eliminarProyecto = async (id) => {
         <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
-        <div v-else-if="seccionActiva === 'documentacion'">
-        <BibliotecaDocs />
-        </div>
-        <div v-else-if="seccionActiva === 'equipo'">
-        <GestionEquipo />
-        </div>
+        <BibliotecaDocs v-else-if="seccionActiva === 'documentacion'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
           <h2>{{ $t(editandoId ? 'intranet.panel.editarInstrumento' : 'intranet.panel.registrarInstrumento') }}</h2>
           <form @submit.prevent="guardarInstrumento" class="grid-form">

@@ -1,4 +1,5 @@
 import hmac
+import json as json_lib
 import os
 import re
 import smtplib
@@ -1761,6 +1762,336 @@ def memoria_anual():
         'dias_tanque': dias_distintos(reservas['tanc']),
         'prestamos': len(reservas['instrument']),
     })
+
+
+# =======================================================
+# EQUIPO (fichas de la página pública «Equipo SIO», editables desde la intranet)
+# =======================================================
+EQUIPO_DIR = os.path.join(os.path.dirname(DB_PATH), 'equipo')
+EQUIPO_INICIAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'equipo_inicial.json')
+IDIOMAS = ('ca', 'es', 'en')
+ETIQUETAS_EQUIPO = ('liderazgo', 'ingenieria', 'soporte')
+CAMPOS_EQUIPO = ['nombre', 'email', 'etiqueta', 'orden', 'visible'] + \
+    [f'{c}_{l}' for c in ('cargo', 'descripcion') for l in IDIOMAS]
+
+
+def crear_tablas_equipo_docs():
+    conexion = conectar_bd()
+    conexion.executescript(f"""
+        CREATE TABLE IF NOT EXISTS equipo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            orden INTEGER NOT NULL DEFAULT 0,
+            nombre TEXT NOT NULL,
+            email TEXT NOT NULL DEFAULT '',
+            etiqueta TEXT NOT NULL DEFAULT 'soporte',
+            foto TEXT NOT NULL DEFAULT '',
+            visible INTEGER NOT NULL DEFAULT 1,
+            {', '.join(f"{c}_{l} TEXT NOT NULL DEFAULT ''" for c in ('cargo', 'descripcion') for l in IDIOMAS)},
+            actualizado TEXT
+        );
+        CREATE TABLE IF NOT EXISTS documentos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            descripcion TEXT NOT NULL DEFAULT '',
+            categoria TEXT NOT NULL,
+            fabricante TEXT NOT NULL DEFAULT '',
+            formato TEXT NOT NULL,
+            archivo TEXT NOT NULL,
+            nombre_original TEXT NOT NULL,
+            tamano INTEGER NOT NULL DEFAULT 0,
+            usuario_id INTEGER,
+            subido_por TEXT NOT NULL,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS equipo_cargado (id INTEGER PRIMARY KEY CHECK (id = 1));
+    """)
+    # La primera vez se cargan las fichas que había en la web (una sola vez, aunque
+    # los dos procesos de gunicorn arranquen a la vez)
+    try:
+        conexion.execute('BEGIN IMMEDIATE')
+        if not conexion.execute('SELECT 1 FROM equipo_cargado').fetchone():
+            with open(EQUIPO_INICIAL, encoding='utf-8') as f:
+                for p in json_lib.load(f):
+                    campos = list(p)
+                    conexion.execute(
+                        f"INSERT INTO equipo ({', '.join(campos)}) VALUES ({', '.join('?' * len(campos))})",
+                        [p[c] for c in campos])
+            conexion.execute('INSERT INTO equipo_cargado (id) VALUES (1)')
+        conexion.commit()
+    except sqlite3.OperationalError:
+        conexion.rollback()
+    conexion.close()
+    os.makedirs(EQUIPO_DIR, exist_ok=True)
+    os.makedirs(DOCS_DIR, exist_ok=True)
+
+
+def ficha_equipo(fila):
+    d = dict(fila)
+    d['visible'] = bool(d['visible'])
+    return d
+
+
+def validar_ficha(datos, actual=None):
+    ficha = dict(actual) if actual else {'orden': 99, 'visible': 1, 'email': '', 'etiqueta': 'soporte'}
+    for campo in CAMPOS_EQUIPO:
+        if campo in datos:
+            ficha[campo] = datos[campo]
+    ficha['nombre'] = str(ficha.get('nombre') or '').strip()
+    if not ficha['nombre'] or len(ficha['nombre']) > 100:
+        return None, "El nombre es obligatorio"
+    ficha['email'] = str(ficha.get('email') or '').strip()
+    if ficha['email'] and not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', ficha['email']):
+        return None, "Correo no válido"
+    if ficha.get('etiqueta') not in ETIQUETAS_EQUIPO:
+        return None, "Grupo no válido"
+    try:
+        ficha['orden'] = int(ficha.get('orden') or 0)
+    except (TypeError, ValueError):
+        return None, "Orden no válido"
+    ficha['visible'] = 1 if ficha.get('visible') in (True, 1, '1') else 0
+    for l in IDIOMAS:
+        ficha[f'cargo_{l}'] = str(ficha.get(f'cargo_{l}') or '').strip()[:200]
+        ficha[f'descripcion_{l}'] = str(ficha.get(f'descripcion_{l}') or '').strip()[:1500]
+    if not any(ficha[f'cargo_{l}'] for l in IDIOMAS):
+        return None, "Falta el cargo"
+    return ficha, None
+
+
+def borrar_foto_equipo(foto):
+    if foto and foto.startswith('/api/equipo/fotos/'):
+        try:
+            os.remove(os.path.join(EQUIPO_DIR, foto.rsplit('/', 1)[1]))
+        except FileNotFoundError:
+            pass
+
+
+@app.route('/api/equipo', methods=['GET', 'POST'])
+def gestionar_equipo():
+    if request.method == 'GET':
+        # La web pública ve solo las fichas visibles; la intranet (?todas=1) las ve todas
+        todas = request.args.get('todas') and session.get('autenticado')
+        conexion = conectar_bd()
+        filas = conexion.execute(
+            'SELECT * FROM equipo' + ('' if todas else ' WHERE visible = 1') + ' ORDER BY orden, id').fetchall()
+        conexion.close()
+        fichas = [ficha_equipo(f) for f in filas]
+        if not session.get('autenticado'):
+            for f in fichas:
+                f.pop('email', None)
+        return jsonify(fichas)
+    return crear_ficha_equipo()
+
+
+@requiere_login
+def crear_ficha_equipo():
+    ficha, error = validar_ficha(request.get_json(silent=True) or {})
+    if error:
+        return jsonify({"error": error}), 400
+    campos = CAMPOS_EQUIPO
+    conexion = conectar_bd()
+    cursor = conexion.execute(
+        f"INSERT INTO equipo ({', '.join(campos)}, actualizado) VALUES ({', '.join('?' * len(campos))}, datetime('now'))",
+        [ficha[c] for c in campos])
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM equipo WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    conexion.close()
+    return jsonify(ficha_equipo(fila)), 201
+
+
+@app.route('/api/equipo/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_ficha_equipo(id):
+    conexion = conectar_bd()
+    actual = conexion.execute('SELECT * FROM equipo WHERE id = ?', (id,)).fetchone()
+    if not actual:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'DELETE':
+        if not session.get('es_admin'):
+            conexion.close()
+            return jsonify({"error": "Solo para administradores"}), 403
+        conexion.execute('DELETE FROM equipo WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        borrar_foto_equipo(actual['foto'])
+        return '', 204
+    ficha, error = validar_ficha(request.get_json(silent=True) or {}, actual)
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    conexion.execute(
+        f"UPDATE equipo SET {', '.join(c + ' = ?' for c in CAMPOS_EQUIPO)}, actualizado = datetime('now') WHERE id = ?",
+        [ficha[c] for c in CAMPOS_EQUIPO] + [id])
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM equipo WHERE id = ?', (id,)).fetchone()
+    conexion.close()
+    return jsonify(ficha_equipo(fila))
+
+
+@app.route('/api/equipo/<int:id>/foto', methods=['POST'])
+@requiere_login
+def subir_foto_equipo(id):
+    conexion = conectar_bd()
+    actual = conexion.execute('SELECT foto FROM equipo WHERE id = ?', (id,)).fetchone()
+    if not actual:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    fichero = request.files.get('foto')
+    if not fichero:
+        conexion.close()
+        return jsonify({"error": "No se ha recibido ninguna foto"}), 400
+    try:
+        imagen = Image.open(fichero.stream)
+        imagen.load()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        conexion.close()
+        return jsonify({"error": "El archivo no es una imagen"}), 400
+    # Cuadrada y centrada (la web la enseña en un círculo); sin EXIF
+    imagen = ImageOps.exif_transpose(imagen)
+    if imagen.mode not in ('RGB', 'RGBA'):
+        imagen = imagen.convert('RGB')
+    imagen = ImageOps.fit(imagen, (600, 600), centering=(0.5, 0.35))
+    nombre = uuid.uuid4().hex + '.webp'
+    imagen.save(os.path.join(EQUIPO_DIR, nombre), 'WEBP', quality=82, method=4)
+    url = '/api/equipo/fotos/' + nombre
+    conexion.execute("UPDATE equipo SET foto = ?, actualizado = datetime('now') WHERE id = ?", (url, id))
+    conexion.commit()
+    conexion.close()
+    borrar_foto_equipo(actual['foto'])
+    return jsonify({"foto": url}), 201
+
+
+@app.route('/api/equipo/fotos/<nombre>', methods=['GET'])
+def foto_equipo(nombre):
+    if not re.fullmatch(r'[0-9a-f]{32}\.webp', nombre):
+        return jsonify({"error": "No existe"}), 404
+    return send_from_directory(EQUIPO_DIR, nombre, mimetype='image/webp', max_age=86400)
+
+
+# =======================================================
+# BIBLIOTECA DE DOCUMENTOS (archivos subidos desde la intranet; solo para el equipo)
+# =======================================================
+DOCS_DIR = os.path.join(os.path.dirname(DB_PATH), 'documentos')
+EXTENSIONES_DOC = {
+    'pdf': 'PDF', 'doc': 'DOC', 'docx': 'DOC', 'odt': 'DOC', 'rtf': 'DOC', 'txt': 'TXT',
+    'xls': 'XLS', 'xlsx': 'XLS', 'ods': 'XLS', 'csv': 'XLS',
+    'ppt': 'PPT', 'pptx': 'PPT', 'odp': 'PPT',
+    'jpg': 'JPG', 'jpeg': 'JPG', 'png': 'PNG',
+    'zip': 'ZIP', '7z': 'ZIP', 'rar': 'ZIP',
+}
+# Estos se abren en el navegador; el resto se descarga
+EXTENSIONES_EN_LINEA = {'pdf', 'jpg', 'jpeg', 'png', 'txt'}
+
+
+def puede_editar_doc(doc):
+    if session.get('es_admin'):
+        return True
+    return doc['usuario_id'] is not None and doc['usuario_id'] == session.get('usuario_id')
+
+
+def documento_json(fila):
+    d = dict(fila)
+    d.pop('archivo', None)
+    d['enlace'] = f"/api/documentos/{d['id']}/archivo"
+    d['puede_editar'] = puede_editar_doc(fila)
+    return d
+
+
+def validar_doc(datos, actual=None):
+    doc = {c: (actual[c] if actual else '') for c in ('titulo', 'descripcion', 'categoria', 'fabricante')}
+    for c in doc:
+        if c in datos:
+            doc[c] = str(datos[c] or '').strip()
+    if not doc['titulo'] or not doc['categoria']:
+        return None, "Rellena los campos obligatorios"
+    if len(doc['titulo']) > 200 or len(doc['categoria']) > 100 or len(doc['fabricante']) > 100:
+        return None, "Texto demasiado largo"
+    doc['descripcion'] = doc['descripcion'][:2000]
+    return doc, None
+
+
+@app.route('/api/documentos', methods=['GET', 'POST'])
+@requiere_login
+def gestionar_documentos():
+    conexion = conectar_bd()
+    if request.method == 'GET':
+        filas = conexion.execute('SELECT * FROM documentos ORDER BY categoria, fabricante, titulo').fetchall()
+        conexion.close()
+        return jsonify([documento_json(f) for f in filas])
+    doc, error = validar_doc(request.form)
+    fichero = request.files.get('archivo')
+    if not error and not fichero:
+        error = "No se ha recibido ningún archivo"
+    extension = fichero.filename.rsplit('.', 1)[-1].lower() if fichero and '.' in fichero.filename else ''
+    if not error and extension not in EXTENSIONES_DOC:
+        error = "Tipo de archivo no permitido"
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    nombre = f'{uuid.uuid4().hex}.{extension}'
+    ruta = os.path.join(DOCS_DIR, nombre)
+    fichero.save(ruta)
+    original = os.path.basename(fichero.filename.replace('\\', '/'))[:200] or nombre
+    cursor = conexion.execute(
+        'INSERT INTO documentos (titulo, descripcion, categoria, fabricante, formato, archivo, nombre_original, '
+        'tamano, usuario_id, subido_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (doc['titulo'], doc['descripcion'], doc['categoria'], doc['fabricante'], EXTENSIONES_DOC[extension],
+         nombre, original, os.path.getsize(ruta), session.get('usuario_id'), session.get('nombre') or ''))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM documentos WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    conexion.close()
+    return jsonify(documento_json(fila)), 201
+
+
+@app.route('/api/documentos/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_documento(id):
+    conexion = conectar_bd()
+    actual = conexion.execute('SELECT * FROM documentos WHERE id = ?', (id,)).fetchone()
+    if not actual:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if not puede_editar_doc(actual):
+        conexion.close()
+        return jsonify({"error": "Solo puede cambiarlo quien lo subió o un administrador"}), 403
+    if request.method == 'DELETE':
+        conexion.execute('DELETE FROM documentos WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        try:
+            os.remove(os.path.join(DOCS_DIR, actual['archivo']))
+        except FileNotFoundError:
+            pass
+        return '', 204
+    doc, error = validar_doc(request.get_json(silent=True) or {}, actual)
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    conexion.execute('UPDATE documentos SET titulo = ?, descripcion = ?, categoria = ?, fabricante = ? WHERE id = ?',
+                     (doc['titulo'], doc['descripcion'], doc['categoria'], doc['fabricante'], id))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM documentos WHERE id = ?', (id,)).fetchone()
+    conexion.close()
+    return jsonify(documento_json(fila))
+
+
+@app.route('/api/documentos/<int:id>/archivo', methods=['GET'])
+@requiere_login
+def archivo_documento(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT archivo, nombre_original FROM documentos WHERE id = ?', (id,)).fetchone()
+    conexion.close()
+    if not fila:
+        return jsonify({"error": "No existe"}), 404
+    extension = fila['archivo'].rsplit('.', 1)[-1]
+    respuesta = send_from_directory(DOCS_DIR, fila['archivo'], download_name=fila['nombre_original'],
+                                    as_attachment=extension not in EXTENSIONES_EN_LINEA, max_age=0)
+    respuesta.headers['Cache-Control'] = 'private, no-cache'
+    respuesta.headers['X-Content-Type-Options'] = 'nosniff'
+    return respuesta
+
+
+crear_tablas_equipo_docs()
 
 
 if __name__ == '__main__':
