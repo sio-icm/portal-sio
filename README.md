@@ -226,8 +226,9 @@ sudo docker image prune -f
 ## Copias de seguridad
 
 Toda la información editable está en `~/sio-portal/datos/`: la base de datos
-`sio_inventario.db` (instrumentos, proyectos, usuarios y notas del diario) y la
-carpeta `fotos/` (fotos del diario). Para copiar la base de datos sin parar el
+`sio_inventario.db` (instrumentos, proyectos, usuarios, notas del diario, equipo...)
+y las carpetas `fotos/` (fotos del diario), `equipo/` (fotos de las fichas del
+equipo) y `documentos/` (archivos subidos a la Biblioteca). Para copiar la base de datos sin parar el
 backend:
 
 ```sh
@@ -258,7 +259,7 @@ sudo systemctl start sio-copia.service && ls -lh ~/sio-copias   # primera copia,
 - Ver cuándo toca la siguiente: `systemctl list-timers sio-copia.timer`
 - Ver si ha fallado: `journalctl -u sio-copia.service -n 20`
 - Restaurar: `tar xzf ~/sio-copias/sio-AAAA-MM-DD.tgz -C /tmp/restaurar`, parar el
-  backend, copiar `sio_inventario.db` y `fotos/` a `~/sio-portal/datos/` y arrancarlo.
+  backend, copiar `sio_inventario.db`, `fotos/`, `equipo/` y `documentos/` a `~/sio-portal/datos/` y arrancarlo.
 - Las copias están en el mismo disco: protegen de errores y borrados, no de que
   se estropee el servidor. De vez en cuando, bájate la última a tu ordenador:
   `scp docker03.icm.csic.es:sio-copias/sio-$(date +%F).tgz ~/`
@@ -344,6 +345,20 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 - Las páginas públicas de la Pelagia, los tanques y los instrumentos marcan en
   azul (o rojo) los días reservados, sin nombres ni motivos.
 - Tablas: `calendario`, `reservas`, `festius`, `ajustes` (se crean solas).
+
+## Equipo y Biblioteca de documentos
+
+- **Gestión del equipo** (intranet): son las fichas de la página pública `/equipo`.
+  Cargo y descripción van en catalán, castellano e inglés (si falta uno, la web
+  usa el castellano). Cualquiera del equipo puede añadir y editar fichas y cambiar
+  la foto (se recorta en cuadrado, 600 px, sin EXIF, en `datos/equipo/`); solo un
+  administrador puede eliminarlas. Una ficha «oculta» no sale en la web.
+  La primera vez se cargan las 6 fichas de `backend/equipo_inicial.json`.
+- **Documentación y manuales** (intranet): los manuales de `public/manuals/` siguen
+  fijos en el código; lo que se sube desde «Subir documento» se guarda en
+  `datos/documentos/` (máximo 40 MB por archivo) y solo se puede descargar con la
+  sesión iniciada. Lo puede editar o borrar quien lo subió o un administrador.
+- Tablas: `equipo`, `documentos` (se crean solas).
 
 ## Cambiar la contraseña de la intranet del administrador del servidor
 

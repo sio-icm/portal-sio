@@ -1,11 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { traducirValor } from '../i18n'
-const { t } = useI18n()
+import { traducirValor, traducirError } from '../i18n'
+import { peticionIntranet } from '../utils/diario'
 
-// Llista COMPLETA de documents amb rutes reals apuntant a public/manuals/
-const documentos = ref([
+// Manuals fixos (a public/manuals/) + documents que puja l'equip des d'aquí
+// (es desen al servidor: /api/documentos, només els veu l'equip)
+defineProps({ sesion: { type: Object, required: true } })
+const emit = defineEmits(['sesion-caducada'])
+const { t, locale } = useI18n()
+const caducada = () => emit('sesion-caducada')
+const MAX_MB = 40
+
+const fijos = [
   // --- ESTACIONS METEOROLÒGIQUES ---
   { id: 1, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Manual Consola Vantage Pro2', descripcion: 'Manual complet de l\'estació meteorològica Vantage Pro2.', formato: 'PDF', enlace: '/manuals/Vantage_pro2_console_manual.pdf' },
   { id: 2, categoria: 'Estacions Meteorològiques', fabricante: 'Davis Instruments', titulo: 'Manual de Instalación Vantage Pro/Pro2', descripcion: 'Guia completa d\'instal·lació i muntatge de màstil.', formato: 'PDF', enlace: '/manuals/Installation_vantage.pdf' },
@@ -73,19 +80,35 @@ const documentos = ref([
   { id: 53, categoria: 'Tècniques de Mostreig', fabricante: 'Universitat de Perpinyà', titulo: 'Técnicas de Muestreo (1990)', descripcion: 'Metodologies històriques.', formato: 'PDF', enlace: '/manuals/1990_Universite_Perpignan_Techniques_Prelevement.pdf' },
   { id: 54, categoria: 'Projectes i Sistemes', fabricante: 'ICM - CSIC', titulo: 'SPY-ICM', descripcion: 'Documentació del sistema.', formato: 'PDF', enlace: '/manuals/SPY-ICM.pdf' },
   { id: 55, categoria: 'Treballs (TFG)', fabricante: 'General', titulo: 'TFG - Oriol Mulet Morales', descripcion: 'Documentació.', formato: 'PDF', enlace: '/manuals/Mulet_Morales_Oriol_TFG.pdf' }
-])
+]
+
+const subidos = ref([])
+const errorCarga = ref('')
+const cargar = async () => {
+  errorCarga.value = ''
+  try {
+    const r = await peticionIntranet('/api/documentos', {}, caducada)
+    if (!r.ok) throw new Error()
+    subidos.value = (await r.json()).map(d => ({ ...d, id: `s${d.id}`, idServidor: d.id, subido: true }))
+  } catch {
+    errorCarga.value = t('intranet.docs.errorCarga')
+  }
+}
+onMounted(cargar)
+
+const documentos = computed(() => [...fijos, ...subidos.value])
+const categorias = computed(() => [...new Set(documentos.value.map(d => d.categoria))].sort())
+const fabricantes = computed(() => [...new Set(documentos.value.map(d => d.fabricante).filter(Boolean))].sort())
 
 const buscador = ref('')
 const mostrarFormulario = ref(false)
+const mensaje = ref('')
+const errorForm = ref('')
+const enviando = ref(false)
+const archivo = ref(null)
 
-const nuevoDoc = ref({
-  titulo: '',
-  descripcion: '',
-  categoria: '',
-  fabricante: '',
-  formato: 'PDF',
-  enlace: '#'
-})
+const docVacio = () => ({ idServidor: null, titulo: '', descripcion: '', categoria: '', fabricante: '' })
+const nuevoDoc = ref(docVacio())
 
 const documentosFiltrados = computed(() => {
   if (!buscador.value) return documentos.value
@@ -93,6 +116,7 @@ const documentosFiltrados = computed(() => {
   return documentos.value.filter(doc => 
     doc.titulo.toLowerCase().includes(query) || 
     doc.fabricante.toLowerCase().includes(query) ||
+    (doc.descripcion || '').toLowerCase().includes(query) ||
     doc.categoria.toLowerCase().includes(query)
   )
 })
@@ -101,8 +125,9 @@ const bibliotecaAgrupada = computed(() => {
   const grupos = {}
   documentosFiltrados.value.forEach(doc => {
     if (!grupos[doc.categoria]) grupos[doc.categoria] = {}
-    if (!grupos[doc.categoria][doc.fabricante]) grupos[doc.categoria][doc.fabricante] = []
-    grupos[doc.categoria][doc.fabricante].push(doc)
+    const fabricante = doc.fabricante || t('intranet.docs.otros')
+    if (!grupos[doc.categoria][fabricante]) grupos[doc.categoria][fabricante] = []
+    grupos[doc.categoria][fabricante].push(doc)
   })
   return grupos
 })
@@ -116,30 +141,92 @@ const toggleCategoria = (categoria) => {
   acordeonesAbiertos.value[categoria] = !acordeonesAbiertos.value[categoria]
 }
 
-const agregarDocumento = () => {
-  if (!nuevoDoc.value.titulo || !nuevoDoc.value.categoria || !nuevoDoc.value.fabricante) {
-    alert(t('intranet.docs.faltan'))
+const avisar = (texto) => {
+  mensaje.value = texto
+  setTimeout(() => { if (mensaje.value === texto) mensaje.value = '' }, 5000)
+}
+
+const abrirFormulario = () => {
+  if (mostrarFormulario.value) { mostrarFormulario.value = false; return }
+  nuevoDoc.value = docVacio()
+  archivo.value = null
+  errorForm.value = ''
+  mostrarFormulario.value = true
+}
+
+const editarDocumento = (doc) => {
+  nuevoDoc.value = { idServidor: doc.idServidor, titulo: doc.titulo, descripcion: doc.descripcion, categoria: doc.categoria, fabricante: doc.fabricante }
+  errorForm.value = ''
+  mostrarFormulario.value = true
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const elegirArchivo = (e) => {
+  archivo.value = e.target.files[0] || null
+  errorForm.value = ''
+  if (archivo.value && archivo.value.size > MAX_MB * 1024 * 1024) {
+    errorForm.value = t('intranet.docs.demasiadoGrande')
+    archivo.value = null
+    e.target.value = ''
     return
   }
-  documentos.value.push({
-    id: Date.now(),
-    titulo: nuevoDoc.value.titulo,
-    descripcion: nuevoDoc.value.descripcion,
-    categoria: nuevoDoc.value.categoria,
-    fabricante: nuevoDoc.value.fabricante,
-    formato: nuevoDoc.value.formato,
-    enlace: nuevoDoc.value.enlace
-  })
-  acordeonesAbiertos.value[nuevoDoc.value.categoria] = true
-  nuevoDoc.value = { titulo: '', descripcion: '', categoria: '', fabricante: '', formato: 'PDF', enlace: '#' }
-  mostrarFormulario.value = false
-  alert(t('intranet.docs.anadido'))
+  // Si no hay título, se propone el nombre del archivo
+  if (archivo.value && !nuevoDoc.value.titulo) nuevoDoc.value.titulo = archivo.value.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')
 }
+
+const agregarDocumento = async () => {
+  errorForm.value = ''
+  const d = nuevoDoc.value
+  if (!d.titulo.trim() || !d.categoria.trim() || (!d.idServidor && !archivo.value)) {
+    errorForm.value = t('intranet.docs.faltan')
+    return
+  }
+  enviando.value = true
+  let r
+  if (d.idServidor) {
+    r = await peticionIntranet(`/api/documentos/${d.idServidor}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d)
+    }, caducada)
+  } else {
+    const datos = new FormData()
+    for (const c of ['titulo', 'descripcion', 'categoria', 'fabricante']) datos.append(c, d[c].trim())
+    datos.append('archivo', archivo.value)
+    r = await peticionIntranet('/api/documentos', { method: 'POST', body: datos }, caducada)
+  }
+  const respuesta = await r.json().catch(() => ({}))
+  enviando.value = false
+  if (!r.ok) {
+    errorForm.value = r.status === 413 ? t('intranet.docs.demasiadoGrande') : (traducirError(respuesta.error) || t('intranet.docs.errorSubir'))
+    return
+  }
+  await cargar()
+  acordeonesAbiertos.value[d.categoria.trim()] = true
+  mostrarFormulario.value = false
+  avisar(t(d.idServidor ? 'intranet.docs.guardado' : 'intranet.docs.anadido'))
+}
+
+const borrarDocumento = async (doc) => {
+  if (!confirm(t('intranet.docs.confirmarBorrar', { titulo: doc.titulo }))) return
+  const r = await peticionIntranet(`/api/documentos/${doc.idServidor}`, { method: 'DELETE' }, caducada)
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}))
+    errorCarga.value = traducirError(d.error) || t('intranet.docs.errorSubir')
+    return
+  }
+  await cargar()
+  avisar(t('intranet.docs.borrado'))
+}
+
+const fechaCorta = (texto) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })
+  .format(new Date(texto.replace(' ', 'T') + 'Z'))
+const tamano = (bytes) => bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
 
 const getIconoFormato = (formato) => {
   if (formato === 'PDF') return '📄'
   if (formato === 'JPG' || formato === 'PNG') return '🖼️'
-  if (formato === 'DOC' || formato === 'DOCX') return '📝'
+  if (formato === 'DOC' || formato === 'DOCX' || formato === 'TXT') return '📝'
+  if (formato === 'XLS') return '📊'
+  if (formato === 'PPT') return '📽️'
   return '📁'
 }
 </script>
@@ -153,52 +240,52 @@ const getIconoFormato = (formato) => {
       </div>
       <div class="acciones-cabecera">
         <input v-model="buscador" type="text" class="buscador-docs" :placeholder="$t('intranet.docs.buscar')">
-        <button @click="mostrarFormulario = !mostrarFormulario" class="btn-nou-doc">
+        <button @click="abrirFormulario" class="btn-nou-doc">
           {{ $t(mostrarFormulario ? 'intranet.docs.cancelar' : 'intranet.docs.subir') }}
         </button>
       </div>
     </div>
 
+    <p v-if="mensaje" class="aviso-ok">{{ mensaje }}</p>
+    <p v-if="errorCarga" class="aviso-error">{{ errorCarga }}</p>
+
     <div v-if="mostrarFormulario" class="formulario-doc-box">
-      <h3>{{ $t('intranet.docs.nuevoTitulo') }}</h3>
+      <h3>{{ $t(nuevoDoc.idServidor ? 'intranet.docs.editarDoc' : 'intranet.docs.nuevoTitulo') }}</h3>
       <form @submit.prevent="agregarDocumento" class="grid-form-docs">
+        <div v-if="!nuevoDoc.idServidor" class="campo">
+          <label>{{ $t('intranet.docs.archivo') }}</label>
+          <input type="file" required @change="elegirArchivo"
+            accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.xls,.xlsx,.ods,.csv,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.zip,.7z,.rar">
+          <p class="ayuda">{{ $t('intranet.docs.archivoAyuda') }}</p>
+        </div>
         <div class="campo">
           <label>{{ $t('intranet.docs.tituloDoc') }}</label>
-          <input v-model="nuevoDoc.titulo" placeholder="Ex: Manual Técnico WorkHorse ADCP" required>
+          <input v-model="nuevoDoc.titulo" placeholder="Ex: Manual Técnico WorkHorse ADCP" required maxlength="200">
         </div>
         <div class="campo-doble">
           <div class="subcampo">
             <label>{{ $t('intranet.docs.categoria') }}</label>
-            <select v-model="nuevoDoc.categoria" required>
-              <option value="" disabled selected>{{ $t('intranet.docs.eligeCategoria') }}</option>
-              <option v-for="c in ['Sondes CTD', 'Perfiladors Acústics (ADCP)', 'Estacions Meteorològiques', 'Sensors Òptics', 'Material Didàctic']" :key="c" :value="c">{{ traducirValor(c) }}</option>
-            </select>
+            <input v-model="nuevoDoc.categoria" list="categorias-docs" required maxlength="100" :placeholder="$t('intranet.docs.eligeCategoria')">
+            <datalist id="categorias-docs">
+              <option v-for="c in categorias" :key="c" :value="c">{{ traducirValor(c) }}</option>
+            </datalist>
           </div>
           <div class="subcampo">
             <label>{{ $t('intranet.docs.fabricante') }}</label>
-            <input v-model="nuevoDoc.fabricante" placeholder="Ex: Teledyne RDI, Sea-Bird, Davis">
-          </div>
-        </div>
-        <div class="campo-doble">
-          <div class="subcampo">
-            <label>{{ $t('intranet.docs.formato') }}</label>
-            <select v-model="nuevoDoc.formato">
-              <option value="PDF">PDF</option>
-              <option value="JPG">{{ $t('intranet.docs.imagen') }}</option>
-              <option value="DOC">DOC / Word</option>
-              <option value="ZIP">ZIP / Rar</option>
-            </select>
-          </div>
-          <div class="subcampo">
-            <label>{{ $t('intranet.docs.ruta') }}</label>
-            <input v-model="nuevoDoc.enlace" placeholder="Ex: /manuals/manual_adcp.pdf">
+            <input v-model="nuevoDoc.fabricante" list="fabricantes-docs" maxlength="100" placeholder="Ex: Teledyne RDI, Sea-Bird, Davis">
+            <datalist id="fabricantes-docs">
+              <option v-for="f in fabricantes" :key="f" :value="f" />
+            </datalist>
           </div>
         </div>
         <div class="campo">
           <label>{{ $t('intranet.docs.descripcion') }}</label>
-          <textarea v-model="nuevoDoc.descripcion" rows="3" :placeholder="$t('intranet.docs.descripcionPh')"></textarea>
+          <textarea v-model="nuevoDoc.descripcion" rows="3" maxlength="2000" :placeholder="$t('intranet.docs.descripcionPh')"></textarea>
         </div>
-        <button type="submit" class="btn-guardar-doc">{{ $t('intranet.docs.guardar') }}</button>
+        <p v-if="errorForm" class="aviso-error">{{ errorForm }}</p>
+        <button type="submit" class="btn-guardar-doc" :disabled="enviando">
+          {{ enviando ? $t('intranet.docs.subiendo') : $t(nuevoDoc.idServidor ? 'intranet.docs.guardarCambios' : 'intranet.docs.guardar') }}
+        </button>
       </form>
     </div>
 
@@ -217,9 +304,16 @@ const getIconoFormato = (formato) => {
                 <div class="info-doc">
                   <h5>{{ doc.titulo }}</h5>
                   <p class="desc-wiki">{{ doc.descripcion || $t('intranet.docs.sinDescripcion') }}</p>
+                  <p v-if="doc.subido" class="subido-por">
+                    {{ $t('intranet.docs.subidoPor', { nombre: doc.subido_por, fecha: fechaCorta(doc.creado) }) }} · {{ tamano(doc.tamano) }}
+                  </p>
                   <div class="pie-tarjeta">
                     <span class="badge-formato">{{ doc.formato }}</span>
-                    <a :href="doc.enlace" target="_blank" class="btn-descargar">{{ $t('intranet.docs.descargar') }}</a>
+                    <span v-if="doc.subido && doc.puede_editar" class="acciones-doc">
+                      <button type="button" class="btn-mini" @click="editarDocumento(doc)">✏️</button>
+                      <button type="button" class="btn-mini btn-mini-borrar" :aria-label="$t('intranet.docs.borrar')" @click="borrarDocumento(doc)">🗑️</button>
+                    </span>
+                    <a :href="doc.enlace" target="_blank" rel="noopener" class="btn-descargar">{{ $t('intranet.docs.descargar') }}</a>
                   </div>
                 </div>
               </div>
@@ -278,4 +372,23 @@ const getIconoFormato = (formato) => {
 .btn-descargar:hover { background: #012169; color: white; border-color: #012169; }
 
 .mensaje-vacio { text-align: center; padding: 40px; color: #777; font-style: italic; }
+.aviso-ok { color: #257a3c; background: #eaf7ed; border-radius: 4px; padding: 8px 12px; }
+.aviso-error { color: #b00020; background: #ffeeee; border-radius: 4px; padding: 8px 12px; margin: 0 0 10px; }
+.ayuda { color: #777; font-size: 0.82rem; margin: 4px 0 0; }
+.campo label { font-size: 0.85rem; font-weight: bold; color: #444; }
+.btn-guardar-doc:disabled { opacity: 0.6; cursor: wait; }
+.subido-por { margin: -8px 0 10px; font-size: 0.75rem; color: #888; }
+.acciones-doc { display: flex; gap: 4px; margin-left: auto; margin-right: 8px; }
+.btn-mini { background: #f4f7f9; border: 1px solid #ccc; border-radius: 4px; padding: 3px 7px; cursor: pointer; font-size: 0.8rem; }
+.btn-mini-borrar { background: #ffeeee; border-color: #ffcccc; }
+
+@media (max-width: 768px) {
+  .panel-biblioteca { padding: 18px; }
+  .cabecera-panel { flex-direction: column; gap: 12px; }
+  .acciones-cabecera { flex-direction: column; width: 100%; }
+  .buscador-docs { width: 100%; box-sizing: border-box; }
+  .campo-doble { flex-direction: column; }
+  .grid-documentos { grid-template-columns: 1fr; }
+  .btn-guardar-doc { width: 100%; }
+}
 </style>

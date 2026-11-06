@@ -32,7 +32,8 @@ assert sqlite3.connect('/datos/$TEMPORAL').execute('PRAGMA integrity_check').fet
 
 # 2. Empaquetar la copia y las fotos; quitar la copia temporal
 tar czf "$COPIAS/sio-$HOY.tgz.parcial" -C "$PORTAL/datos" \
-    --transform "s|^$TEMPORAL\$|sio_inventario.db|" "$TEMPORAL" fotos
+    --transform "s|^$TEMPORAL\$|sio_inventario.db|" "$TEMPORAL" fotos \
+    $(cd "$PORTAL/datos" && ls -d equipo documentos 2>/dev/null)
 rm -f "$PORTAL/datos/$TEMPORAL"
 mv "$COPIAS/sio-$HOY.tgz.parcial" "$COPIAS/sio-$HOY.tgz"
 chmod 600 "$COPIAS/sio-$HOY.tgz"
