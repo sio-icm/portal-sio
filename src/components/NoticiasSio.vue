@@ -20,9 +20,7 @@ const noticias = [
   {
     fecha: '2026-08-11', imagen: '/fotos/noticias/somorrostro-portada.webp', ampliada: '/fotos/noticias/somorrostro-boia.webp',
     galeria: ['/fotos/noticias/somorrostro-grua.webp', '/fotos/noticias/somorrostro-fondeig.webp', '/fotos/noticias/somorrostro-zodiac.webp']
-  },
-  { fecha: '2026-07-10', imagen: '/fotos/noticias/impresion-3d.webp' },
-  { fecha: '2026-06-28', imagen: '/fotos/noticias/boya-fondeo.webp' }
+  }
 ]
 
 const formatoFecha = (iso) => {

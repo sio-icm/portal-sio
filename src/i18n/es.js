@@ -603,7 +603,7 @@ export default {
     lista: [
       {
         titulo: 'Muestreo de agua con la FNOB frente al Llobregat y el Besòs',
-        texto: 'El 26 de octubre, de 10:00 a 14:00, salimos a bordo del velero de la Fundació Navegació Oceànica Barcelona (FNOB) para tomar muestras de agua en puntos estratégicos frente a las desembocaduras del Llobregat y del Besòs, además de otras estaciones de la costa de Barcelona. El SIO acompañó a investigadores del ICM para mejorar el método de recogida de las muestras, desde el muestreador hasta su envasado a bordo. Una colaboración más entre ambas entidades, esta vez con Pilar Pasanau al timón.',
+        texto: "El 26 de octubre, de 10:00 a 14:00, diez personas entre investigadores del ICM y técnicos del SIO salimos a bordo de un velero de la Fundació Barcelona Capital Nàutica, la antigua Fundació Navegació Oceànica Barcelona (FNOB), para tomar muestras de agua frente a las desembocaduras del Llobregat y del Besòs y en otras estaciones de la costa de Barcelona. La fundación nació en 2005 para impulsar la vela oceánica, con la Barcelona World Race como gran proyecto, y hoy trabaja para que Barcelona y Cataluña sean un referente náutico a través del deporte, la sostenibilidad, la economía azul, la ciencia y la educación. El Institut de Ciències del Mar (ICM-CSIC), con sede en el frente marítimo de Barcelona, estudia el océano y su papel en el cambio global, desde la física y la química del agua hasta los ecosistemas marinos, y el SIO le da apoyo técnico en el mar y en el laboratorio. En esta salida acompañamos a los investigadores para mejorar el método de recogida de las muestras, desde el muestreador hasta su envasado a bordo. Una colaboración más entre ambas entidades, esta vez con Pilar Pasanau al timón.",
         alt: 'Investigadores del ICM y técnicos del SIO trabajando en la cubierta del velero, con Barcelona al fondo',
         fotos: ['Bajando el muestreador al agua', 'Envasando las muestras de agua a bordo', 'El equipo preparando las muestras en cubierta']
       },
@@ -618,16 +618,6 @@ export default {
         texto: "Este verano ha quedado fondeada frente a la playa de Somorrostro (Barcelona), a unos 1,5 km de la costa, una boya oceanográfica que envía datos en tiempo real: corrientes, temperatura, salinidad y pH del agua, además de las variables de su estación meteorológica. La boya la ha desarrollado el ICATMAR (Instituto Catalán de Investigación para la Gobernanza del Mar) con el ICM-CSIC, gracias a la financiación del ICATMAR, el Ayuntamiento de Barcelona y Barcelona Cicle de l'Aigua. Forma parte de la red de observación meteo-marina del ICATMAR y servirá para seguir la acidificación del mar en la costa catalana, en un punto que el ICM muestrea cada mes desde hace más de 25 años. El SIO, que participó en el montaje y el fondeo, se encarga de su mantenimiento.",
         alt: "Técnicos del ICM en una zódiac junto a la boya de Somorrostro",
         fotos: ["Embarcación con grúa fondeando la boya frente a Barcelona", "La embarcación de fondeo y la zódiac del ICM frente a Montjuïc", "Zódiac del ICM volviendo a puerto tras el fondeo"]
-      },
-      {
-        titulo: 'Avances en el diseño y fabricación de nuevos sensores submarinos',
-        texto: 'Gracias a la combinación de nuestras fresadoras de precisión y el nuevo parque de impresión 3D, hemos logrado prototipar carcasas estancas ultraligeras y soportes a medida para instrumentación oceanográfica extrema. Esto reduce drásticamente los costes de desarrollo y acelera nuestras pruebas en laboratorio.',
-        alt: 'Impresora 3D del taller fabricando piezas'
-      },
-      {
-        titulo: 'Nuevas sinergias estratégicas para la observación costera',
-        texto: 'Establecemos nuevas líneas de colaboración con instituciones y entidades del sector para compartir recursos náuticos y optimizar el despliegue de redes de boyas y radares HF. Un paso más hacia la consolidación de un sistema de observación marina integrado y de alta eficiencia en el litoral catalán.',
-        alt: 'Fondeo oceanográfico con boyas e instrumentos'
       }
     ]
   },

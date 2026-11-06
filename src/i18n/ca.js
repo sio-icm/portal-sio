@@ -603,7 +603,7 @@ export default {
     lista: [
       {
         titulo: "Mostreig d'aigua amb la FNOB davant del Llobregat i el Besòs",
-        texto: "El 26 d'octubre, de 10.00 a 14.00, vam sortir a bord del veler de la Fundació Navegació Oceànica Barcelona (FNOB) per prendre mostres d'aigua en punts estratègics davant de les desembocadures del Llobregat i del Besòs, a més d'altres estacions de la costa de Barcelona. El Servei d'Enginyeria Oceanogràfica va acompanyar investigadors de l'ICM per millorar el mètode de recollida de les mostres, des del mostrejador fins a l'envasament a bord. Una col·laboració més entre totes dues entitats, aquesta vegada amb la Pilar Pasanau al timó.",
+        texto: "El 26 d'octubre, de 10:00 a 14:00, deu persones entre investigadors de l'ICM i tècnics del Servei d'Enginyeria Oceanogràfica vam sortir a bord d'un veler de la Fundació Barcelona Capital Nàutica, l'antiga Fundació Navegació Oceànica Barcelona (FNOB), per prendre mostres d'aigua davant de les desembocadures del Llobregat i del Besòs i en altres estacions de la costa de Barcelona. La fundació va néixer el 2005 per impulsar la vela oceànica, amb la Barcelona World Race com a gran projecte, i avui treballa perquè Barcelona i Catalunya siguin un referent nàutic a través de l'esport, la sostenibilitat, l'economia blava, la ciència i l'educació. L'Institut de Ciències del Mar (ICM-CSIC), amb seu al front marítim de Barcelona, estudia l'oceà i el seu paper en el canvi global, des de la física i la química de l'aigua fins als ecosistemes marins, i el servei li dona suport tècnic al mar i al laboratori. En aquesta sortida vam acompanyar els investigadors per millorar el mètode de recollida de les mostres, des del mostrejador fins a l'envasament a bord. Una col·laboració més entre totes dues entitats, aquesta vegada amb la Pilar Pasanau al timó.",
         alt: "Investigadors de l'ICM i tècnics del servei treballant a la coberta del veler, amb Barcelona al fons",
         fotos: ["Baixant el mostrejador a l'aigua", "Envasant les mostres d'aigua a bord", "L'equip preparant les mostres a coberta"]
       },
@@ -618,16 +618,6 @@ export default {
         texto: "Aquest estiu ha quedat fondejada davant la platja del Somorrostro (Barcelona), a uns 1,5 km de la costa, una boia oceanogràfica que envia dades en temps real: corrents, temperatura, salinitat i pH de l'aigua, a més de les variables de la seva estació meteorològica. La boia l'ha desenvolupat l'ICATMAR (Institut Català de Recerca per a la Governança del Mar) amb l'ICM-CSIC, gràcies al finançament de l'ICATMAR, l'Ajuntament de Barcelona i Barcelona Cicle de l'Aigua. Forma part de la xarxa d'observació meteomarina de l'ICATMAR i servirà per seguir l'acidificació del mar a la costa catalana, en un punt que l'ICM mostreja cada mes des de fa més de 25 anys. El Servei d'Enginyeria Oceanogràfica, que va participar en el muntatge i el fondeig, se n'encarrega del manteniment.",
         alt: "Tècnics de l'ICM en una zòdiac al costat de la boia de Somorrostro",
         fotos: ["Embarcació amb grua fondejant la boia davant de Barcelona", "L'embarcació de fondeig i la zòdiac de l'ICM davant de Montjuïc", "Zòdiac de l'ICM tornant a port després del fondeig"]
-      },
-      {
-        titulo: 'Avenços en el disseny i la fabricació de nous sensors submarins',
-        texto: "Gràcies a la combinació de les nostres fresadores de precisió i el nou parc d'impressió 3D, hem aconseguit prototipar carcasses estanques ultralleugeres i suports a mida per a instrumentació oceanogràfica extrema. Això redueix dràsticament els costos de desenvolupament i accelera les nostres proves al laboratori.",
-        alt: 'Impressora 3D del taller fabricant peces'
-      },
-      {
-        titulo: "Noves sinergies estratègiques per a l'observació costanera",
-        texto: "Establim noves línies de col·laboració amb institucions i entitats del sector per compartir recursos nàutics i optimitzar el desplegament de xarxes de boies i radars HF. Un pas més cap a la consolidació d'un sistema d'observació marina integrat i d'alta eficiència al litoral català.",
-        alt: 'Fondeig oceanogràfic amb boies i instruments'
       }
     ]
   },

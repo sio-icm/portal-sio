@@ -603,7 +603,7 @@ export default {
     lista: [
       {
         titulo: 'Water sampling with the FNOB off the Llobregat and Besòs rivers',
-        texto: 'On 26 October, from 10:00 to 14:00, we sailed aboard the Fundació Navegació Oceànica Barcelona (FNOB) sailing boat to collect water samples at strategic points off the mouths of the Llobregat and Besòs rivers and at other stations along the Barcelona coast. Our team joined ICM researchers to improve the sampling procedure, from the sampler to bottling the samples on board. Another collaboration between both institutions, this time with Pilar Pasanau at the helm.',
+        texto: "On 26 October, from 10:00 to 14:00, ten of us, ICM researchers and technicians from our service, set out on a sailing boat of the Fundació Barcelona Capital Nàutica, formerly the Fundació Navegació Oceànica Barcelona (FNOB), to take water samples off the mouths of the Llobregat and Besòs rivers and at other stations along the Barcelona coast. The foundation was set up in 2005 to promote ocean sailing, with the Barcelona World Race as its flagship event, and today works to make Barcelona and Catalonia a nautical reference through sport, sustainability, the blue economy, science and education. The Institute of Marine Sciences (ICM-CSIC), based on Barcelona's seafront, studies the ocean and its role in global change, from the physics and chemistry of seawater to marine ecosystems, and our service gives it technical support at sea and in the laboratory. On this trip we accompanied the researchers to improve the sample collection method, from the sampler to bottling on board. One more collaboration between the two organisations, this time with Pilar Pasanau at the helm.",
         alt: 'ICM researchers and service technicians working on the deck of the sailing boat, with Barcelona in the background',
         fotos: ['Lowering the sampler into the water', 'Bottling the water samples on board', 'The team preparing the samples on deck']
       },
@@ -618,16 +618,6 @@ export default {
         texto: "This summer an oceanographic buoy was moored off Somorrostro beach (Barcelona), about 1.5 km from the coast. It sends real-time data on currents, water temperature, salinity and pH, as well as readings from its weather station. The buoy was developed by ICATMAR (Catalan Institute for Research on Ocean Governance) together with ICM-CSIC, with funding from ICATMAR, Barcelona City Council and Barcelona Cicle de l'Aigua. It is part of ICATMAR's meteo-marine observation network and will help track ocean acidification on the Catalan coast, at a site that ICM has sampled every month for more than 25 years. Our service, which took part in assembling and mooring it, is in charge of its maintenance.",
         alt: "ICM technicians in a RIB next to the Somorrostro buoy",
         fotos: ["Crane vessel mooring the buoy off Barcelona", "The mooring vessel and the ICM RIB off Montjuïc", "ICM RIB heading back to port after the mooring"]
-      },
-      {
-        titulo: 'Progress in the design and manufacture of new underwater sensors',
-        texto: 'By combining our precision milling machines with the new 3D printing facility, we have prototyped ultralight watertight housings and custom mounts for extreme oceanographic instrumentation. This drastically reduces development costs and speeds up our laboratory tests.',
-        alt: 'Workshop 3D printer making parts'
-      },
-      {
-        titulo: 'New strategic synergies for coastal observation',
-        texto: 'We are establishing new lines of collaboration with institutions and organisations in the sector to share nautical resources and optimise the deployment of buoy networks and HF radars. One more step towards an integrated, highly efficient marine observation system on the Catalan coast.',
-        alt: 'Oceanographic mooring with buoys and instruments'
       }
     ]
   },
