@@ -608,6 +608,12 @@ export default {
         fotos: ['Bajando el muestreador al agua', 'Envasando las muestras de agua a bordo', 'El equipo preparando las muestras en cubierta']
       },
       {
+        titulo: 'Formación en drones y teledetección en Doñana gracias a la ayuda Mov-Tec',
+        texto: 'Del 25 de septiembre al 9 de octubre, el SIO se ha formado en el uso de drones para la investigación ambiental en el Laboratorio de SIG y Teledetección de la Estación Biológica de Doñana (LAST-EBD, CSIC), gracias a una ayuda de movilidad Mov-Tec. De la mano de David Aragonés, Diego García y Javier Bustamante, trabajamos con multirrotores equipados con LiDAR y cámaras y con drones de ala fija, planificamos vuelos con estaciones GNSS para georreferenciar con precisión y procesamos nubes de puntos para estudiar la vegetación, como la detección de copas de árboles y sus cambios entre años. Una experiencia que aporta al SIO nuevas capacidades para observar el litoral y los ecosistemas costeros.',
+        alt: 'Dron con sensor LiDAR y antenas GNSS en una playa de Doñana',
+        fotos: ['Drones del LAST-EBD preparados en el laboratorio', 'Procesado de una nube de puntos LiDAR para detectar copas de árboles', 'Hexacóptero del LAST-EBD en su maleta', 'Estación de medida entre la vegetación de Doñana', 'Ciervo en el parque de Doñana', 'Caballos en las marismas de Doñana']
+      },
+      {
         titulo: 'Nueva misión autónoma con vehículos de superficie en la Costa Brava',
         texto: 'Nuestro equipo ha desplegado con éxito la nueva flota de vehículos autónomos para monitorizar corrientes superficiales y parámetros físico-químicos en tiempo real. Esta prueba piloto nos permite validar los algoritmos de navegación adaptativa antes de dar el salto a misiones de larga duración en mar abierto.',
         alt: 'Embarcación con técnicos junto a una boya oceanográfica'

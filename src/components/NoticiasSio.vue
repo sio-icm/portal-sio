@@ -12,6 +12,11 @@ const noticias = [
     fecha: '2026-10-26', imagen: '/fotos/noticias/fnob-portada.webp', ampliada: '/fotos/noticias/fnob-cubierta.webp',
     galeria: ['/fotos/noticias/fnob-muestreador.webp', '/fotos/noticias/fnob-muestras.webp', '/fotos/noticias/fnob-equipo.webp']
   },
+  {
+    fecha: '2026-10-09', imagen: '/fotos/noticias/donana-portada.webp', ampliada: '/fotos/noticias/donana-playa.webp',
+    galeria: ['/fotos/noticias/donana-drones.webp', '/fotos/noticias/donana-lidar.webp', '/fotos/noticias/donana-hexacoptero.webp',
+      '/fotos/noticias/donana-estacion.webp', '/fotos/noticias/donana-ciervo.webp', '/fotos/noticias/donana-caballos.webp']
+  },
   { fecha: '2026-08-19', imagen: '/fotos/noticias/vehiculos-superficie.webp' },
   { fecha: '2026-07-10', imagen: '/fotos/noticias/impresion-3d.webp' },
   { fecha: '2026-06-28', imagen: '/fotos/noticias/boya-fondeo.webp' }

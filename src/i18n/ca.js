@@ -608,6 +608,12 @@ export default {
         fotos: ["Baixant el mostrejador a l'aigua", "Envasant les mostres d'aigua a bord", "L'equip preparant les mostres a coberta"]
       },
       {
+        titulo: 'Formació en drons i teledetecció a Doñana gràcies a l’ajut Mov-Tec',
+        texto: "Del 25 de setembre al 9 d'octubre, el Servei d'Enginyeria Oceanogràfica s'ha format en l'ús de drons per a la recerca ambiental al Laboratori de SIG i Teledetecció de l'Estació Biològica de Doñana (LAST-EBD, CSIC), gràcies a un ajut de mobilitat Mov-Tec. De la mà de David Aragonés, Diego García i Javier Bustamante, vam treballar amb multirotors equipats amb LiDAR i càmeres i amb drons d'ala fixa, vam planificar vols amb estacions GNSS per georeferenciar amb precisió i vam processar núvols de punts per estudiar la vegetació, com la detecció de capçades d'arbres i els seus canvis entre anys. Una experiència que aporta al servei noves capacitats per observar el litoral i els ecosistemes costaners.",
+        alt: 'Dron amb sensor LiDAR i antenes GNSS en una platja de Doñana',
+        fotos: ['Drons del LAST-EBD preparats al laboratori', "Processament d'un núvol de punts LiDAR per detectar capçades d'arbres", 'Hexacòpter del LAST-EBD a la seva maleta', 'Estació de mesura entre la vegetació de Doñana', 'Cérvol al parc de Doñana', 'Cavalls a les maresmes de Doñana']
+      },
+      {
         titulo: 'Nova missió autònoma amb vehicles de superfície a la Costa Brava',
         texto: "El nostre equip ha desplegat amb èxit la nova flota de vehicles autònoms per monitorar corrents superficials i paràmetres fisicoquímics en temps real. Aquesta prova pilot ens permet validar els algorismes de navegació adaptativa abans de fer el salt a missions de llarga durada en mar obert.",
         alt: 'Embarcació amb tècnics al costat d’una boia oceanogràfica'
