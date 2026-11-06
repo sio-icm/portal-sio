@@ -608,10 +608,10 @@ export default {
         fotos: ['Lowering the sampler into the water', 'Bottling the water samples on board', 'The team preparing the samples on deck']
       },
       {
-        titulo: 'Drone and remote sensing training in Doñana thanks to a Mov-Tec grant',
-        texto: 'From 25 September to 9 October, our service trained in the use of drones for environmental research at the GIS and Remote Sensing Laboratory of the Doñana Biological Station (LAST-EBD, CSIC), thanks to a Mov-Tec mobility grant. Guided by David Aragonés, Diego García and Javier Bustamante, we worked with multirotors fitted with LiDAR and cameras and with fixed-wing drones, planned flights with GNSS stations for accurate georeferencing, and processed point clouds to study vegetation, such as detecting tree crowns and how they change over the years. An experience that gives our service new capabilities to observe the coastline and coastal ecosystems.',
+        titulo: "Drone and LiDAR training in Doñana thanks to a Mov-Tec grant",
+        texto: "From 28 September to 9 October, our service completed a training stay at the GIS and Remote Sensing Laboratory of the Doñana Biological Station (LAST-EBD, CSIC), thanks to a Mov-Tec mobility grant. Guided by David Aragonés, Diego García and Javier Bustamante, we learned to use drones for three-dimensional vegetation analysis as part of the monitoring of the juniper woodland in the Doñana Biological Reserve. We flew multirotors carrying a LiDAR sensor, which captures around 1,000 points per square metre, and georeferenced the flights with GNSS stations. Using point clouds from different years, we separated the ground from the vegetation, calculated canopy height at 10 cm resolution, identified each juniper and compared how it has changed to detect growth, loss of vigour or new seedlings. We also developed our own Python tool that automates this census and the measurements of each crown. An experience that gives our service new drone-based remote sensing capabilities for the coastline and coastal ecosystems.",
         alt: 'Drone with a LiDAR sensor and GNSS antennas on a beach in Doñana',
-        fotos: ['LAST-EBD drones ready in the lab', 'Processing a LiDAR point cloud to detect tree crowns', 'LAST-EBD hexacopter in its case', 'Measuring station among the Doñana vegetation', 'Red deer in Doñana National Park', 'Horses in the Doñana marshes']
+        fotos: ['LAST-EBD drones ready in the lab', "Processing a LiDAR point cloud to identify the juniper crowns", 'LAST-EBD hexacopter in its case', 'Measuring station among the Doñana vegetation', 'Red deer in Doñana National Park', 'Horses in the Doñana marshes']
       },
       {
         titulo: 'New autonomous mission with surface vehicles on the Costa Brava',
