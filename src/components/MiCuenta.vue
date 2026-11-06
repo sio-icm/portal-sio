@@ -1,5 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { traducirError } from '../i18n'
 import { peticionIntranet } from '../utils/diario'
 
 // Cada usuario cambia aquí su propia contraseña. El administrador definido en
@@ -11,6 +13,7 @@ const props = defineProps({
   obligatorio: { type: Boolean, default: false }
 })
 const emit = defineEmits(['sesion-caducada', 'cambiada'])
+const { t } = useI18n()
 
 const actual = ref('')
 const nueva = ref('')
@@ -34,15 +37,15 @@ const guardarEmail = async () => {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value })
   }, () => emit('sesion-caducada'))
   const d = await r.json().catch(() => ({}))
-  if (r.ok) { email.value = d.email || ''; mensajeEmail.value = email.value ? 'Correu desat.' : 'Correu esborrat.' }
-  else errorEmail.value = d.error || "No s'ha pogut desar el correu."
+  if (r.ok) { email.value = d.email || ''; mensajeEmail.value = email.value ? t('intranet.cuenta.correoGuardado') : t('intranet.cuenta.correoBorrado') }
+  else errorEmail.value = traducirError(d.error) || t('intranet.cuenta.correoNoGuardado')
 }
 
 const cambiar = async () => {
   mensaje.value = ''
   error.value = ''
   if (nueva.value !== repetida.value) {
-    error.value = 'Les dues contrasenyes noves no coincideixen.'
+    error.value = t('intranet.cuenta.noCoinciden')
     return
   }
   const r = await peticionIntranet('/api/mi-contrasena', {
@@ -51,12 +54,12 @@ const cambiar = async () => {
     body: JSON.stringify({ actual: actual.value, nueva: nueva.value })
   }, () => emit('sesion-caducada'))
   if (r.ok) {
-    mensaje.value = 'Contrasenya canviada.'
+    mensaje.value = t('intranet.cuenta.cambiada')
     actual.value = nueva.value = repetida.value = ''
     emit('cambiada')
   } else {
     const d = await r.json().catch(() => ({}))
-    error.value = d.error || "No s'ha pogut canviar la contrasenya."
+    error.value = traducirError(d.error) || t('intranet.panel.noCambiada')
   }
 }
 </script>
@@ -64,32 +67,31 @@ const cambiar = async () => {
 <template>
   <div class="panel-cuenta">
     <template v-if="props.obligatorio">
-      <h2>🔑 Canvia la contrasenya</h2>
-      <p class="aviso-obligatorio">Hola, {{ props.sesion.nombre }}. És el teu primer accés (o un administrador t'ha posat una contrasenya nova): tria'n una de personal per continuar.</p>
+      <h2>{{ $t('intranet.cuenta.cambiaTitulo') }}</h2>
+      <p class="aviso-obligatorio">{{ $t('intranet.cuenta.obligatorio', { nombre: props.sesion.nombre }) }}</p>
     </template>
-    <h2 v-else>👤 El meu compte</h2>
-    <p v-if="!props.obligatorio" class="nombre">{{ props.sesion.nombre }} <span v-if="props.sesion.es_admin" class="etiqueta">Administrador</span></p>
+    <h2 v-else>{{ $t('intranet.cuenta.titulo') }}</h2>
+    <p v-if="!props.obligatorio" class="nombre">{{ props.sesion.nombre }} <span v-if="props.sesion.es_admin" class="etiqueta">{{ $t('intranet.cuenta.administrador') }}</span></p>
 
     <p v-if="props.sesion.usuario_id === null" class="ayuda">
-      Has entrat amb l'usuari administrador del servidor. La seva contrasenya es canvia al servidor (vegeu el README).
-      Per escriure al diari amb el teu nom, crea't un usuari personal a «Usuaris».
+      {{ $t('intranet.cuenta.adminServidor') }}
     </p>
 
     <form v-else class="formulario" @submit.prevent="cambiar">
-      <h3 v-if="!props.obligatorio">Canviar la contrasenya</h3>
-      <label>{{ props.obligatorio ? 'Contrasenya inicial (la que t\'han donat)' : 'Contrasenya actual' }} <input type="password" v-model="actual" autocomplete="current-password" required></label>
-      <label>Contrasenya nova (mínim 8 caràcters) <input type="password" v-model="nueva" minlength="8" autocomplete="new-password" required></label>
-      <label>Repeteix la nova <input type="password" v-model="repetida" minlength="8" autocomplete="new-password" required></label>
-      <button type="submit" class="btn-principal">Canviar</button>
+      <h3 v-if="!props.obligatorio">{{ $t('intranet.cuenta.cambiarTitulo') }}</h3>
+      <label>{{ $t(props.obligatorio ? 'intranet.cuenta.inicial' : 'intranet.cuenta.actual') }} <input type="password" v-model="actual" autocomplete="current-password" required></label>
+      <label>{{ $t('intranet.cuenta.nueva') }} <input type="password" v-model="nueva" minlength="8" autocomplete="new-password" required></label>
+      <label>{{ $t('intranet.cuenta.repite') }} <input type="password" v-model="repetida" minlength="8" autocomplete="new-password" required></label>
+      <button type="submit" class="btn-principal">{{ $t('intranet.cuenta.cambiar') }}</button>
       <p v-if="mensaje" class="ok">{{ mensaje }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </form>
 
     <form v-if="!props.obligatorio && props.sesion.usuario_id !== null" class="formulario" @submit.prevent="guardarEmail">
-      <h3>El meu correu</h3>
-      <p class="ayuda">Si oblides la contrasenya, t'hi enviarem un enllaç per posar-ne una de nova.</p>
-      <label>Correu <input type="email" v-model="email" autocomplete="email" placeholder="ex.: nhoareau@icm.csic.es"></label>
-      <button type="submit" class="btn-principal">Desar el correu</button>
+      <h3>{{ $t('intranet.cuenta.correoTitulo') }}</h3>
+      <p class="ayuda">{{ $t('intranet.cuenta.correoAyuda') }}</p>
+      <label>{{ $t('intranet.cuenta.correo') }} <input type="email" v-model="email" autocomplete="email" :placeholder="$t('intranet.cuenta.correoPh')"></label>
+      <button type="submit" class="btn-principal">{{ $t('intranet.cuenta.guardarCorreo') }}</button>
       <p v-if="mensajeEmail" class="ok">{{ mensajeEmail }}</p>
       <p v-if="errorEmail" class="error">{{ errorEmail }}</p>
     </form>

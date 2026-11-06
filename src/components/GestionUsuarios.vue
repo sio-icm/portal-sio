@@ -1,10 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { traducirError } from '../i18n'
 import { peticionIntranet } from '../utils/diario'
 
 // Usuarios personales de la intranet (solo administradores). Cada persona del
 // equipo tiene el suyo, para saber quién escribe cada nota del diario.
 const emit = defineEmits(['sesion-caducada'])
+const { t } = useI18n()
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
 const json = (metodo, cuerpo) => ({ method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
 
@@ -16,7 +19,7 @@ const nuevo = ref({ usuario: '', nombre: '', email: '', password: '', es_admin: 
 const cargar = async () => {
   const r = await api('/api/usuarios')
   if (r.ok) usuarios.value = await r.json()
-  else error.value = "No s'han pogut carregar els usuaris."
+  else error.value = t('intranet.usuarios.errorCarga')
 }
 onMounted(cargar)
 
@@ -29,13 +32,13 @@ const avisar = async (respuesta, textoOk) => {
   }
   const d = await respuesta.json().catch(() => ({}))
   mensaje.value = ''
-  error.value = d.error || 'Error desconegut.'
+  error.value = traducirError(d.error) || t('intranet.comun.errorDesconocido')
   return false
 }
 
 const crear = async () => {
   const r = await api('/api/usuarios', json('POST', nuevo.value))
-  if (await avisar(r, `Usuari «${nuevo.value.usuario}» creat. Passa-li la contrasenya inicial: la primera vegada que entri haurà de canviar-la.`)) {
+  if (await avisar(r, t('intranet.usuarios.creado', { usuario: nuevo.value.usuario }))) {
     nuevo.value = { usuario: '', nombre: '', email: '', password: '', es_admin: false }
   }
 }
@@ -47,37 +50,34 @@ const editando = ref(null) // { id, usuario, nombre, email }
 const empezarEdicion = (u) => { editando.value = { id: u.id, usuario: u.usuario, nombre: u.nombre, email: u.email || '' } }
 const guardarEdicion = async () => {
   const { id, usuario, nombre, email } = editando.value
-  if (await cambiar({ id }, { usuario, nombre, email }, `Usuari «${usuario}» actualitzat.`)) editando.value = null
+  if (await cambiar({ id }, { usuario, nombre, email }, t('intranet.usuarios.actualizado', { usuario }))) editando.value = null
 }
 
 const borrar = async (u) => {
-  if (!confirm(`Segur que vols esborrar l'usuari «${u.usuario}» (${u.nombre})?`)) return
-  await avisar(await api(`/api/usuarios/${u.id}`, { method: 'DELETE' }), `Usuari «${u.usuario}» esborrat.`)
+  if (!confirm(t('intranet.usuarios.confirmarBorrar', { usuario: u.usuario, nombre: u.nombre }))) return
+  await avisar(await api(`/api/usuarios/${u.id}`, { method: 'DELETE' }), t('intranet.usuarios.borrado', { usuario: u.usuario }))
 }
 
 const nuevaContrasena = async (u) => {
-  const p = prompt(`Nova contrasenya per a ${u.nombre} (mínim 8 caràcters):`)
-  if (p) await cambiar(u, { password: p }, `Contrasenya de ${u.nombre} canviada.`)
+  const p = prompt(t('intranet.usuarios.pedirContrasena', { nombre: u.nombre }))
+  if (p) await cambiar(u, { password: p }, t('intranet.usuarios.contrasenaCambiada', { nombre: u.nombre }))
 }
 </script>
 
 <template>
   <div class="panel-usuarios">
-    <h2>👥 Usuaris de la intranet</h2>
-    <p class="ayuda">Cada persona de l'equip té el seu usuari: així el diari sap qui escriu cada nota. Els administradors poden gestionar usuaris i editar qualsevol nota.
-      Un usuari només es pot esborrar si no ha escrit cap nota; si en té, desactiva'l.
-      El correu serveix per a «He oblidat la contrasenya».
-      «Plantilla» = compta per a l'avís de falta de personal del calendari d'equip.</p>
+    <h2>{{ $t('intranet.usuarios.titulo') }}</h2>
+    <p class="ayuda">{{ $t('intranet.usuarios.ayuda') }}</p>
 
     <form class="nuevo" @submit.prevent="crear">
-      <h3>Nou usuari</h3>
+      <h3>{{ $t('intranet.usuarios.nuevo') }}</h3>
       <div class="fila">
-        <label>Usuari <input v-model="nuevo.usuario" placeholder="ex.: nhoareau" autocomplete="off" required></label>
-        <label class="ancho">Nom complet <input v-model="nuevo.nombre" placeholder="ex.: Nina Hoareau" required></label>
-        <label class="ancho">Correu <input v-model="nuevo.email" type="email" placeholder="ex.: nhoareau@icm.csic.es"></label>
-        <label>Contrasenya inicial <input v-model="nuevo.password" type="text" minlength="8" autocomplete="new-password" required></label>
-        <label class="check"><input type="checkbox" v-model="nuevo.es_admin"> Administrador</label>
-        <button type="submit" class="btn-principal">Crear</button>
+        <label>{{ $t('intranet.usuarios.usuario') }} <input v-model="nuevo.usuario" :placeholder="$t('intranet.usuarios.ejUsuario')" autocomplete="off" required></label>
+        <label class="ancho">{{ $t('intranet.usuarios.nombre') }} <input v-model="nuevo.nombre" :placeholder="$t('intranet.usuarios.ejNombre')" required></label>
+        <label class="ancho">{{ $t('intranet.usuarios.correo') }} <input v-model="nuevo.email" type="email" :placeholder="$t('intranet.cuenta.correoPh')"></label>
+        <label>{{ $t('intranet.usuarios.inicial') }} <input v-model="nuevo.password" type="text" minlength="8" autocomplete="new-password" required></label>
+        <label class="check"><input type="checkbox" v-model="nuevo.es_admin"> {{ $t('intranet.usuarios.admin') }}</label>
+        <button type="submit" class="btn-principal">{{ $t('intranet.usuarios.crear') }}</button>
       </div>
     </form>
 
@@ -85,14 +85,14 @@ const nuevaContrasena = async (u) => {
     <p v-if="error" class="error">{{ error }}</p>
 
     <table class="tabla">
-      <thead><tr><th>Usuari</th><th>Nom</th><th>Correu</th><th>Administrador</th><th>Plantilla</th><th>Estat</th><th></th></tr></thead>
+      <thead><tr><th>{{ $t('intranet.usuarios.usuario') }}</th><th>{{ $t('intranet.usuarios.nombreCorto') }}</th><th>{{ $t('intranet.usuarios.correo') }}</th><th>{{ $t('intranet.usuarios.admin') }}</th><th>{{ $t('intranet.usuarios.plantilla') }}</th><th>{{ $t('intranet.usuarios.estado') }}</th><th></th></tr></thead>
       <tbody>
-        <tr v-if="usuarios.length === 0"><td colspan="7" class="aviso">Encara no hi ha usuaris personals.</td></tr>
+        <tr v-if="usuarios.length === 0"><td colspan="7" class="aviso">{{ $t('intranet.usuarios.ninguno') }}</td></tr>
         <tr v-for="u in usuarios" :key="u.id" :class="{ inactivo: !u.activo }">
           <template v-if="editando && editando.id === u.id">
-            <td><input v-model="editando.usuario" class="input-fila" aria-label="Usuari"></td>
-            <td><input v-model="editando.nombre" class="input-fila" aria-label="Nom complet"></td>
-            <td><input v-model="editando.email" type="email" class="input-fila" aria-label="Correu" placeholder="(cap)"></td>
+            <td><input v-model="editando.usuario" class="input-fila" :aria-label="$t('intranet.usuarios.usuario')"></td>
+            <td><input v-model="editando.nombre" class="input-fila" :aria-label="$t('intranet.usuarios.nombre')"></td>
+            <td><input v-model="editando.email" type="email" class="input-fila" :aria-label="$t('intranet.usuarios.correo')" :placeholder="$t('intranet.comun.ninguno')"></td>
           </template>
           <template v-else>
             <td>{{ u.usuario }}</td>
@@ -101,27 +101,27 @@ const nuevaContrasena = async (u) => {
           </template>
           <td>
             <label class="check"><input type="checkbox" :checked="!!u.es_admin"
-              @change="cambiar(u, { es_admin: $event.target.checked }, `Permisos de ${u.nombre} actualitzats.`)"></label>
+              @change="cambiar(u, { es_admin: $event.target.checked }, $t('intranet.usuarios.permisos', { nombre: u.nombre }))"></label>
           </td>
           <td>
-            <label class="check"><input type="checkbox" :checked="!!u.plantilla" :aria-label="`${u.nombre} compta a la plantilla`"
-              @change="cambiar(u, { plantilla: $event.target.checked }, $event.target.checked ? `${u.nombre} compta a la plantilla.` : `${u.nombre} ja no compta a la plantilla.`)"></label>
+            <label class="check"><input type="checkbox" :checked="!!u.plantilla" :aria-label="$t('intranet.usuarios.plantillaAria', { nombre: u.nombre })"
+              @change="cambiar(u, { plantilla: $event.target.checked }, $event.target.checked ? $t('intranet.usuarios.enPlantilla', { nombre: u.nombre }) : $t('intranet.usuarios.fueraPlantilla', { nombre: u.nombre }))"></label>
           </td>
           <td>
-            {{ u.activo ? 'Actiu' : 'Desactivat' }}
-            <span v-if="u.activo && u.debe_cambiar" class="pendiente" title="Ha de canviar la contrasenya en entrar">· pendent de canviar la contrasenya</span>
+            {{ $t(u.activo ? 'intranet.usuarios.activo' : 'intranet.usuarios.desactivado') }}
+            <span v-if="u.activo && u.debe_cambiar" class="pendiente" :title="$t('intranet.usuarios.pendienteTitulo')">{{ $t('intranet.usuarios.pendiente') }}</span>
           </td>
           <td v-if="editando && editando.id === u.id" class="acciones">
-            <button class="btn-mini guardar" @click="guardarEdicion">💾 Desar</button>
-            <button class="btn-mini" @click="editando = null">Cancel·lar</button>
+            <button class="btn-mini guardar" @click="guardarEdicion">{{ $t('intranet.comun.guardar') }}</button>
+            <button class="btn-mini" @click="editando = null">{{ $t('intranet.comun.cancelar') }}</button>
           </td>
           <td v-else class="acciones">
-            <button class="btn-mini" @click="empezarEdicion(u)">✏️ Editar</button>
-            <button class="btn-mini" @click="nuevaContrasena(u)">🔑 Contrasenya</button>
-            <button class="btn-mini" @click="cambiar(u, { activo: !u.activo }, u.activo ? `${u.nombre} desactivat.` : `${u.nombre} activat.`)">
-              {{ u.activo ? '⛔ Desactivar' : '✅ Activar' }}
+            <button class="btn-mini" @click="empezarEdicion(u)">{{ $t('intranet.comun.editar') }}</button>
+            <button class="btn-mini" @click="nuevaContrasena(u)">{{ $t('intranet.usuarios.contrasena') }}</button>
+            <button class="btn-mini" @click="cambiar(u, { activo: !u.activo }, u.activo ? $t('intranet.usuarios.desactivadoMsg', { nombre: u.nombre }) : $t('intranet.usuarios.activadoMsg', { nombre: u.nombre }))">
+              {{ $t(u.activo ? 'intranet.usuarios.desactivar' : 'intranet.usuarios.activar') }}
             </button>
-            <button class="btn-mini peligro" @click="borrar(u)">🗑️ Esborrar</button>
+            <button class="btn-mini peligro" @click="borrar(u)">{{ $t('intranet.comun.borrar') }}</button>
           </td>
         </tr>
       </tbody>

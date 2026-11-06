@@ -22,7 +22,7 @@ const idiomaInicial = () => {
 // intranet.js tiene cada frase con sus tres idiomas juntos: aquí se separan.
 // Los errores del servidor (claves con puntos) no pasan por vue-i18n: ver traducirError.
 const separar = (nodo, idioma) => Object.fromEntries(Object.entries(nodo)
-  .filter(([clave]) => clave !== 'errores')
+  .filter(([clave]) => clave !== 'errores' && clave !== 'valores')
   .map(([clave, valor]) => [clave, typeof valor.ca === 'string' ? valor[idioma] : separar(valor, idioma)]))
 for (const [idioma, mensajes] of [['ca', ca], ['es', es], ['en', en]]) mensajes.intranet = separar(intranet, idioma)
 
@@ -55,5 +55,8 @@ export const traducirError = (mensaje) => {
   if (notas) return intranet.errores._tieneNotas[idioma].replace('{n}', notas[1])
   return mensaje
 }
+
+// Valor guardado de un proyecto o instrumento («En Curs», «Contrato»...) tal como se ve en cada idioma
+export const traducirValor = (valor) => intranet.panel.valores[valor]?.[i18n.global.locale.value] || valor
 
 export default i18n

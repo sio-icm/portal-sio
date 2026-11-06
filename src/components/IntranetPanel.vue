@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { traducirError, traducirValor } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import BibliotecaDocs from './BibliotecaDocs.vue'
@@ -13,6 +15,7 @@ import CalendariEquip from './CalendariEquip.vue'
 import ResumenCalendario from './ResumenCalendario.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const apiBase = '/api'
 const apiUrl = `${apiBase}/instrumentos`
 const apiUrlProyectos = `${apiBase}/proyectos`
@@ -26,7 +29,7 @@ const peticionApi = async (url, opciones = {}) => {
   const respuesta = await fetch(url, opciones)
   if (respuesta.status === 401 && estaLogueado.value) {
     estaLogueado.value = false
-    alert("La sessió ha caducat. Torna a entrar.")
+    alert(t('intranet.panel.sesionCaducada'))
   }
   return respuesta
 }
@@ -36,7 +39,7 @@ const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'i
 const sesionCaducada = () => {
   if (!estaLogueado.value) return
   estaLogueado.value = false
-  alert("La sessió ha caducat. Torna a entrar.")
+  alert(t('intranet.panel.sesionCaducada'))
 }
 const usuario = ref('')
 const password = ref('')
@@ -107,10 +110,10 @@ const pedirEnlace = async () => {
     const r = await fetch(`${apiBase}/recuperar`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: olvido.value.dato })
     })
-    if (r.ok) olvido.value.enviado = "Si l'usuari o el correu existeixen i tenen un correu configurat, t'hem enviat un enllaç (mira també el correu brossa). Val durant una hora."
-    else olvido.value.error = (await r.json().catch(() => ({}))).error || "No s'ha pogut enviar."
+    if (r.ok) olvido.value.enviado = t('intranet.panel.enlaceEnviado')
+    else olvido.value.error = traducirError((await r.json().catch(() => ({}))).error) || t('intranet.panel.noEnviado')
   } catch {
-    olvido.value.error = "No s'ha pogut connectar amb el servidor."
+    olvido.value.error = t('intranet.panel.sinConexion')
   } finally {
     olvido.value.enviando = false
   }
@@ -119,19 +122,19 @@ const restablir = ref({ nueva: '', repetida: '', error: '', guardando: false })
 const guardarRestablir = async () => {
   const f = restablir.value
   f.error = ''
-  if (f.nueva !== f.repetida) { f.error = 'Les dues contrasenyes no coincideixen.'; return }
+  if (f.nueva !== f.repetida) { f.error = t('intranet.panel.noCoinciden'); return }
   f.guardando = true
   try {
     const r = await fetch(`${apiBase}/restablir`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tokenRestablir.value, nueva: f.nueva })
     })
     const d = await r.json().catch(() => ({}))
-    if (!r.ok) { f.error = d.error || "No s'ha pogut canviar la contrasenya."; return }
+    if (!r.ok) { f.error = traducirError(d.error) || t('intranet.panel.noCambiada'); return }
     salirDeRestablir()
     usuario.value = d.usuario || ''
-    mensajeLogin.value = 'Contrasenya canviada. Ja pots entrar amb la nova.'
+    mensajeLogin.value = t('intranet.panel.cambiadaEntra')
   } catch {
-    f.error = "No s'ha pogut connectar amb el servidor."
+    f.error = t('intranet.panel.sinConexion')
   } finally {
     f.guardando = false
   }
@@ -176,15 +179,15 @@ const iniciarSesion = async () => {
       cargarInstrumentos()
       cargarProyectos()
     } else if (respuesta.status === 401) {
-      alert("Usuari o contrasenya incorrectes")
+      alert(t('intranet.panel.loginIncorrecto'))
     } else if (respuesta.status === 429) {
-      alert("Massa intents fallits. Espera uns minuts i torna-ho a provar.")
+      alert(t('intranet.panel.demasiadosIntentos'))
     } else {
-      alert("No s'ha pogut iniciar sessió. Contacta amb l'administrador.")
+      alert(t('intranet.panel.loginError'))
     }
   } catch (error) {
     console.error("Error iniciant sessió:", error)
-    alert("No s'ha pogut connectar amb el servidor.")
+    alert(t('intranet.panel.sinConexion'))
   }
 }
 
@@ -226,7 +229,7 @@ const guardarInstrumento = async () => {
       body: JSON.stringify(nuevoEquipo.value)
     })
     if (respuesta.ok) {
-      alert(editandoId.value ? "✅ Instrument actualitzat!" : "✅ Equip registrat!")
+      alert(editandoId.value ? t('intranet.panel.instrumentoActualizado') : t('intranet.panel.instrumentoRegistrado'))
       volverDashboard()
       cargarInstrumentos()
     }
@@ -234,11 +237,11 @@ const guardarInstrumento = async () => {
 }
 
 const eliminarInstrumento = async (id) => {
-  if (!confirm("Segur que vols esborrar aquest instrument?")) return
+  if (!confirm(t('intranet.panel.confirmarBorrarInstrumento'))) return
   try {
     const respuesta = await peticionApi(`${apiUrl}/${id}`, { method: 'DELETE' })
     if (respuesta.ok) {
-      alert("🗑️ Instrument eliminat")
+      alert(t('intranet.panel.instrumentoBorrado'))
       cargarInstrumentos()
     }
   } catch (error) { console.error(error) }
@@ -281,12 +284,12 @@ const guardarProyecto = async () => {
       body: JSON.stringify(datosAEnviar)
     });
     if (res.ok) {
-      alert("✅ Projecte desat correctament!");
+      alert(t('intranet.panel.proyectoGuardado'));
       volverDashboard();
       cargarProyectos();
     } else {
       const data = await res.json();
-      alert("Error al guardar: " + JSON.stringify(data));
+      alert(t('intranet.panel.errorGuardar') + (traducirError(data.error) || JSON.stringify(data)));
     }
   } catch (e) {
     console.error("Error catastrofic al guardar:", e);
@@ -294,11 +297,11 @@ const guardarProyecto = async () => {
 }
 
 const eliminarProyecto = async (id) => {
-  if (!confirm("Segur que vols esborrar aquest projecte/campanya?")) return
+  if (!confirm(t('intranet.panel.confirmarBorrarProyecto'))) return
   try {
     const respuesta = await peticionApi(`${apiUrlProyectos}/${id}`, { method: 'DELETE' })
     if (respuesta.ok) {
-      alert("🗑️ Projecte eliminat")
+      alert(t('intranet.panel.proyectoBorrado'))
       cargarProyectos()
     }
   } catch (error) { console.error(error) }
@@ -312,38 +315,37 @@ const eliminarProyecto = async (id) => {
       <div class="login-box">
         <!-- Enllaç del correu «He oblidat la contrasenya» -->
         <template v-if="tokenRestablir">
-          <h2>Nova contrasenya</h2>
+          <h2>{{ $t('intranet.panel.nuevaContrasena') }}</h2>
           <form @submit.prevent="guardarRestablir">
-            <input type="password" v-model="restablir.nueva" placeholder="Contrasenya nova (mínim 8)" minlength="8" autocomplete="new-password" required>
-            <input type="password" v-model="restablir.repetida" placeholder="Repeteix-la" minlength="8" autocomplete="new-password" required>
+            <input type="password" v-model="restablir.nueva" :placeholder="$t('intranet.panel.nuevaMin')" minlength="8" autocomplete="new-password" required>
+            <input type="password" v-model="restablir.repetida" :placeholder="$t('intranet.panel.repitela')" minlength="8" autocomplete="new-password" required>
             <p v-if="restablir.error" class="login-error">{{ restablir.error }}</p>
-            <button type="submit" :disabled="restablir.guardando">DESAR</button>
+            <button type="submit" :disabled="restablir.guardando">{{ $t('intranet.panel.guardarMayus') }}</button>
           </form>
-          <p class="olvido"><a href="#" @click.prevent="salirDeRestablir">← Tornar a l'accés</a></p>
+          <p class="olvido"><a href="#" @click.prevent="salirDeRestablir">{{ $t('intranet.panel.volverAcceso') }}</a></p>
         </template>
         <template v-else>
-        <h2>Accés SIO</h2>
+        <h2>{{ $t('intranet.panel.accesoTitulo') }}</h2>
         <p v-if="mensajeLogin" class="login-ok">{{ mensajeLogin }}</p>
         <form @submit.prevent="iniciarSesion">
-          <input v-model="usuario" placeholder="Usuari" autocomplete="username" required>
-          <input type="password" v-model="password" placeholder="Contrasenya" autocomplete="current-password" required>
+          <input v-model="usuario" :placeholder="$t('intranet.panel.usuario')" autocomplete="username" required>
+          <input type="password" v-model="password" :placeholder="$t('intranet.panel.contrasena')" autocomplete="current-password" required>
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-size: 0.9rem; color: #555;">
             <input type="checkbox" v-model="recordarSesion" id="recordar" style="width: auto; margin: 0;">
-            <label for="recordar" style="cursor: pointer;">Recordar sessió</label>
+            <label for="recordar" style="cursor: pointer;">{{ $t('intranet.panel.recordar') }}</label>
           </div>
-          <button type="submit">ENTRAR</button>
+          <button type="submit">{{ $t('intranet.panel.entrar') }}</button>
         </form>
         <details class="olvido">
-          <summary>Has oblidat l'usuari o la contrasenya?</summary>
-          <p>Escriu el teu usuari o el teu correu i t'enviarem un enllaç per posar una contrasenya nova (i et recordarem l'usuari).</p>
+          <summary>{{ $t('intranet.panel.olvidoTitulo') }}</summary>
+          <p>{{ $t('intranet.panel.olvidoTexto') }}</p>
           <form @submit.prevent="pedirEnlace">
-            <input v-model="olvido.dato" placeholder="Usuari o correu" autocomplete="username" required>
-            <button type="submit" class="btn-olvido" :disabled="olvido.enviando">✉️ Enviar-me l'enllaç</button>
+            <input v-model="olvido.dato" :placeholder="$t('intranet.panel.usuarioOCorreo')" autocomplete="username" required>
+            <button type="submit" class="btn-olvido" :disabled="olvido.enviando">{{ $t('intranet.panel.enviarEnlace') }}</button>
           </form>
           <p v-if="olvido.enviado" class="login-ok">{{ olvido.enviado }}</p>
           <p v-if="olvido.error" class="login-error">{{ olvido.error }}</p>
-          <p class="nota-olvido">Si no tens cap correu configurat, demana a un administrador (Raül Ferrando o Raül Bardají) una contrasenya provisional.
-            L'usuari sol ser el teu nom en minúscules (ex.: <i>nina</i>).</p>
+          <p class="nota-olvido">{{ $t('intranet.panel.olvidoNota') }}</p>
         </details>
         </template>
       </div>
@@ -352,33 +354,33 @@ const eliminarProyecto = async (id) => {
     <!-- Primer acceso (o contraseña puesta por un administrador): hay que cambiarla antes de seguir -->
     <div v-else-if="sesion.debe_cambiar" class="cambio-obligatorio">
       <MiCuenta :sesion="sesion" obligatorio @cambiada="sesion.debe_cambiar = false" @sesion-caducada="sesionCaducada" />
-      <button @click="cerrarSesion" class="btn-salir-cambio">Tancar sessió</button>
+      <button @click="cerrarSesion" class="btn-salir-cambio">{{ $t('intranet.panel.cerrarSesion') }}</button>
     </div>
 
     <div v-else class="dashboard-grid">
 
       <aside class="sidebar">
-        <h3 class="sidebar-title">Panel SIO</h3>
+        <h3 class="sidebar-title">{{ $t('intranet.panel.menu.titulo') }}</h3>
         <p class="sidebar-usuario">👤 {{ sesion.nombre }}</p>
 <nav class="sidebar-nav">
-          <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">📊 Visió General</a>
-          <a href="#" @click.prevent="seccionActiva = 'calendari'" :class="{ active: seccionActiva === 'calendari' }">🗓️ Calendari d'equip</a>
-          <a href="#" @click.prevent="seccionActiva = 'diario'" :class="{ active: seccionActiva === 'diario' }">📓 Diari d'activitat</a>
-          <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">🧾 Informe semestral</a>
-          <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">👥 Gestión del Equipo</a>
-          <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">📚 Documentació i Manuals</a>
+          <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">{{ $t('intranet.panel.menu.general') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'calendari'" :class="{ active: seccionActiva === 'calendari' }">{{ $t('intranet.panel.menu.calendario') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'diario'" :class="{ active: seccionActiva === 'diario' }">{{ $t('intranet.panel.menu.diario') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">{{ $t('intranet.panel.menu.informe') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">{{ $t('intranet.panel.menu.equipo') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">{{ $t('intranet.panel.menu.documentacion') }}</a>
           <a href="#" @click.prevent="seccionActiva = 'instrumentacion'" :class="{ active: seccionActiva === 'instrumentacion' }">
-            {{ editandoId ? '✏️ Editant Instrument' : '🛠️ Alta Instrument' }}
+            {{ $t(editandoId ? 'intranet.panel.menu.editandoInstrumento' : 'intranet.panel.menu.altaInstrumento') }}
           </a>
           <a href="#" @click.prevent="seccionActiva = 'proyecto'" :class="{ active: seccionActiva === 'proyecto' }">
-            {{ editandoProyectoId ? '✏️ Editant Projecte' : '🚀 Alta Projecte' }}
+            {{ $t(editandoProyectoId ? 'intranet.panel.menu.editandoProyecto' : 'intranet.panel.menu.altaProyecto') }}
           </a>
-          <a href="#" @click.prevent="seccionActiva = 'cuenta'" :class="{ active: seccionActiva === 'cuenta' }">👤 El meu compte</a>
-          <a v-if="sesion.es_admin" href="#" @click.prevent="seccionActiva = 'usuarios'" :class="{ active: seccionActiva === 'usuarios' }">🔐 Usuaris</a>
+          <a href="#" @click.prevent="seccionActiva = 'cuenta'" :class="{ active: seccionActiva === 'cuenta' }">{{ $t('intranet.panel.menu.cuenta') }}</a>
+          <a v-if="sesion.es_admin" href="#" @click.prevent="seccionActiva = 'usuarios'" :class="{ active: seccionActiva === 'usuarios' }">{{ $t('intranet.panel.menu.usuarios') }}</a>
           <!-- Este lo dejamos sin prevent porque SÍ queremos que abra una pestaña nueva hacia la web pública -->
-          <a href="/" target="_blank" class="btn-web">🌐 Veure Web Pública</a>
+          <a href="/" target="_blank" class="btn-web">{{ $t('intranet.panel.menu.webPublica') }}</a>
         </nav>
-        <button @click="cerrarSesion" class="btn-logout">Tancar Sessió</button>
+        <button @click="cerrarSesion" class="btn-logout">{{ $t('intranet.panel.cerrarSesion') }}</button>
       </aside>
 
       <main class="main-content">
@@ -396,50 +398,44 @@ const eliminarProyecto = async (id) => {
         <GestionEquipo />
         </div>
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
-          <h2>{{ editandoId ? '✏️ Editar Instrument' : '➕ Registrar Nou Instrument' }}</h2>
+          <h2>{{ $t(editandoId ? 'intranet.panel.editarInstrumento' : 'intranet.panel.registrarInstrumento') }}</h2>
           <form @submit.prevent="guardarInstrumento" class="grid-form">
             <div style="grid-column: span 2; display: flex; gap: 10px; margin-bottom: 5px;">
               <div style="flex: 1;">
-                <label style="font-size: 0.85rem; font-weight: bold; color: #555;">Nom de l'equip:</label>
+                <label style="font-size: 0.85rem; font-weight: bold; color: #555;">{{ $t('intranet.panel.nombreEquipo') }}</label>
                 <input v-model="nuevoEquipo.nombre" placeholder="Ex: CTD-48M" required style="width: 100%; box-sizing: border-box;">
               </div>
               <div style="flex: 1;">
-                <label style="font-size: 0.85rem; font-weight: bold; color: #555;">Marca / Fabricant:</label>
+                <label style="font-size: 0.85rem; font-weight: bold; color: #555;">{{ $t('intranet.panel.marca') }}</label>
                 <input v-model="nuevoEquipo.marca" placeholder="Ex: Sea-Bird" style="width: 100%; box-sizing: border-box;">
               </div>
               <div style="flex: 1; background-color: #fff3cd; padding: 5px 10px; border-radius: 4px; border: 1px dashed #ffeeba;">
-                <label style="color: #856404; font-size: 0.85rem; font-weight: bold;">🔒 Número de Sèrie:</label>
+                <label style="color: #856404; font-size: 0.85rem; font-weight: bold;">{{ $t('intranet.panel.numeroSerie') }}</label>
                 <input v-model="nuevoEquipo.numero_serie" placeholder="Ex: SN-180" style="background: white; width: 100%; box-sizing: border-box;" />
               </div>
             </div>
 
             <div style="grid-column: span 2; display: flex; gap: 10px; margin-bottom: 10px;">
               <select v-model="nuevoEquipo.categoria" required style="flex: 1;">
-                <option value="" disabled selected>Categoria</option>
-                <option value="Física">Física</option>
-                <option value="Química">Química</option>
-                <option value="Biologia">Biologia</option>
-                <option value="Geologia">Geologia</option>
+                <option value="" disabled selected>{{ $t('intranet.panel.categoria') }}</option>
+                <option v-for="v in ['Física', 'Química', 'Biologia', 'Geologia']" :key="v" :value="v">{{ traducirValor(v) }}</option>
               </select>
               <select v-model="nuevoEquipo.subcategoria" required style="flex: 1;">
-                <option value="" disabled selected>Subcategoria</option>
-                <option value="General">General</option>
-                <option value="Sondes">Sondes</option>
-                <option value="Mostreig">Mostreig</option>
-                <option value="Sistemes Estacionaris">Sistemes Estacionaris</option>
+                <option value="" disabled selected>{{ $t('intranet.panel.subcategoria') }}</option>
+                <option v-for="v in ['General', 'Sondes', 'Mostreig', 'Sistemes Estacionaris']" :key="v" :value="v">{{ traducirValor(v) }}</option>
               </select>
               <input v-model="nuevoEquipo.ultima_calibracion" type="date" required style="flex: 1;">
             </div>
 
             <div style="grid-column: span 2; margin-top: 10px;">
-              <label style="font-weight: bold; color: #333;">Descripció tècnica:</label>
+              <label style="font-weight: bold; color: #333;">{{ $t('intranet.panel.descripcionTecnica') }}</label>
               <div style="background: white; border-radius: 4px; border: 1px solid #ddd;">
                 <QuillEditor theme="snow" v-model:content="nuevoEquipo.descripcion" contentType="html" :toolbar="opcionsEditor" />
               </div>
             </div>
 
             <div style="grid-column: span 2; margin-top: 10px; margin-bottom: 20px;">
-              <label style="font-weight: bold; color: #333;">Paràmetres / Manuals:</label>
+              <label style="font-weight: bold; color: #333;">{{ $t('intranet.panel.parametros') }}</label>
               <div style="background: white; border-radius: 4px; border: 1px solid #ddd;">
                 <QuillEditor theme="snow" v-model:content="nuevoEquipo.parametros_tecnicos" contentType="html" :toolbar="opcionsEditor" />
               </div>
@@ -447,68 +443,59 @@ const eliminarProyecto = async (id) => {
 
             <div style="grid-column: span 2; display: flex; gap: 10px;">
               <button type="submit" style="flex: 1; padding: 12px; font-weight: bold; background: #012169; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                {{ editandoId ? '💾 Desar Canvis' : '➕ Registrar al Catàleg' }}
+                {{ $t(editandoId ? 'intranet.panel.guardarCambios' : 'intranet.panel.registrarCatalogo') }}
               </button>
               <button v-if="editandoId" type="button" @click="volverDashboard" style="flex: 0.3; background: #ccc; color: #333; font-weight: bold; padding: 12px; border: none; border-radius: 4px; cursor: pointer;">
-                ❌ Cancel·lar
+                {{ $t('intranet.panel.cancelarX') }}
               </button>
             </div>
           </form>
         </div>
 
         <div v-else-if="seccionActiva === 'proyecto'" class="admin-panel">
-          <h2>{{ editandoProyectoId ? '✏️ Editar Projecte' : '🚀 Registrar Nou Projecte' }}</h2>
+          <h2>{{ $t(editandoProyectoId ? 'intranet.panel.editarProyecto' : 'intranet.panel.registrarProyecto') }}</h2>
           <form @submit.prevent="guardarProyecto" class="grid-form">
-            <label>Títol:</label>
-            <input v-model="nuevoProyecto.titulo" placeholder="Títol del projecte" required>
+            <label>{{ $t('intranet.panel.titulo') }}</label>
+            <input v-model="nuevoProyecto.titulo" :placeholder="$t('intranet.panel.tituloPh')" required>
             <div style="display: flex; gap: 20px; margin-bottom: 15px;">
               <div style="flex: 1;">
-                <label>Categoria:</label>
+                <label>{{ $t('intranet.panel.categoriaDos') }}</label>
                 <select v-model="nuevoProyecto.categoria" required style="width: 100%;">
-                  <option value="Infraestructura">Infraestructura</option>
-                  <option value="Campanya">Campanya</option>
-                  <option value="I+D+I">I+D+I</option>
-                  <option value="Divulgació científica">Divulgació científica</option>
-                  <option value="Plan Nacional">Plan Nacional</option>
-                  <option value="Contrato">Contrato</option>
-                  <option value="Otro">Otro</option>
+                  <option v-for="v in ['Infraestructura', 'Campanya', 'I+D+I', 'Divulgació científica', 'Plan Nacional', 'Contrato', 'Otro']" :key="v" :value="v">{{ traducirValor(v) }}</option>
                 </select>
               </div>
               <div style="flex: 1;">
-                <label>Estat:</label>
+                <label>{{ $t('intranet.panel.estado') }}</label>
                 <select v-model="nuevoProyecto.estado" required style="width: 100%;">
-                  <option value="Sol·licitat">Sol·licitat</option>
-                  <option value="Aprovat">Aprovat</option>
-                  <option value="En Curs">En Curs</option>
-                  <option value="Finalitzat">Finalitzat</option>
+                  <option v-for="v in ['Sol·licitat', 'Aprovat', 'En Curs', 'Finalitzat']" :key="v" :value="v">{{ traducirValor(v) }}</option>
                 </select>
               </div>
             </div>
 
             <div class="campo-form">
-              <label>IP (Investigador Principal):</label>
+              <label>{{ $t('intranet.panel.ip') }}</label>
               <input type="text" v-model="nuevoProyecto.investigador_principal" placeholder="Ex: Maria Garcia, Joan Puig" class="input-texto">
             </div>
 
             <div class="campo-form">
-              <label>PIT (Personal Tècnic SIO):</label>
+              <label>{{ $t('intranet.panel.pit') }}</label>
               <input type="text" v-model="nuevoProyecto.pit" placeholder="Ex: Raül Ferrando" class="input-texto">
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label>Descripció curta (Resum màx. 2 línies):</label>
-              <textarea v-model="nuevoProyecto.descripcion_corta" rows="2" maxlength="150" placeholder="Escriu un breu resum aquí..." style="width: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: inherit;"></textarea>
+              <label>{{ $t('intranet.panel.descCorta') }}</label>
+              <textarea v-model="nuevoProyecto.descripcion_corta" rows="2" maxlength="150" :placeholder="$t('intranet.panel.descCortaPh')" style="width: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: inherit;"></textarea>
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label>Descripció ampliada (Amb imatges):</label>
+              <label>{{ $t('intranet.panel.descAmpliada') }}</label>
               <div style="background: white; border: 1px solid #ddd;">
                 <QuillEditor theme="snow" v-model:content="nuevoProyecto.descripcion_ampliada" contentType="html" :toolbar="opcionsEditor" />
               </div>
             </div>
 
             <button type="submit" class="btn-submit-main" style="margin-top: 10px; padding: 15px; cursor: pointer;">
-              {{ editandoProyectoId ? '💾 Desar Canvis' : '🚀 Registrar Projecte' }}
+              {{ $t(editandoProyectoId ? 'intranet.panel.guardarCambios' : 'intranet.panel.registrarProyectoBtn') }}
             </button>
           </form>
         </div>
@@ -519,10 +506,10 @@ const eliminarProyecto = async (id) => {
           <div class="acordeon-dash">
             <div class="acordeon-dash-header" @click="toggleDashboard('proyectos')">
               <div style="display: flex; align-items: center; gap: 15px;">
-                <h3 style="margin: 0; color: #012169;">Campanyes i Projectes ({{ proyectos.length }})</h3>
+                <h3 style="margin: 0; color: #012169;">{{ $t('intranet.panel.proyectos', { n: proyectos.length }) }}</h3>
               </div>
               <div style="display: flex; align-items: center; gap: 20px;">
-                <button @click.stop="seccionActiva = 'proyecto'" class="btn-nou">+ Nou Projecte</button>
+                <button @click.stop="seccionActiva = 'proyecto'" class="btn-nou">{{ $t('intranet.panel.nuevoProyecto') }}</button>
                 <span style="font-size: 1.5rem; color: #0086c0; font-weight: bold; width: 20px; text-align: center;">
                   {{ acordeonesDash.proyectos ? '−' : '+' }}
                 </span>
@@ -533,12 +520,12 @@ const eliminarProyecto = async (id) => {
                 <tr v-for="proj in proyectos" :key="proj.id">
                   <td>
                     <strong style="color: #0086c0; font-size: 1.1rem;">{{ proj.titulo }}</strong> <br>
-                    <small style="color: #666;">{{ proj.categoria }} | IP: {{ proj.investigador_principal || 'No assignat' }}</small>
+                    <small style="color: #666;">{{ traducirValor(proj.categoria) }} | IP: {{ proj.investigador_principal || $t('intranet.panel.sinAsignar') }}</small>
                   </td>
-                  <td><span class="badge-estado">{{ proj.estado }}</span></td>
+                  <td><span class="badge-estado">{{ traducirValor(proj.estado) }}</span></td>
                   <td style="text-align: right; width: 220px;">
-                    <button @click="cargarParaEditarProyecto(proj)" class="btn-edit" style="margin-right: 5px;">✏️ Editar</button>
-                    <button @click="eliminarProyecto(proj.id)" class="btn-delete">🗑️ Esborrar</button>
+                    <button @click="cargarParaEditarProyecto(proj)" class="btn-edit" style="margin-right: 5px;">{{ $t('intranet.comun.editar') }}</button>
+                    <button @click="eliminarProyecto(proj.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
                   </td>
                 </tr>
               </table>
@@ -548,10 +535,10 @@ const eliminarProyecto = async (id) => {
           <div class="acordeon-dash">
             <div class="acordeon-dash-header" @click="toggleDashboard('instrumentos')">
               <div style="display: flex; align-items: center; gap: 15px;">
-                <h3 style="margin: 0; color: #012169;">Inventari d'Instruments ({{ instrumentos.length }})</h3>
+                <h3 style="margin: 0; color: #012169;">{{ $t('intranet.panel.instrumentos', { n: instrumentos.length }) }}</h3>
               </div>
               <div style="display: flex; align-items: center; gap: 20px;">
-                <button @click.stop="seccionActiva = 'instrumentacion'" class="btn-nou">+ Nou Instrument</button>
+                <button @click.stop="seccionActiva = 'instrumentacion'" class="btn-nou">{{ $t('intranet.panel.nuevoInstrumento') }}</button>
                 <span style="font-size: 1.5rem; color: #0086c0; font-weight: bold; width: 20px; text-align: center;">
                   {{ acordeonesDash.instrumentos ? '−' : '+' }}
                 </span>
@@ -568,8 +555,8 @@ const eliminarProyecto = async (id) => {
                     </span>
                   </td>
                   <td style="text-align: right; width: 220px;">
-                    <button @click="cargarParaEditar(inst)" class="btn-edit" style="margin-right: 5px;">✏️ Editar</button>
-                    <button @click="eliminarInstrumento(inst.id)" class="btn-delete">🗑️ Esborrar</button>
+                    <button @click="cargarParaEditar(inst)" class="btn-edit" style="margin-right: 5px;">{{ $t('intranet.comun.editar') }}</button>
+                    <button @click="eliminarInstrumento(inst.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
                   </td>
                 </tr>
               </table>
