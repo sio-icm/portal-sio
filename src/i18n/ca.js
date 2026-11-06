@@ -602,6 +602,12 @@ export default {
     subtitulo: "Últimes novetats, campanyes i avenços tecnològics del Servei d'Enginyeria Oceanogràfica.",
     lista: [
       {
+        titulo: "Mostreig d'aigua amb la FNOB davant del Llobregat i el Besòs",
+        texto: "El 26 d'octubre, de 10.00 a 14.00, vam sortir a bord del veler de la Fundació Navegació Oceànica Barcelona (FNOB) per prendre mostres d'aigua en punts estratègics davant de les desembocadures del Llobregat i del Besòs, a més d'altres estacions de la costa de Barcelona. El Servei d'Enginyeria Oceanogràfica va acompanyar investigadors de l'ICM per millorar el mètode de recollida de les mostres, des del mostrejador fins a l'envasament a bord. Una col·laboració més entre totes dues entitats, aquesta vegada amb la Pilar Pasanau al timó.",
+        alt: "Investigadors de l'ICM i tècnics del servei treballant a la coberta del veler, amb Barcelona al fons",
+        fotos: ["Baixant el mostrejador a l'aigua", "Envasant les mostres d'aigua a bord", "L'equip preparant les mostres a coberta"]
+      },
+      {
         titulo: 'Nova missió autònoma amb vehicles de superfície a la Costa Brava',
         texto: "El nostre equip ha desplegat amb èxit la nova flota de vehicles autònoms per monitorar corrents superficials i paràmetres fisicoquímics en temps real. Aquesta prova pilot ens permet validar els algorismes de navegació adaptativa abans de fer el salt a missions de llarga durada en mar obert.",
         alt: 'Embarcació amb tècnics al costat d’una boia oceanogràfica'

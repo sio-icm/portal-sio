@@ -5,8 +5,13 @@ const fondoNoticias = '/instrumentacion.webp'
 
 const { locale } = useI18n()
 
-// Fecha y foto de cada noticia (título, texto y descripción de la foto: noticias.lista en src/i18n)
+// Fecha y foto de cada noticia (título, texto y descripción de las fotos: noticias.lista en src/i18n,
+// en el mismo orden). «ampliada» = foto entera al pulsar; «galeria» = fotos pequeñas debajo del texto.
 const noticias = [
+  {
+    fecha: '2026-10-26', imagen: '/fotos/noticias/fnob-portada.webp', ampliada: '/fotos/noticias/fnob-cubierta.webp',
+    galeria: ['/fotos/noticias/fnob-muestreador.webp', '/fotos/noticias/fnob-muestras.webp', '/fotos/noticias/fnob-equipo.webp']
+  },
   { fecha: '2026-08-19', imagen: '/fotos/noticias/vehiculos-superficie.webp' },
   { fecha: '2026-07-10', imagen: '/fotos/noticias/impresion-3d.webp' },
   { fecha: '2026-06-28', imagen: '/fotos/noticias/boya-fondeo.webp' }
@@ -35,11 +40,19 @@ const backgroundStyle = computed(() => {
       <div class="grid-noticias">
         <div v-for="(noticia, i) in noticias" :key="noticia.fecha" class="tarjeta-noticia">
           <div class="contenedor-imagen-noticia">
-            <img :src="noticia.imagen" :alt="$t(`noticias.lista[${i}].alt`)" loading="lazy">
+            <a v-if="noticia.ampliada" :href="noticia.ampliada" target="_blank" rel="noopener">
+              <img :src="noticia.imagen" :alt="$t(`noticias.lista[${i}].alt`)" loading="lazy">
+            </a>
+            <img v-else :src="noticia.imagen" :alt="$t(`noticias.lista[${i}].alt`)" loading="lazy">
           </div>
           <div class="fecha-noticia"><time :datetime="noticia.fecha">{{ formatoFecha(noticia.fecha) }}</time></div>
           <h3>{{ $t(`noticias.lista[${i}].titulo`) }}</h3>
           <p class="texto-noticia">{{ $t(`noticias.lista[${i}].texto`) }}</p>
+          <div v-if="noticia.galeria" class="galeria-noticia">
+            <a v-for="(foto, j) in noticia.galeria" :key="foto" :href="foto" target="_blank" rel="noopener">
+              <img :src="foto" :alt="$t(`noticias.lista[${i}].fotos[${j}]`)" loading="lazy">
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -68,6 +81,9 @@ const backgroundStyle = computed(() => {
 .fecha-noticia { color: #8cc63f; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 25px 30px 5px 30px; }
 .tarjeta-noticia h3 { color: #012169; font-size: 1.25rem; margin: 0 0 15px 0; padding: 0 30px; line-height: 1.4; }
 .texto-noticia { color: #555; font-size: 0.95rem; line-height: 1.6; padding: 0 30px; margin: 0; }
+.galeria-noticia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 18px 30px 0; }
+.galeria-noticia img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; transition: opacity 0.2s; }
+.galeria-noticia a:hover img { opacity: 0.85; }
 
 @media (max-width: 768px) { .contenido-noticias { padding-top: 150px; } .grid-noticias { grid-template-columns: 1fr; } }
 </style>

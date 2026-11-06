@@ -602,6 +602,12 @@ export default {
     subtitulo: 'The latest news, campaigns and technological advances from the Oceanographic Engineering Service.',
     lista: [
       {
+        titulo: 'Water sampling with the FNOB off the Llobregat and Besòs rivers',
+        texto: 'On 26 October, from 10:00 to 14:00, we sailed aboard the Fundació Navegació Oceànica Barcelona (FNOB) sailing boat to collect water samples at strategic points off the mouths of the Llobregat and Besòs rivers and at other stations along the Barcelona coast. Our team joined ICM researchers to improve the sampling procedure, from the sampler to bottling the samples on board. Another collaboration between both institutions, this time with Pilar Pasanau at the helm.',
+        alt: 'ICM researchers and service technicians working on the deck of the sailing boat, with Barcelona in the background',
+        fotos: ['Lowering the sampler into the water', 'Bottling the water samples on board', 'The team preparing the samples on deck']
+      },
+      {
         titulo: 'New autonomous mission with surface vehicles on the Costa Brava',
         texto: 'Our team has successfully deployed the new fleet of autonomous vehicles to monitor surface currents and physico-chemical parameters in real time. This pilot test allows us to validate the adaptive navigation algorithms before moving on to long-duration missions in the open sea.',
         alt: 'Boat with technicians next to an oceanographic buoy'

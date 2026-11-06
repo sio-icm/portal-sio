@@ -602,6 +602,12 @@ export default {
     subtitulo: 'Últimas novedades, campañas y avances tecnológicos del Servicio de Ingeniería Oceanográfica.',
     lista: [
       {
+        titulo: 'Muestreo de agua con la FNOB frente al Llobregat y el Besòs',
+        texto: 'El 26 de octubre, de 10:00 a 14:00, salimos a bordo del velero de la Fundació Navegació Oceànica Barcelona (FNOB) para tomar muestras de agua en puntos estratégicos frente a las desembocaduras del Llobregat y del Besòs, además de otras estaciones de la costa de Barcelona. El SIO acompañó a investigadores del ICM para mejorar el método de recogida de las muestras, desde el muestreador hasta su envasado a bordo. Una colaboración más entre ambas entidades, esta vez con Pilar Pasanau al timón.',
+        alt: 'Investigadores del ICM y técnicos del SIO trabajando en la cubierta del velero, con Barcelona al fondo',
+        fotos: ['Bajando el muestreador al agua', 'Envasando las muestras de agua a bordo', 'El equipo preparando las muestras en cubierta']
+      },
+      {
         titulo: 'Nueva misión autónoma con vehículos de superficie en la Costa Brava',
         texto: 'Nuestro equipo ha desplegado con éxito la nueva flota de vehículos autónomos para monitorizar corrientes superficiales y parámetros físico-químicos en tiempo real. Esta prueba piloto nos permite validar los algoritmos de navegación adaptativa antes de dar el salto a misiones de larga duración en mar abierto.',
         alt: 'Embarcación con técnicos junto a una boya oceanográfica'
