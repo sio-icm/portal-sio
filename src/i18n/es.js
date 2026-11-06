@@ -617,7 +617,8 @@ export default {
         titulo: "Desplegada la boya de Somorrostro, con datos del mar en tiempo real",
         texto: "Este verano ha quedado fondeada frente a la playa de Somorrostro (Barcelona), a unos 1,5 km de la costa, una boya oceanográfica que envía datos en tiempo real: corrientes, temperatura, salinidad y pH del agua, además de las variables de su estación meteorológica. La boya la ha desarrollado el ICATMAR (Instituto Catalán de Investigación para la Gobernanza del Mar) con el ICM-CSIC, gracias a la financiación del ICATMAR, el Ayuntamiento de Barcelona y Barcelona Cicle de l'Aigua. Forma parte de la red de observación meteo-marina del ICATMAR y servirá para seguir la acidificación del mar en la costa catalana, en un punto que el ICM muestrea cada mes desde hace más de 25 años. El SIO, que participó en el montaje y el fondeo, se encarga de su mantenimiento.",
         alt: "Técnicos del ICM en una zódiac junto a la boya de Somorrostro",
-        fotos: ["Embarcación con grúa fondeando la boya frente a Barcelona", "La embarcación de fondeo y la zódiac del ICM frente a Montjuïc", "Zódiac del ICM volviendo a puerto tras el fondeo"]
+        fotos: ["Embarcación con grúa fondeando la boya frente a Barcelona", "La embarcación de fondeo y la zódiac del ICM frente a Montjuïc", "Zódiac del ICM volviendo a puerto tras el fondeo"],
+        enlace: "Ver los datos de la boya en tiempo real"
       }
     ]
   },

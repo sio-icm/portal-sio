@@ -6,7 +6,8 @@ const fondoNoticias = '/instrumentacion.webp'
 const { locale } = useI18n()
 
 // Fecha y foto de cada noticia (título, texto y descripción de las fotos: noticias.lista en src/i18n,
-// en el mismo orden). «ampliada» = foto entera al pulsar; «galeria» = fotos pequeñas debajo del texto.
+// en el mismo orden). «ampliada» = foto entera al pulsar; «galeria» = fotos pequeñas debajo del texto;
+// «enlace» = botón a una web externa (su texto: noticias.lista[i].enlace).
 const noticias = [
   {
     fecha: '2026-10-26', imagen: '/fotos/noticias/fnob-portada.webp', ampliada: '/fotos/noticias/fnob-cubierta.webp',
@@ -19,7 +20,8 @@ const noticias = [
   },
   {
     fecha: '2026-08-11', imagen: '/fotos/noticias/somorrostro-portada.webp', ampliada: '/fotos/noticias/somorrostro-boia.webp',
-    galeria: ['/fotos/noticias/somorrostro-grua.webp', '/fotos/noticias/somorrostro-fondeig.webp', '/fotos/noticias/somorrostro-zodiac.webp']
+    galeria: ['/fotos/noticias/somorrostro-grua.webp', '/fotos/noticias/somorrostro-fondeig.webp', '/fotos/noticias/somorrostro-zodiac.webp'],
+    enlace: 'https://www.icatmar.cat/boiasomorrostro/#SECTION=observations&TIMESCALE=1h&PANEL=compact'
   }
 ]
 
@@ -54,6 +56,7 @@ const backgroundStyle = computed(() => {
           <div class="fecha-noticia"><time :datetime="noticia.fecha">{{ formatoFecha(noticia.fecha) }}</time></div>
           <h3>{{ $t(`noticias.lista[${i}].titulo`) }}</h3>
           <p class="texto-noticia">{{ $t(`noticias.lista[${i}].texto`) }}</p>
+          <a v-if="noticia.enlace" :href="noticia.enlace" target="_blank" rel="noopener" class="enlace-noticia">{{ $t(`noticias.lista[${i}].enlace`) }} ↗</a>
           <div v-if="noticia.galeria" class="galeria-noticia">
             <a v-for="(foto, j) in noticia.galeria" :key="foto" :href="foto" target="_blank" rel="noopener">
               <img :src="foto" :alt="$t(`noticias.lista[${i}].fotos[${j}]`)" loading="lazy">
@@ -87,6 +90,8 @@ const backgroundStyle = computed(() => {
 .fecha-noticia { color: #8cc63f; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 25px 30px 5px 30px; }
 .tarjeta-noticia h3 { color: #012169; font-size: 1.25rem; margin: 0 0 15px 0; padding: 0 30px; line-height: 1.4; }
 .texto-noticia { color: #555; font-size: 0.95rem; line-height: 1.6; padding: 0 30px; margin: 0; }
+.enlace-noticia { align-self: flex-start; margin: 16px 30px 0; background: #012169; color: white; text-decoration: none; font-weight: bold; font-size: 0.9rem; padding: 9px 16px; border-radius: 6px; transition: background 0.2s; }
+.enlace-noticia:hover { background: #0086c0; }
 .galeria-noticia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 18px 30px 0; }
 .galeria-noticia img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; transition: opacity 0.2s; }
 .galeria-noticia a:hover img { opacity: 0.85; }

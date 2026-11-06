@@ -617,7 +617,8 @@ export default {
         titulo: "Somorrostro buoy deployed, with real-time sea data",
         texto: "This summer an oceanographic buoy was moored off Somorrostro beach (Barcelona), about 1.5 km from the coast. It sends real-time data on currents, water temperature, salinity and pH, as well as readings from its weather station. The buoy was developed by ICATMAR (Catalan Institute for Research on Ocean Governance) together with ICM-CSIC, with funding from ICATMAR, Barcelona City Council and Barcelona Cicle de l'Aigua. It is part of ICATMAR's meteo-marine observation network and will help track ocean acidification on the Catalan coast, at a site that ICM has sampled every month for more than 25 years. Our service, which took part in assembling and mooring it, is in charge of its maintenance.",
         alt: "ICM technicians in a RIB next to the Somorrostro buoy",
-        fotos: ["Crane vessel mooring the buoy off Barcelona", "The mooring vessel and the ICM RIB off Montjuïc", "ICM RIB heading back to port after the mooring"]
+        fotos: ["Crane vessel mooring the buoy off Barcelona", "The mooring vessel and the ICM RIB off Montjuïc", "ICM RIB heading back to port after the mooring"],
+        enlace: "See the buoy data in real time"
       }
     ]
   },

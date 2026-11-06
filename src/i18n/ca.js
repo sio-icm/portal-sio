@@ -617,7 +617,8 @@ export default {
         titulo: "Desplegada la boia de Somorrostro, amb dades del mar en temps real",
         texto: "Aquest estiu ha quedat fondejada davant la platja del Somorrostro (Barcelona), a uns 1,5 km de la costa, una boia oceanogràfica que envia dades en temps real: corrents, temperatura, salinitat i pH de l'aigua, a més de les variables de la seva estació meteorològica. La boia l'ha desenvolupat l'ICATMAR (Institut Català de Recerca per a la Governança del Mar) amb l'ICM-CSIC, gràcies al finançament de l'ICATMAR, l'Ajuntament de Barcelona i Barcelona Cicle de l'Aigua. Forma part de la xarxa d'observació meteomarina de l'ICATMAR i servirà per seguir l'acidificació del mar a la costa catalana, en un punt que l'ICM mostreja cada mes des de fa més de 25 anys. El Servei d'Enginyeria Oceanogràfica, que va participar en el muntatge i el fondeig, se n'encarrega del manteniment.",
         alt: "Tècnics de l'ICM en una zòdiac al costat de la boia de Somorrostro",
-        fotos: ["Embarcació amb grua fondejant la boia davant de Barcelona", "L'embarcació de fondeig i la zòdiac de l'ICM davant de Montjuïc", "Zòdiac de l'ICM tornant a port després del fondeig"]
+        fotos: ["Embarcació amb grua fondejant la boia davant de Barcelona", "L'embarcació de fondeig i la zòdiac de l'ICM davant de Montjuïc", "Zòdiac de l'ICM tornant a port després del fondeig"],
+        enlace: "Veure les dades de la boia en temps real"
       }
     ]
   },
