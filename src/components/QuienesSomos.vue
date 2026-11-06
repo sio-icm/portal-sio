@@ -102,13 +102,13 @@ import logoBlueLab from '../assets/logobluelab.png'
   max-width: 100%;
   max-height: 110%;
   object-fit: cover;
-  transform: scale(1.09);   /* algo más grande, sin pasar al logo del SIO */
+  transform: scale(1.01);   /* casi el tamaño original, sin pasar al logo del SIO */
   transition: transform 0.3s ease;
 }
 /* El logo lleva su propio fondo: se ilumina la ficha entera (fondo y logo a la vez) */
 .ficha-sio.ficha-bluelab { filter: brightness(0.85); }
 .ficha-sio.ficha-bluelab:hover { filter: brightness(1.25); background-color: #02097c; }
-.ficha-bluelab:hover img { transform: scale(1.14); }
+.ficha-bluelab:hover img { transform: scale(1.06); }
 
 .ficha-sio:focus-visible {
   outline: 3px solid #0086c0;
