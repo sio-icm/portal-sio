@@ -614,9 +614,10 @@ export default {
         fotos: ['Drons del LAST-EBD preparats al laboratori', "Processament d'un núvol de punts LiDAR per identificar les capçades de les savines", 'Hexacòpter del LAST-EBD a la seva maleta', 'Estació de mesura entre la vegetació de Doñana', 'Cérvol al parc de Doñana', 'Cavalls a les maresmes de Doñana']
       },
       {
-        titulo: 'Nova missió autònoma amb vehicles de superfície a la Costa Brava',
-        texto: "El nostre equip ha desplegat amb èxit la nova flota de vehicles autònoms per monitorar corrents superficials i paràmetres fisicoquímics en temps real. Aquesta prova pilot ens permet validar els algorismes de navegació adaptativa abans de fer el salt a missions de llarga durada en mar obert.",
-        alt: 'Embarcació amb tècnics al costat d’una boia oceanogràfica'
+        titulo: "Desplegada la boia de Somorrostro, amb dades del mar en temps real",
+        texto: "Aquest estiu ha quedat fondejada davant la platja del Somorrostro (Barcelona), a uns 1,5 km de la costa, una boia oceanogràfica que envia dades en temps real: corrents, temperatura, salinitat i pH de l'aigua, a més de les variables de la seva estació meteorològica. La boia l'ha desenvolupat l'ICATMAR (Institut Català de Recerca per a la Governança del Mar) amb l'ICM-CSIC, gràcies al finançament de l'ICATMAR, l'Ajuntament de Barcelona i Barcelona Cicle de l'Aigua. Forma part de la xarxa d'observació meteomarina de l'ICATMAR i servirà per seguir l'acidificació del mar a la costa catalana, en un punt que l'ICM mostreja cada mes des de fa més de 25 anys. El Servei d'Enginyeria Oceanogràfica, que va participar en el muntatge i el fondeig, se n'encarrega del manteniment.",
+        alt: "Tècnics de l'ICM en una zòdiac al costat de la boia de Somorrostro",
+        fotos: ["Embarcació amb grua fondejant la boia davant de Barcelona", "L'embarcació de fondeig i la zòdiac de l'ICM davant de Montjuïc", "Zòdiac de l'ICM tornant a port després del fondeig"]
       },
       {
         titulo: 'Avenços en el disseny i la fabricació de nous sensors submarins',

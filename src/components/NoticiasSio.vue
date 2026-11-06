@@ -17,7 +17,10 @@ const noticias = [
     galeria: ['/fotos/noticias/donana-drones.webp', '/fotos/noticias/donana-lidar.webp', '/fotos/noticias/donana-hexacoptero.webp',
       '/fotos/noticias/donana-estacion.webp', '/fotos/noticias/donana-ciervo.webp', '/fotos/noticias/donana-caballos.webp']
   },
-  { fecha: '2026-08-19', imagen: '/fotos/noticias/vehiculos-superficie.webp' },
+  {
+    fecha: '2026-08-11', imagen: '/fotos/noticias/somorrostro-portada.webp', ampliada: '/fotos/noticias/somorrostro-boia.webp',
+    galeria: ['/fotos/noticias/somorrostro-grua.webp', '/fotos/noticias/somorrostro-fondeig.webp', '/fotos/noticias/somorrostro-zodiac.webp']
+  },
   { fecha: '2026-07-10', imagen: '/fotos/noticias/impresion-3d.webp' },
   { fecha: '2026-06-28', imagen: '/fotos/noticias/boya-fondeo.webp' }
 ]
