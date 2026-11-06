@@ -1211,6 +1211,7 @@ def calcular_avisos(conexion, desde, hasta):
             presentes = [u for u in plantilla if not fuera(u, dia, FUERA_DEL_CENTRO)]
             if len(presentes) < ajustes['minim_presents']:
                 avisos.append({'id': f'personal:{dia}', 'tipo': 'personal', 'fecha': dia,
+                               'datos': {'presentes': len(presentes), 'total': len(plantilla)},
                                'texto': f"Només {len(presentes)} de {len(plantilla)} persones al centre"})
 
     # 2. El mateix recurs reservat dues vegades els mateixos dies
@@ -1224,6 +1225,7 @@ def calcular_avisos(conexion, desde, hasta):
             nombre = a['instrumento'] or 'instrument' if a['recurso'] == 'instrument' else NOMBRE_RECURSO[a['recurso']]
             avisos.append({'id': f"conflicte:{a['id']}-{b['id']}", 'tipo': 'conflicte',
                            'fecha': max(inicio, desde), 'fin': fin,
+                           'datos': {'recurso': a['recurso'], 'instrumento': a['instrumento']},
                            'texto': f"{nombre}: dues reserves els mateixos dies"})
 
     # 3. Pelagia reservada sense el patró
@@ -1231,13 +1233,14 @@ def calcular_avisos(conexion, desde, hasta):
         if r['recurso'] != 'pelagia':
             continue
         if not patron:
-            avisos.append({'id': f"patro:{r['id']}", 'tipo': 'patro', 'fecha': max(r['inicio'], desde),
+            avisos.append({'id': f"patro:{r['id']}", 'tipo': 'patro', 'fecha': max(r['inicio'], desde), 'datos': {},
                            'texto': "Pelagia reservada: no hi ha cap patró configurat"})
             continue
         dias = [d for d in dias_entre(max(r['inicio'], desde), min(r['fin'], hasta))
                 if fuera(patron['id'], d, AUSENCIAS_PATRON)]
         if dias:
             avisos.append({'id': f"patro:{r['id']}:{dias[0]}", 'tipo': 'patro', 'fecha': dias[0], 'fin': dias[-1],
+                           'datos': {'persona': patron['nombre']},
                            'texto': f"Pelagia reservada però {patron['nombre']} (patró) no hi és"})
     # 4. Una persona amb dos compromisos fora del centre els mateixos dies
     #    (p. ex. una campanya i un congrés, o dues campanyes diferents)
@@ -1252,7 +1255,9 @@ def calcular_avisos(conexion, desde, hasta):
             if inicio > fin:
                 continue
             que = lambda e: ETIQUETAS_CALENDARIO[e['tipo']] + ''.join(f" ({x})" for x in (e['nota'], e['proyecto']) if x)
+            datos_e = lambda e: {'tipo': e['tipo'], 'nota': e['nota'], 'proyecto': e['proyecto']}
             avisos.append({'id': f"persona:{a['id']}-{b['id']}", 'tipo': 'persona', 'fecha': inicio, 'fin': fin,
+                           'datos': {'persona': a['persona'], 'a': datos_e(a), 'b': datos_e(b)},
                            'texto': f"{a['persona']}: {que(a)} i {que(b)} coincideixen"})
 
     # 5. El responsable d'una reserva no hi és (a la Pelagia, una campanya pot ser la mateixa sortida)
@@ -1265,6 +1270,7 @@ def calcular_avisos(conexion, desde, hasta):
         if dias:
             nombre = (r['instrumento'] or 'Instrument') if r['recurso'] == 'instrument' else NOMBRE_RECURSO[r['recurso']]
             avisos.append({'id': f"responsable:{r['id']}:{dias[0]}", 'tipo': 'responsable', 'fecha': dias[0], 'fin': dias[-1],
+                           'datos': {'recurso': r['recurso'], 'instrumento': r['instrumento'], 'persona': r['persona']},
                            'texto': f"{nombre}: reservat per {r['persona']}, que no hi serà"})
 
     # 6. Instrument reservat que està en manteniment o reparació
@@ -1272,6 +1278,7 @@ def calcular_avisos(conexion, desde, hasta):
         estado = (r['estado_instrumento'] or '').lower()
         if r['recurso'] == 'instrument' and ('manten' in estado or 'repar' in estado):
             avisos.append({'id': f"estat:{r['id']}", 'tipo': 'estat', 'fecha': max(r['inicio'], desde), 'fin': min(r['fin'], hasta),
+                           'datos': {'instrumento': r['instrumento'], 'estado': r['estado_instrumento']},
                            'texto': f"{r['instrumento']}: reservat però està en «{r['estado_instrumento']}»"})
 
     avisos.sort(key=lambda a: (a['fecha'], a['tipo']))

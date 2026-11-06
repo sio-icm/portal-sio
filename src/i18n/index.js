@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 import es from './es.js'
 import ca from './ca.js'
 import en from './en.js'
+import intranet from './intranet.js'
 
 // Textos de la web en castellano, catalán e inglés (src/i18n/*.js).
 // Ojo al escribir textos: { } @ $ | tienen significado especial en vue-i18n.
@@ -18,6 +19,13 @@ const idiomaInicial = () => {
   return IDIOMAS.includes(navegador) ? navegador : 'es'
 }
 
+// intranet.js tiene cada frase con sus tres idiomas juntos: aquí se separan.
+// Los errores del servidor (claves con puntos) no pasan por vue-i18n: ver traducirError.
+const separar = (nodo, idioma) => Object.fromEntries(Object.entries(nodo)
+  .filter(([clave]) => clave !== 'errores')
+  .map(([clave, valor]) => [clave, typeof valor.ca === 'string' ? valor[idioma] : separar(valor, idioma)]))
+for (const [idioma, mensajes] of [['ca', ca], ['es', es], ['en', en]]) mensajes.intranet = separar(intranet, idioma)
+
 const i18n = createI18n({
   legacy: false,
   globalInjection: true,
@@ -33,6 +41,19 @@ export const cambiarIdioma = (idioma) => {
   i18n.global.locale.value = idioma
   document.documentElement.lang = idioma
   try { localStorage.setItem(CLAVE_GUARDADA, idioma) } catch { /* sin almacenamiento */ }
+}
+
+// Mensaje de error del servidor (en castellano) en el idioma de la web; si no se conoce, tal cual
+export const traducirError = (mensaje) => {
+  if (!mensaje) return mensaje
+  const idioma = i18n.global.locale.value
+  const conocido = intranet.errores[mensaje]
+  if (conocido) return conocido[idioma]
+  const fotos = mensaje.match(/^Máximo (\d+) fotos por nota$/)
+  if (fotos) return intranet.errores._fotosMax[idioma].replace('{n}', fotos[1])
+  const notas = mensaje.match(/^Tiene (\d+) notas en el diario/)
+  if (notas) return intranet.errores._tieneNotas[idioma].replace('{n}', notas[1])
+  return mensaje
 }
 
 export default i18n

@@ -1,25 +1,28 @@
+import i18n from '../i18n'
+const t = (...a) => i18n.global.t(...a)
+
 // Tipos de nota del diario de actividad. Los valores son los mismos que acepta
 // el backend (TIPOS_NOTA en backend/app.py); si se añade uno, hay que hacerlo
 // en los dos sitios.
 export const TIPOS_NOTA = [
-  { valor: 'campanya', etiqueta: 'Campanya de mar', color: '#0086c0' },
-  { valor: 'desenvolupament', etiqueta: 'Desenvolupament', color: '#6f42c1' },
-  { valor: 'manteniment', etiqueta: 'Manteniment', color: '#fd7e14' },
-  { valor: 'calibratge', etiqueta: 'Calibratge', color: '#20a39e' },
-  { valor: 'divulgacio', etiqueta: 'Divulgació', color: '#d63384' },
-  { valor: 'formacio', etiqueta: 'Formació', color: '#198754' },
-  { valor: 'gestio', etiqueta: 'Gestió', color: '#6c757d' },
-  { valor: 'altres', etiqueta: 'Altres', color: '#495057' }
+  { valor: 'campanya', get etiqueta() { return t('intranet.tipos.nota.campanya') }, color: '#0086c0' },
+  { valor: 'desenvolupament', get etiqueta() { return t('intranet.tipos.nota.desenvolupament') }, color: '#6f42c1' },
+  { valor: 'manteniment', get etiqueta() { return t('intranet.tipos.nota.manteniment') }, color: '#fd7e14' },
+  { valor: 'calibratge', get etiqueta() { return t('intranet.tipos.nota.calibratge') }, color: '#20a39e' },
+  { valor: 'divulgacio', get etiqueta() { return t('intranet.tipos.nota.divulgacio') }, color: '#d63384' },
+  { valor: 'formacio', get etiqueta() { return t('intranet.tipos.nota.formacio') }, color: '#198754' },
+  { valor: 'gestio', get etiqueta() { return t('intranet.tipos.nota.gestio') }, color: '#6c757d' },
+  { valor: 'altres', get etiqueta() { return t('intranet.tipos.nota.altres') }, color: '#495057' }
 ]
 
 // Temps dedicat a una nota (el mateix que INTERVALOS_HORAS a backend/app.py).
 // min/max serveixen per sumar: els totals surten com «entre X i Y hores».
 export const INTERVALOS_HORAS = [
-  { valor: '0-1', etiqueta: 'Menys d\'1 h', min: 0, max: 1 },
-  { valor: '1-3', etiqueta: '1–3 h', min: 1, max: 3 },
-  { valor: '3-5', etiqueta: '3–5 h', min: 3, max: 5 },
-  { valor: '5-8', etiqueta: '5–8 h', min: 5, max: 8 },
-  { valor: '8+', etiqueta: 'Més de 8 h (diversos dies)', min: 8, max: 16 }
+  { valor: '0-1', get etiqueta() { return t('intranet.tipos.horas.h01') }, min: 0, max: 1 },
+  { valor: '1-3', get etiqueta() { return t('intranet.tipos.horas.h13') }, min: 1, max: 3 },
+  { valor: '3-5', get etiqueta() { return t('intranet.tipos.horas.h35') }, min: 3, max: 5 },
+  { valor: '5-8', get etiqueta() { return t('intranet.tipos.horas.h58') }, min: 5, max: 8 },
+  { valor: '8+', get etiqueta() { return t('intranet.tipos.horas.h8') }, min: 8, max: 16 }
 ]
 export const intervaloHoras = (valor) => INTERVALOS_HORAS.find(i => i.valor === valor)
 // Suma d'intervals -> { min, max } en hores
@@ -27,7 +30,7 @@ export const sumaHoras = (notas) => notas.reduce((t, n) => {
   const i = intervaloHoras(n.horas)
   return i ? { min: t.min + i.min, max: t.max + i.max } : t
 }, { min: 0, max: 0 })
-export const textoHoras = ({ min, max }) => max === 0 ? '' : (min === 0 ? `fins a ${max} h` : `entre ${min} i ${max} h`)
+export const textoHoras = ({ min, max }) => max === 0 ? '' : (min === 0 ? t('intranet.tipos.sumaHoras.hasta', { max }) : t('intranet.tipos.sumaHoras.entre', { min, max }))
 
 export const tipoNota = (valor) => TIPOS_NOTA.find(t => t.valor === valor) || TIPOS_NOTA[TIPOS_NOTA.length - 1]
 

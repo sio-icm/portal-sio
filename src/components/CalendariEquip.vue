@@ -1,20 +1,23 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { traducirError } from '../i18n'
 import { peticionIntranet, hoyIso } from '../utils/diario'
 import {
   TIPOS_CALENDARIO, tipoCalendario, RECURSOS, recurso, nombreReserva, ICONOS_AVISO,
-  aIso, deIso, fechaLarga, rangoTexto, resumenDia, nombreCorto
+  aIso, deIso, fechaLarga, rangoTexto, resumenDia, nombreCorto, textoAviso
 } from '../utils/calendario'
 
 // Calendari d'equip: qui és al centre (teletreball, campanyes, vacances...),
 // reserves de la Pelagia, el tanc i els instruments, i els avisos que en surten.
 const props = defineProps({ sesion: { type: Object, required: true } })
+const { t, locale } = useI18n()
 const emit = defineEmits(['sesion-caducada', 'cambiado'])
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
 const json = (metodo, cuerpo) => ({ method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
 
 const hoy = hoyIso()
-const DIAS_SEMANA = ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg']
+const DIAS_SEMANA = computed(() => t('intranet.comun.diasSemana').split(','))
 const mesVisible = ref(new Date(deIso(hoy).getFullYear(), deIso(hoy).getMonth(), 1))
 const diaSeleccionado = ref(hoy)
 const datos = ref({ entradas: [], reservas: [], festius: [], equipo: [], avisos: [], ajustes: { minim_presents: 3, patro_pelagia: '' } })
@@ -25,8 +28,8 @@ const error = ref('')
 const mensaje = ref('')
 
 const nombreMes = computed(() => {
-  const t = new Intl.DateTimeFormat('ca', { month: 'long', year: 'numeric' }).format(mesVisible.value)
-  return t.charAt(0).toUpperCase() + t.slice(1)
+  const texto = new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(mesVisible.value)
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 })
 
 // Cel·les del mes, començant en dilluns
@@ -58,7 +61,7 @@ const cargar = async () => {
     if (!r.ok) throw new Error()
     datos.value = await r.json()
   } catch {
-    error.value = "No s'ha pogut carregar el calendari."
+    error.value = t('intranet.calendario.errorCarga')
   } finally {
     cargando.value = false
   }
@@ -93,8 +96,8 @@ const seleccionarDia = (c) => {
 const chips = (r) => [
   ...r.entradas.map(e => ({
     clave: `e${e.id}`, color: tipoCalendario(e.tipo).color,
-    texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : "Equip"}`,
-    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || "tot l'equip"}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
+    texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : t('intranet.comun.equipoCorto')}`,
+    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || t('intranet.comun.todoEquipoMin')}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
   })),
   ...r.reservas.map(x => ({
     clave: `r${x.id}`, color: '#012169',
@@ -141,10 +144,10 @@ const guardar = async () => {
     const r = await api(f.id ? `${base}/${f.id}` : base, json(f.id ? 'PUT' : 'POST', cuerpo))
     if (!r.ok) {
       const d = await r.json().catch(() => ({}))
-      errorFormulario.value = d.error || "No s'ha pogut desar."
+      errorFormulario.value = traducirError(d.error) || t('intranet.comun.noGuardado')
       return
     }
-    mensaje.value = f.clase === 'entrada' ? 'Desat al calendari.' : 'Reserva desada.'
+    mensaje.value = f.clase === 'entrada' ? t('intranet.calendario.guardadoEntrada') : t('intranet.calendario.guardadaReserva')
     diaSeleccionado.value = f.inicio
     formulario.value = null
     const d = deIso(f.inicio)
@@ -158,11 +161,14 @@ const guardar = async () => {
 }
 
 const borrar = async (clase, x) => {
-  const que = clase === 'entrada' ? `«${tipoCalendario(x.tipo).etiqueta}» de ${x.persona || "tot l'equip"}` : `la reserva de ${nombreReserva(x)}`
-  if (!confirm(`Segur que vols esborrar ${que} (${rangoTexto(x.inicio, x.fin)})?`)) return
+  const fechas = rangoTexto(x.inicio, x.fin)
+  const pregunta = clase === 'entrada'
+    ? t('intranet.calendario.confirmarBorrarEntrada', { tipo: tipoCalendario(x.tipo).etiqueta, persona: x.persona || t('intranet.comun.todoEquipoMin'), fechas })
+    : t('intranet.calendario.confirmarBorrarReserva', { recurso: nombreReserva(x), fechas })
+  if (!confirm(pregunta)) return
   const r = await api(`/api/calendario/${clase === 'entrada' ? 'entradas' : 'reservas'}/${x.id}`, { method: 'DELETE' })
-  if (r.ok) { mensaje.value = 'Esborrat.'; await cargar(); emit('cambiado') }
-  else error.value = "No s'ha pogut esborrar."
+  if (r.ok) { mensaje.value = t('intranet.comun.borrado'); await cargar(); emit('cambiado') }
+  else error.value = t('intranet.comun.noBorrado')
 }
 
 // ---------- CONFIGURACIÓ (administradors) ----------
@@ -180,20 +186,20 @@ const abrirConfig = async () => {
 const resultado = async (r, ok) => {
   if (r.ok) { mensaje.value = ok; error.value = ''; await cargar(); emit('cambiado'); return true }
   const d = await r.json().catch(() => ({}))
-  error.value = d.error || 'Error desconegut.'
+  error.value = traducirError(d.error) || t('intranet.comun.errorDesconocido')
   return false
 }
-const guardarAjustes = async () => resultado(await api('/api/calendario/ajustes', json('PUT', ajustesForm.value)), 'Configuració desada.')
+const guardarAjustes = async () => resultado(await api('/api/calendario/ajustes', json('PUT', ajustesForm.value)), t('intranet.calendario.configGuardada'))
 const afegirFestiu = async () => {
-  if (await resultado(await api('/api/calendario/festius', json('POST', nuevoFestiu.value)), 'Festiu afegit.')) {
+  if (await resultado(await api('/api/calendario/festius', json('POST', nuevoFestiu.value)), t('intranet.calendario.festivoAnadido'))) {
     nuevoFestiu.value = { fecha: '', nombre: '' }
     verConfig.value = false
     await abrirConfig()
   }
 }
 const treureFestiu = async (f) => {
-  if (!confirm(`Treure el festiu «${f.nombre}» (${rangoTexto(f.fecha, f.fecha)})?`)) return
-  if (await resultado(await api(`/api/calendario/festius/${f.fecha}`, { method: 'DELETE' }), 'Festiu tret.')) {
+  if (!confirm(t('intranet.calendario.confirmarQuitarFestivo', { nombre: f.nombre, fecha: rangoTexto(f.fecha, f.fecha) }))) return
+  if (await resultado(await api(`/api/calendario/festius/${f.fecha}`, { method: 'DELETE' }), t('intranet.calendario.festivoQuitado'))) {
     festius.value = festius.value.filter(x => x.fecha !== f.fecha)
   }
 }
@@ -203,13 +209,13 @@ const treureFestiu = async (f) => {
   <div class="panel-calendari">
     <div class="cabecera">
       <div>
-        <h2>🗓️ Calendari d'equip</h2>
-        <p class="ayuda">Apunta quan fas teletreball, campanya, vacances... i reserva la Pelagia, el tanc o els instruments. La pantalla principal avisa si falta gent o hi ha reserves que xoquen.</p>
+        <h2>{{ $t('intranet.calendario.titulo') }}</h2>
+        <p class="ayuda">{{ $t('intranet.calendario.ayuda') }}</p>
       </div>
       <div class="botones">
-        <button class="btn-principal" @click="nuevaEntrada">+ Apuntar-me</button>
-        <button class="btn-secundario" @click="nuevaReserva">+ Reservar recurs</button>
-        <button v-if="sesion.es_admin" class="btn-secundario" :aria-expanded="verConfig" @click="abrirConfig">⚙️ Configuració</button>
+        <button class="btn-principal" @click="nuevaEntrada">{{ $t('intranet.calendario.apuntarme') }}</button>
+        <button class="btn-secundario" @click="nuevaReserva">{{ $t('intranet.calendario.reservar') }}</button>
+        <button v-if="sesion.es_admin" class="btn-secundario" :aria-expanded="verConfig" @click="abrirConfig">{{ $t('intranet.calendario.configuracion') }}</button>
       </div>
     </div>
 
@@ -218,109 +224,108 @@ const treureFestiu = async (f) => {
 
     <!-- Configuració -->
     <div v-if="verConfig" class="caja config">
-      <h3>⚙️ Configuració dels avisos</h3>
+      <h3>{{ $t('intranet.calendario.configTitulo') }}</h3>
       <form class="fila" @submit.prevent="guardarAjustes">
-        <label>Avisa si al centre hi ha menys de
-          <span class="en-linea"><input type="number" min="0" max="50" v-model.number="ajustesForm.minim_presents" class="corto"> persones</span>
+        <label>{{ $t('intranet.calendario.avisarSiMenos') }}
+          <span class="en-linea"><input type="number" min="0" max="50" v-model.number="ajustesForm.minim_presents" class="corto"> {{ $t('intranet.calendario.personas') }}</span>
         </label>
-        <label>Patró de la Pelagia
+        <label>{{ $t('intranet.calendario.patron') }}
           <select v-model="ajustesForm.patro_pelagia">
-            <option value="">(cap)</option>
+            <option value="">{{ $t('intranet.comun.ninguno') }}</option>
             <option v-for="u in datos.equipo" :key="u.id" :value="u.usuario">{{ u.nombre }}</option>
           </select>
         </label>
-        <button type="submit" class="btn-principal">Desar</button>
+        <button type="submit" class="btn-principal">{{ $t('intranet.comun.guardar') }}</button>
       </form>
-      <p class="ayuda">Només compten les persones marcades com a «plantilla» a <b>Usuaris</b>
-        (ara: {{ datos.equipo.filter(u => u.plantilla).length }} — {{ datos.equipo.filter(u => u.plantilla).map(u => nombreCorto(u.nombre, datos.equipo)).join(', ') }}).</p>
+      <p class="ayuda">{{ $t('intranet.calendario.plantillaAyuda', { n: datos.equipo.filter(u => u.plantilla).length, nombres: datos.equipo.filter(u => u.plantilla).map(u => nombreCorto(u.nombre, datos.equipo)).join(', ') }) }}</p>
 
-      <h3>Festius (Barcelona)</h3>
-      <p class="ayuda">Els caps de setmana i els festius no compten per als avisos. Els locals de 2027 encara no s'han publicat: revisa'ls quan surtin.</p>
+      <h3>{{ $t('intranet.calendario.festivosTitulo') }}</h3>
+      <p class="ayuda">{{ $t('intranet.calendario.festivosAyuda') }}</p>
       <ul class="festius">
         <li v-for="f in festius" :key="f.fecha">
           <span>{{ rangoTexto(f.fecha, f.fecha) }} {{ f.fecha.slice(0, 4) }} · {{ f.nombre }}</span>
-          <button class="btn-mini peligro" @click="treureFestiu(f)" :aria-label="`Treure ${f.nombre}`">✕</button>
+          <button class="btn-mini peligro" @click="treureFestiu(f)" :aria-label="$t('intranet.calendario.quitarFestivo', { nombre: f.nombre })">✕</button>
         </li>
       </ul>
       <form class="fila" @submit.prevent="afegirFestiu">
-        <label>Data <input type="date" v-model="nuevoFestiu.fecha" required></label>
-        <label class="ancho">Nom <input v-model="nuevoFestiu.nombre" maxlength="100" placeholder="ex.: Pont de la Constitució" required></label>
-        <button type="submit" class="btn-secundario">Afegir festiu</button>
+        <label>{{ $t('intranet.calendario.fecha') }} <input type="date" v-model="nuevoFestiu.fecha" required></label>
+        <label class="ancho">{{ $t('intranet.calendario.nombre') }} <input v-model="nuevoFestiu.nombre" maxlength="100" :placeholder="$t('intranet.calendario.festivoPh')" required></label>
+        <button type="submit" class="btn-secundario">{{ $t('intranet.calendario.anadirFestivo') }}</button>
       </form>
     </div>
 
     <!-- Formulari -->
     <form v-if="formulario" class="caja formulario" @submit.prevent="guardar">
-      <h3>{{ formulario.clase === 'entrada' ? (formulario.id ? 'Editar entrada' : 'Apuntar al calendari') : (formulario.id ? 'Editar reserva' : 'Reservar un recurs') }}</h3>
+      <h3>{{ $t(formulario.clase === 'entrada' ? (formulario.id ? 'intranet.calendario.editarEntrada' : 'intranet.calendario.nuevaEntrada') : (formulario.id ? 'intranet.calendario.editarReserva' : 'intranet.calendario.nuevaReserva')) }}</h3>
       <div class="fila">
         <template v-if="formulario.clase === 'entrada'">
-          <label>Què
+          <label>{{ $t('intranet.calendario.que') }}
             <select v-model="formulario.tipo">
               <option v-for="t in TIPOS_CALENDARIO" :key="t.valor" :value="t.valor">{{ t.icono }} {{ t.etiqueta }}</option>
             </select>
           </label>
         </template>
         <template v-else>
-          <label>Recurs
+          <label>{{ $t('intranet.calendario.recurso') }}
             <select v-model="formulario.recurso">
               <option v-for="r in RECURSOS" :key="r.valor" :value="r.valor">{{ r.icono }} {{ r.etiqueta }}</option>
             </select>
           </label>
-          <label v-if="formulario.recurso === 'instrument'" class="ancho">Instrument
+          <label v-if="formulario.recurso === 'instrument'" class="ancho">{{ $t('intranet.calendario.instrumento') }}
             <select v-model="formulario.instrumento_id" required>
-              <option value="" disabled>Tria l'instrument</option>
+              <option value="" disabled>{{ $t('intranet.calendario.eligeInstrumento') }}</option>
               <option v-for="i in instrumentos" :key="i.id" :value="i.id">{{ i.nombre }}{{ i.numero_serie ? ` (${i.numero_serie})` : '' }}</option>
             </select>
           </label>
         </template>
-        <label>{{ formulario.clase === 'entrada' ? 'Qui' : 'Responsable' }}
+        <label>{{ $t(formulario.clase === 'entrada' ? 'intranet.calendario.quien' : 'intranet.calendario.responsable') }}
           <select v-model="formulario.usuario_id">
-            <option v-if="personasElegibles.length === 0 && !permiteEquipo" value="" disabled>Tria la persona</option>
+            <option v-if="personasElegibles.length === 0 && !permiteEquipo" value="" disabled>{{ $t('intranet.calendario.eligePersona') }}</option>
             <option v-for="u in personasElegibles" :key="u.id" :value="u.id">{{ u.nombre }}</option>
-            <option v-if="formulario.clase === 'entrada' && permiteEquipo" value="">Tot l'equip</option>
-            <option v-if="formulario.clase === 'reserva' && sesion.es_admin" value="">Algú de fora (escriu-lo)</option>
+            <option v-if="formulario.clase === 'entrada' && permiteEquipo" value="">{{ $t('intranet.comun.todoEquipo') }}</option>
+            <option v-if="formulario.clase === 'reserva' && sesion.es_admin" value="">{{ $t('intranet.calendario.alguienFuera') }}</option>
           </select>
         </label>
-        <label>Des de <input type="date" v-model="formulario.inicio" required></label>
-        <label>Fins a <input type="date" v-model="formulario.fin" :min="formulario.inicio" required></label>
+        <label>{{ $t('intranet.calendario.desde') }} <input type="date" v-model="formulario.inicio" required></label>
+        <label>{{ $t('intranet.calendario.hastaFecha') }} <input type="date" v-model="formulario.fin" :min="formulario.inicio" required></label>
       </div>
       <div class="fila">
-        <label v-if="formulario.clase === 'reserva'" class="ancho">Per a / préstec a
-          <input v-model="formulario.para" maxlength="200" :required="formulario.usuario_id === ''" placeholder="ex.: Grup d'ecologia, UB (opcional si és per a l'equip)">
+        <label v-if="formulario.clase === 'reserva'" class="ancho">{{ $t('intranet.calendario.para') }}
+          <input v-model="formulario.para" maxlength="200" :required="formulario.usuario_id === ''" :placeholder="$t('intranet.calendario.paraPh')">
         </label>
-        <label v-if="formulario.clase === 'entrada' && !['teletreball', 'vacances', 'baixa'].includes(formulario.tipo)">Projecte (opcional)
+        <label v-if="formulario.clase === 'entrada' && !['teletreball', 'vacances', 'baixa'].includes(formulario.tipo)">{{ $t('intranet.calendario.proyecto') }}
           <select v-model="formulario.proyecto_id">
-            <option value="">Cap</option>
+            <option value="">{{ $t('intranet.comun.cap') }}</option>
             <option v-for="p in proyectos" :key="p.id" :value="p.id">{{ p.titulo }}</option>
           </select>
         </label>
-        <label class="ancho">{{ formulario.clase === 'entrada' ? 'Nota (opcional)' : 'Motiu (opcional)' }}
-          <input v-if="formulario.clase === 'entrada'" v-model="formulario.nota" maxlength="500" placeholder="ex.: Campanya MOOSE, Congrés a Brest...">
-          <input v-else v-model="formulario.proposito" maxlength="500" placeholder="ex.: Proves del CTD">
+        <label class="ancho">{{ $t(formulario.clase === 'entrada' ? 'intranet.calendario.nota' : 'intranet.calendario.motivo') }}
+          <input v-if="formulario.clase === 'entrada'" v-model="formulario.nota" maxlength="500" :placeholder="$t('intranet.calendario.notaPh')">
+          <input v-else v-model="formulario.proposito" maxlength="500" :placeholder="$t('intranet.calendario.motivoPh')">
         </label>
       </div>
       <p v-if="errorFormulario" class="error">{{ errorFormulario }}</p>
       <div class="botones">
-        <button type="submit" class="btn-principal" :disabled="guardando">💾 Desar</button>
-        <button type="button" class="btn-secundario" @click="formulario = null">Cancel·lar</button>
+        <button type="submit" class="btn-principal" :disabled="guardando">{{ $t('intranet.comun.guardar') }}</button>
+        <button type="button" class="btn-secundario" @click="formulario = null">{{ $t('intranet.comun.cancelar') }}</button>
       </div>
     </form>
 
     <!-- Avisos del mes -->
     <div v-if="avisosMes.length" class="avisos-mes" role="status">
-      <strong>Avisos de {{ nombreMes.toLowerCase() }}:</strong>
+      <strong>{{ $t('intranet.calendario.avisosDe', { mes: locale === 'en' ? nombreMes : nombreMes.toLowerCase() }) }}</strong>
       <button v-for="a in avisosMes" :key="a.id" type="button" class="aviso-chip"
-        @click="diaSeleccionado = a.fecha">{{ ICONOS_AVISO[a.tipo] }} {{ rangoTexto(a.fecha, a.fin || a.fecha) }} · {{ a.texto }}</button>
+        @click="diaSeleccionado = a.fecha">{{ ICONOS_AVISO[a.tipo] }} {{ rangoTexto(a.fecha, a.fin || a.fecha) }} · {{ textoAviso(a) }}</button>
     </div>
 
     <!-- Calendari -->
     <div class="calendario">
       <div class="cal-cabecera">
-        <button type="button" class="btn-mini" @click="moverMes(-1)" aria-label="Mes anterior">◀</button>
+        <button type="button" class="btn-mini" @click="moverMes(-1)" :aria-label="$t('intranet.comun.mesAnterior')">◀</button>
         <span class="cal-mes">{{ nombreMes }}</span>
-        <button type="button" class="btn-mini" @click="moverMes(1)" aria-label="Mes següent">▶</button>
-        <button type="button" class="btn-mini" @click="irAHoy">Avui</button>
-        <span v-if="cargando" class="cargando">Carregant…</span>
+        <button type="button" class="btn-mini" @click="moverMes(1)" :aria-label="$t('intranet.comun.mesSiguiente')">▶</button>
+        <button type="button" class="btn-mini" @click="irAHoy">{{ $t('intranet.comun.hoy') }}</button>
+        <span v-if="cargando" class="cargando">{{ $t('intranet.comun.cargando') }}</span>
       </div>
       <div class="cal-grid">
         <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
@@ -336,32 +341,32 @@ const treureFestiu = async (f) => {
       </div>
       <p class="leyenda">
         <span v-for="t in TIPOS_CALENDARIO" :key="t.valor"><i :style="{ background: t.color }"></i>{{ t.etiqueta }}</span>
-        <span><i style="background: #012169"></i>Reserva</span>
+        <span><i style="background: #012169"></i>{{ $t('intranet.calendario.reserva') }}</span>
       </p>
     </div>
 
     <!-- Detall del dia -->
     <section class="caja detalle" aria-live="polite">
       <h3>{{ fechaLarga(detalle.dia) }}</h3>
-      <p v-if="detalle.festiu" class="festiu-texto">🎉 Festiu: {{ detalle.festiu }}</p>
-      <p v-else-if="!detalle.laborable" class="festiu-texto">Cap de setmana</p>
+      <p v-if="detalle.festiu" class="festiu-texto">🎉 {{ $t('intranet.comun.festivo') }}: {{ detalle.festiu }}</p>
+      <p v-else-if="!detalle.laborable" class="festiu-texto">{{ $t('intranet.comun.finDeSemana') }}</p>
       <p v-if="detalle.laborable && detalle.plantilla.length" class="presentes">
-        👥 Al centre: <b>{{ detalle.presentes.length }} de {{ detalle.plantilla.length }}</b>
+        👥 {{ $t('intranet.comun.alCentro') }}: <b>{{ $t('intranet.comun.deTotal', { n: detalle.presentes.length, total: detalle.plantilla.length }) }}</b>
         <span v-if="detalle.presentes.length"> ({{ detalle.presentes.map(u => nombreCorto(u.nombre, datos.equipo)).join(', ') }})</span>
       </p>
-      <p v-for="a in detalle.avisos" :key="a.id" class="aviso">{{ ICONOS_AVISO[a.tipo] }} {{ a.texto }}</p>
+      <p v-for="a in detalle.avisos" :key="a.id" class="aviso">{{ ICONOS_AVISO[a.tipo] }} {{ textoAviso(a) }}</p>
 
-      <p v-if="!detalle.entradas.length && !detalle.reservas.length" class="vacio">No hi ha res apuntat aquest dia.</p>
+      <p v-if="!detalle.entradas.length && !detalle.reservas.length" class="vacio">{{ $t('intranet.calendario.nadaApuntado') }}</p>
       <ul class="lista">
         <li v-for="e in detalle.entradas" :key="'e' + e.id">
           <span class="tag" :style="{ background: tipoCalendario(e.tipo).color }">{{ tipoCalendario(e.tipo).icono }} {{ tipoCalendario(e.tipo).etiqueta }}</span>
-          <b>{{ e.persona || "Tot l'equip" }}</b>
+          <b>{{ e.persona || $t('intranet.comun.todoEquipo') }}</b>
           <span class="rango">{{ rangoTexto(e.inicio, e.fin) }}</span>
           <span v-if="e.nota" class="nota">· {{ e.nota }}</span>
           <span v-if="e.proyecto" class="nota">· 📁 {{ e.proyecto }}</span>
           <span v-if="e.editable" class="acciones">
             <button class="btn-mini" @click="editar('entrada', e)">✏️</button>
-            <button class="btn-mini peligro" @click="borrar('entrada', e)" aria-label="Esborrar">🗑️</button>
+            <button class="btn-mini peligro" @click="borrar('entrada', e)" :aria-label="$t('intranet.calendario.borrarAria')">🗑️</button>
           </span>
         </li>
         <li v-for="x in detalle.reservas" :key="'r' + x.id">
@@ -371,7 +376,7 @@ const treureFestiu = async (f) => {
           <span v-if="x.proposito" class="nota">· {{ x.proposito }}</span>
           <span v-if="x.editable" class="acciones">
             <button class="btn-mini" @click="editar('reserva', x)">✏️</button>
-            <button class="btn-mini peligro" @click="borrar('reserva', x)" aria-label="Esborrar">🗑️</button>
+            <button class="btn-mini peligro" @click="borrar('reserva', x)" :aria-label="$t('intranet.calendario.borrarAria')">🗑️</button>
           </span>
         </li>
       </ul>

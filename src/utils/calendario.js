@@ -1,24 +1,29 @@
+import i18n from '../i18n'
+const t = (...a) => i18n.global.t(...a)
+// Idioma actual de la web, per a les dates
+const idioma = () => i18n.global.locale.value
+
 // Calendari d'equip. Els valors són els mateixos que accepta el backend
 // (TIPOS_CALENDARIO, FUERA_DEL_CENTRO i RECURSOS a backend/app.py): si se
 // n'afegeix un, cal fer-ho als dos llocs.
 export const TIPOS_CALENDARIO = [
-  { valor: 'teletreball', etiqueta: 'Teletreball', icono: '🏠', color: '#6f42c1', fuera: true },
-  { valor: 'campanya', etiqueta: 'Campanya / fora', icono: '🚢', color: '#0086c0', fuera: true },
-  { valor: 'vacances', etiqueta: 'Vacances', icono: '🌴', color: '#20a39e', fuera: true },
-  { valor: 'baixa', etiqueta: 'Baixa / permís', icono: '🩺', color: '#b02a37', fuera: true },
-  { valor: 'formacio', etiqueta: 'Formació / congrés', icono: '🎓', color: '#198754', fuera: true },
-  { valor: 'reunio', etiqueta: 'Reunió', icono: '💬', color: '#fd7e14', fuera: false },
-  { valor: 'altres', etiqueta: 'Altres', icono: '📌', color: '#495057', fuera: false }
+  { valor: 'teletreball', get etiqueta() { return t('intranet.tipos.calendario.teletreball') }, icono: '🏠', color: '#6f42c1', fuera: true },
+  { valor: 'campanya', get etiqueta() { return t('intranet.tipos.calendario.campanya') }, icono: '🚢', color: '#0086c0', fuera: true },
+  { valor: 'vacances', get etiqueta() { return t('intranet.tipos.calendario.vacances') }, icono: '🌴', color: '#20a39e', fuera: true },
+  { valor: 'baixa', get etiqueta() { return t('intranet.tipos.calendario.baixa') }, icono: '🩺', color: '#b02a37', fuera: true },
+  { valor: 'formacio', get etiqueta() { return t('intranet.tipos.calendario.formacio') }, icono: '🎓', color: '#198754', fuera: true },
+  { valor: 'reunio', get etiqueta() { return t('intranet.tipos.calendario.reunio') }, icono: '💬', color: '#fd7e14', fuera: false },
+  { valor: 'altres', get etiqueta() { return t('intranet.tipos.calendario.altres') }, icono: '📌', color: '#495057', fuera: false }
 ]
 export const tipoCalendario = (valor) => TIPOS_CALENDARIO.find(t => t.valor === valor) || TIPOS_CALENDARIO[TIPOS_CALENDARIO.length - 1]
 
 export const RECURSOS = [
-  { valor: 'pelagia', etiqueta: 'Pelagia', icono: '⛵' },
-  { valor: 'tanc', etiqueta: 'Tanc de proves', icono: '💧' },
-  { valor: 'instrument', etiqueta: 'Instrument (préstec)', icono: '🔧' }
+  { valor: 'pelagia', get etiqueta() { return t('intranet.tipos.recurso.pelagia') }, icono: '⛵' },
+  { valor: 'tanc', get etiqueta() { return t('intranet.tipos.recurso.tanc') }, icono: '💧' },
+  { valor: 'instrument', get etiqueta() { return t('intranet.tipos.recurso.instrument') }, icono: '🔧' }
 ]
 export const recurso = (valor) => RECURSOS.find(r => r.valor === valor) || RECURSOS[2]
-export const nombreReserva = (r) => r.recurso === 'instrument' ? (r.instrumento || 'Instrument') : recurso(r.recurso).etiqueta
+export const nombreReserva = (r) => r.recurso === 'instrument' ? (r.instrumento || t('intranet.tipos.recurso.instrumentCorto')) : recurso(r.recurso).etiqueta
 
 export const ICONOS_AVISO = { personal: '👥', conflicte: '⚠️', patro: '⛵', persona: '🔀', responsable: '🔑', estat: '🔧' }
 
@@ -29,10 +34,10 @@ export const sumarDias = (iso, n) => { const d = deIso(iso); d.setDate(d.getDate
 export const lunesDe = (iso) => { const d = deIso(iso); return sumarDias(iso, -((d.getDay() + 6) % 7)) }
 export const esFinDeSemana = (iso) => [0, 6].includes(deIso(iso).getDay())
 
-export const fechaLarga = (iso, conAnio = true) => new Intl.DateTimeFormat('ca', {
+export const fechaLarga = (iso, conAnio = true) => new Intl.DateTimeFormat(idioma(), {
   weekday: 'long', day: 'numeric', month: 'long', ...(conAnio ? { year: 'numeric' } : {})
 }).format(deIso(iso))
-export const fechaBreve = (iso) => new Intl.DateTimeFormat('ca', { weekday: 'short', day: 'numeric', month: 'short' }).format(deIso(iso))
+export const fechaBreve = (iso) => new Intl.DateTimeFormat(idioma(), { weekday: 'short', day: 'numeric', month: 'short' }).format(deIso(iso))
 export const rangoTexto = (inicio, fin) => inicio === fin ? fechaBreve(inicio) : `${fechaBreve(inicio)} – ${fechaBreve(fin)}`
 
 const cubre = (x, dia) => x.inicio <= dia && dia <= x.fin
@@ -64,4 +69,20 @@ export const nombreCorto = (nombre, equipo) => {
   const [primero, segundo] = nombre.split(' ')
   const repetido = equipo.filter(u => u.nombre.split(' ')[0] === primero).length > 1
   return repetido && segundo ? `${primero} ${segundo[0]}.` : primero
+}
+
+// Texto de un aviso en el idioma de la web (el servidor manda el tipo y los datos)
+export const textoAviso = (a) => {
+  const d = a.datos || {}
+  const que = (e) => [t(`intranet.tipos.calendario.${e.tipo}`).toLowerCase(), e.nota && `(${e.nota})`, e.proyecto && `(${e.proyecto})`].filter(Boolean).join(' ')
+  const nombreRecurso = (r) => r.recurso === 'instrument' ? (r.instrumento || t('intranet.tipos.recurso.instrumentCorto')) : t(`intranet.tipos.recurso.${r.recurso}`)
+  switch (a.tipo) {
+    case 'personal': return t('intranet.avisos.personal', d)
+    case 'conflicte': return t('intranet.avisos.conflicte', { recurso: nombreRecurso(d) })
+    case 'patro': return d.persona ? t('intranet.avisos.patro', d) : t('intranet.avisos.patroNinguno')
+    case 'persona': return t('intranet.avisos.persona', { persona: d.persona, a: que(d.a), b: que(d.b) })
+    case 'responsable': return t('intranet.avisos.responsable', { recurso: nombreRecurso(d), persona: d.persona })
+    case 'estat': return t('intranet.avisos.estat', { recurso: d.instrumento, estado: d.estado })
+    default: return a.texto
+  }
 }
