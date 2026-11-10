@@ -5,7 +5,7 @@ import { traducirError } from '../i18n'
 import { peticionIntranet, hoyIso } from '../utils/diario'
 import {
   TIPOS_CALENDARIO, tipoCalendario, RECURSOS, recurso, nombreReserva, ICONOS_AVISO,
-  aIso, deIso, fechaLarga, rangoTexto, resumenDia, nombreCorto, textoAviso
+  aIso, deIso, fechaLarga, rangoTexto, horario, resumenDia, nombreCorto, textoAviso
 } from '../utils/calendario'
 
 // Calendari d'equip: qui és al centre (teletreball, campanyes, vacances...),
@@ -97,7 +97,7 @@ const chips = (r) => [
   ...r.entradas.map(e => ({
     clave: `e${e.id}`, color: tipoCalendario(e.tipo).color,
     texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : t('intranet.comun.equipoCorto')}`,
-    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || t('intranet.comun.todoEquipoMin')}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
+    titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || t('intranet.comun.todoEquipoMin')}${horario(e) ? ' · 🕘 ' + horario(e) : ''}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
   })),
   ...r.reservas.map(x => ({
     clave: `r${x.id}`, color: '#012169',
@@ -113,7 +113,7 @@ const guardando = ref(false)
 
 const nuevaEntrada = () => {
   errorFormulario.value = ''
-  formulario.value = { clase: 'entrada', id: null, tipo: 'teletreball', usuario_id: props.sesion.usuario_id ?? '', inicio: diaSeleccionado.value, fin: diaSeleccionado.value, nota: '', proyecto_id: '' }
+  formulario.value = { clase: 'entrada', id: null, tipo: 'teletreball', usuario_id: props.sesion.usuario_id ?? '', inicio: diaSeleccionado.value, fin: diaSeleccionado.value, hora_inicio: '', hora_fin: '', nota: '', proyecto_id: '' }
 }
 const nuevaReserva = () => {
   errorFormulario.value = ''
@@ -122,7 +122,7 @@ const nuevaReserva = () => {
 const editar = (clase, x) => {
   errorFormulario.value = ''
   formulario.value = clase === 'entrada'
-    ? { clase, id: x.id, tipo: x.tipo, usuario_id: x.usuario_id ?? '', inicio: x.inicio, fin: x.fin, nota: x.nota, proyecto_id: x.proyecto_id ?? '' }
+    ? { clase, id: x.id, tipo: x.tipo, usuario_id: x.usuario_id ?? '', inicio: x.inicio, fin: x.fin, hora_inicio: x.hora_inicio || '', hora_fin: x.hora_fin || '', nota: x.nota, proyecto_id: x.proyecto_id ?? '' }
     : { clase, id: x.id, recurso: x.recurso, instrumento_id: x.instrumento_id ?? '', usuario_id: x.usuario_id ?? '', para: x.para, inicio: x.inicio, fin: x.fin, proposito: x.proposito }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -293,6 +293,11 @@ const treureFestiu = async (f) => {
         <label v-if="formulario.clase === 'reserva'" class="ancho">{{ $t('intranet.calendario.para') }}
           <input v-model="formulario.para" maxlength="200" :required="formulario.usuario_id === ''" :placeholder="$t('intranet.calendario.paraPh')">
         </label>
+        <template v-if="formulario.clase === 'entrada'">
+          <label>{{ $t('intranet.calendario.horaInicio') }} <input type="time" v-model="formulario.hora_inicio" step="300"></label>
+          <label>{{ $t('intranet.calendario.horaFin') }} <input type="time" v-model="formulario.hora_fin" step="300"
+            :min="formulario.inicio === formulario.fin ? formulario.hora_inicio : undefined"></label>
+        </template>
         <label v-if="formulario.clase === 'entrada' && !['teletreball', 'vacances', 'baixa'].includes(formulario.tipo)">{{ $t('intranet.calendario.proyecto') }}
           <select v-model="formulario.proyecto_id">
             <option value="">{{ $t('intranet.comun.cap') }}</option>
@@ -362,6 +367,7 @@ const treureFestiu = async (f) => {
           <span class="tag" :style="{ background: tipoCalendario(e.tipo).color }">{{ tipoCalendario(e.tipo).icono }} {{ tipoCalendario(e.tipo).etiqueta }}</span>
           <b>{{ e.persona || $t('intranet.comun.todoEquipo') }}</b>
           <span class="rango">{{ rangoTexto(e.inicio, e.fin) }}</span>
+          <span v-if="horario(e)" class="rango">🕘 {{ horario(e) }}</span>
           <span v-if="e.nota" class="nota">· {{ e.nota }}</span>
           <span v-if="e.proyecto" class="nota">· 📁 {{ e.proyecto }}</span>
           <span v-if="e.editable" class="acciones">

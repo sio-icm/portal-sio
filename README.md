@@ -328,6 +328,10 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   formación o reuniones, y reserva la **Pelagia**, el **tanque de pruebas** o un
   **instrumento** (también préstamos a gente de fuera). Cada uno cambia lo suyo;
   los administradores, todo.
+- Cada entrada puede llevar **hora de inicio y de fin** (opcionales; sin hora =
+  todo el día). Solo se muestran: no cambian los avisos ni quién está en el centro.
+- Cada entrada puede llevar **hora de inicio y de fin** (opcionales; sin hora =
+  todo el día). Solo se muestran: no cambian los avisos ni quién está en el centro.
 - La pantalla principal de la intranet muestra un resumen (Hoy / Semana / Mes).
   «✓ Vist» lo pliega hasta el día siguiente o hasta que salga un aviso nuevo
   (se recuerda en cada navegador).

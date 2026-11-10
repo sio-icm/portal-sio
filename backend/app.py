@@ -1111,6 +1111,12 @@ def crear_tablas_calendario():
             conexion.execute('ALTER TABLE calendario ADD COLUMN proyecto_id INTEGER REFERENCES proyectos(id)')
         except sqlite3.OperationalError:
             pass
+    for columna in ('hora_inicio', 'hora_fin'):
+        if columna not in columnas_cal:
+            try:  # hora opcional (HH:MM), p. ex. una formació de 9:00 a 14:00; '' = tot el dia
+                conexion.execute(f"ALTER TABLE calendario ADD COLUMN {columna} TEXT NOT NULL DEFAULT ''")
+            except sqlite3.OperationalError:
+                pass  # l'altre procés de gunicorn l'ha afegit alhora
     if 'plantilla' not in columnas:
         # 1 = compta per a l'avís de falta de personal
         try:
@@ -1140,6 +1146,20 @@ def fecha_valida(texto):
         return date.fromisoformat(texto) if PATRON_FECHA.match(texto or '') else None
     except ValueError:
         return None
+
+
+def hora_valida(texto):
+    """'HH:MM' (00:00-23:59) o '' si no n'hi ha. None = no vàlida."""
+    texto = str(texto or '').strip()
+    if not texto:
+        return ''
+    try:
+        hora, minuto = (int(x) for x in texto.split(':'))
+    except ValueError:
+        return None
+    if not (0 <= hora <= 23 and 0 <= minuto <= 59) or len(texto.split(':')[1]) != 2:
+        return None
+    return f'{hora:02d}:{minuto:02d}'
 
 
 def validar_rango(datos):
@@ -1185,7 +1205,8 @@ def calcular_avisos(conexion, desde, hasta):
     plantilla = {f['id']: f['nombre'] for f in conexion.execute(
         'SELECT id, nombre FROM usuarios WHERE activo = 1 AND plantilla = 1')}
     entradas = conexion.execute(
-        '''SELECT c.id, c.usuario_id, c.tipo, c.inicio, c.fin, c.nota, u.nombre AS persona, p.titulo AS proyecto
+        '''SELECT c.id, c.usuario_id, c.tipo, c.inicio, c.fin, c.nota, c.hora_inicio, c.hora_fin,
+                  u.nombre AS persona, p.titulo AS proyecto
            FROM calendario c LEFT JOIN usuarios u ON u.id = c.usuario_id LEFT JOIN proyectos p ON p.id = c.proyecto_id
            WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''',
         (hasta, desde)).fetchall()
@@ -1334,6 +1355,13 @@ def validar_entrada(conexion, datos):
     nota = str(datos.get('nota', '') or '').strip()
     if len(nota) > 500:
         return None, "La nota es demasiado larga (máximo 500 caracteres)"
+    hora_inicio, hora_fin = hora_valida(datos.get('hora_inicio')), hora_valida(datos.get('hora_fin'))
+    if hora_inicio is None or hora_fin is None:
+        return None, "Hora no válida (HH:MM)"
+    if hora_fin and not hora_inicio:
+        return None, "Pon también la hora de inicio"
+    if hora_fin and inicio == fin and hora_fin <= hora_inicio:
+        return None, "La hora final es anterior a la inicial"
     usuario_id = datos.get('usuario_id', session.get('usuario_id'))
     if usuario_id in ('', None):
         # Entrada per a tot l'equip: només reunions i altres (no treu ningú del centre)
@@ -1359,7 +1387,7 @@ def validar_entrada(conexion, datos):
             return None, "Proyecto no válido"
         if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
             return None, "El proyecto no existe"
-    return (usuario_id, tipo, inicio, fin, nota, proyecto_id), None
+    return (usuario_id, tipo, inicio, fin, nota, proyecto_id, hora_inicio, hora_fin), None
 
 
 @app.route('/api/calendario/entradas', methods=['POST'])
@@ -1371,7 +1399,8 @@ def crear_entrada_calendario():
         conexion.close()
         return jsonify({"error": error}), 400
     cursor = conexion.execute(
-        'INSERT INTO calendario (usuario_id, tipo, inicio, fin, nota, proyecto_id, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO calendario (usuario_id, tipo, inicio, fin, nota, proyecto_id, hora_inicio, hora_fin, creado_por)'
+        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         valores + (session.get('usuario_id'),))
     conexion.commit()
     conexion.close()
@@ -1395,11 +1424,14 @@ def modificar_entrada_calendario(id):
         datos = request.get_json(silent=True) or {}
         datos.setdefault('usuario_id', fila['usuario_id'])
         datos.setdefault('proyecto_id', fila['proyecto_id'])
+        datos.setdefault('hora_inicio', fila['hora_inicio'])
+        datos.setdefault('hora_fin', fila['hora_fin'])
         valores, error = validar_entrada(conexion, datos)
         if error:
             conexion.close()
             return jsonify({"error": error}), 400
-        conexion.execute('UPDATE calendario SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, nota = ?, proyecto_id = ? WHERE id = ?',
+        conexion.execute('UPDATE calendario SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, nota = ?, proyecto_id = ?,'
+                         ' hora_inicio = ?, hora_fin = ? WHERE id = ?',
                          valores + (id,))
     conexion.commit()
     conexion.close()

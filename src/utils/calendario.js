@@ -40,6 +40,12 @@ export const fechaLarga = (iso, conAnio = true) => new Intl.DateTimeFormat(idiom
 export const fechaBreve = (iso) => new Intl.DateTimeFormat(idioma(), { weekday: 'short', day: 'numeric', month: 'short' }).format(deIso(iso))
 export const rangoTexto = (inicio, fin) => inicio === fin ? fechaBreve(inicio) : `${fechaBreve(inicio)} – ${fechaBreve(fin)}`
 
+// Hora d'una entrada: «9:00–14:00», «9:00» o '' (tot el dia)
+const horaCorta = (h) => (h || '').replace(/^0(\d)/, '$1')
+export const horario = (e) => e.hora_inicio
+  ? (e.hora_fin ? `${horaCorta(e.hora_inicio)}–${horaCorta(e.hora_fin)}` : horaCorta(e.hora_inicio))
+  : ''
+
 const cubre = (x, dia) => x.inicio <= dia && dia <= x.fin
 
 // Com es presenta un dia a partir de la resposta de /api/calendario
