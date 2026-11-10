@@ -413,7 +413,7 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
 .cal-mes { font-weight: bold; color: #012169; font-size: 1.1rem; min-width: 170px; text-align: center; }
 .btn-mes { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; width: 32px; height: 32px; cursor: pointer; font-size: 1.1rem; }
 .btn-hoy { margin-left: auto; padding: 5px 12px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cal-dia-semana { text-align: center; font-size: 0.75rem; font-weight: bold; color: #666; padding: 4px 0; }
 .cal-celda { min-height: 86px; border: 1px solid #e3e8ee; border-radius: 6px; background: white; padding: 4px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; cursor: pointer; font: inherit; overflow: hidden; }
 .cal-celda:hover { border-color: #0086c0; }

@@ -593,13 +593,13 @@ const eliminarProyecto = async (id) => {
 .login-box button { width: 100%; padding: 10px; background: #8cc63f; color: #012169; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
 
 .dashboard-grid { display: flex; min-height: 100vh; }
-.sidebar { width: 250px; background: #012169; color: white; padding: 20px; display: flex; flex-direction: column; }
+.sidebar { width: 250px; flex-shrink: 0; background: #012169; color: white; padding: 20px; display: flex; flex-direction: column; }
 .sidebar-usuario { color: #8cc63f; font-size: 0.85rem; margin: -5px 0 15px; }
 .sidebar-nav a { display: block; color: #ccc; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
 .sidebar-nav a.active { color: white; font-weight: bold; border-left: 3px solid #8cc63f; background: rgba(255, 255, 255, 0.05); }
 .btn-logout { margin-top: 12px; background: none; border: 1px solid white; color: white; padding: 10px; cursor: pointer; border-radius: 4px; }
 
-.main-content { flex-grow: 1; padding: 40px; background: #f4f7f9; }
+.main-content { flex-grow: 1; min-width: 0; padding: 40px; background: #f4f7f9; }
 .grid-form { display: grid; gap: 10px; max-width: 800px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
 .grid-form input, .grid-form select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
 .badge-estado { background-color: #e1eef5; color: #0086c0; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; }

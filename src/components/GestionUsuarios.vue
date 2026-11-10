@@ -84,6 +84,7 @@ const nuevaContrasena = async (u) => {
     <p v-if="mensaje" class="ok">{{ mensaje }}</p>
     <p v-if="error" class="error">{{ error }}</p>
 
+    <div class="tabla-scroll">
     <table class="tabla">
       <thead><tr><th>{{ $t('intranet.usuarios.usuario') }}</th><th>{{ $t('intranet.usuarios.nombreCorto') }}</th><th>{{ $t('intranet.usuarios.correo') }}</th><th>{{ $t('intranet.usuarios.admin') }}</th><th>{{ $t('intranet.usuarios.plantilla') }}</th><th>{{ $t('intranet.usuarios.estado') }}</th><th></th></tr></thead>
       <tbody>
@@ -126,6 +127,7 @@ const nuevaContrasena = async (u) => {
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 </template>
 
@@ -144,10 +146,10 @@ input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit;
 .ok { color: #198754; font-weight: bold; }
 .error { color: #b02a37; font-weight: bold; }
 .aviso { color: #666; font-style: italic; text-align: center; }
+.tabla-scroll { overflow-x: auto; }  /* si la taula no hi cap, es desplaça dins la caixa (no aixafa el menú) */
 .tabla { width: 100%; border-collapse: collapse; margin-top: 10px; }
 @media (max-width: 768px) {
   .panel-usuarios { padding: 14px; }
-  .tabla { display: block; overflow-x: auto; }
 }
 .tabla th, .tabla td { border-bottom: 1px solid #e3e8ee; padding: 8px; text-align: left; font-size: 0.9rem; }
 .tabla th { color: #555; }
