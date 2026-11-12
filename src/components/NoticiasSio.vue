@@ -8,12 +8,16 @@ const { locale } = useI18n()
 // Fecha y foto de cada noticia (título, texto y descripción de las fotos: noticias.lista en src/i18n,
 // en el mismo orden). «ampliada» = foto entera al pulsar; «galeria» = fotos pequeñas debajo del texto;
 // «enlace» = botón a una web externa (su texto: noticias.lista[i].enlace);
-// «video» = botón a un vídeo externo (su texto: noticias.lista[i].video).
+// «video» = botón a un vídeo externo (su texto: noticias.lista[i].video);
+// «videoLocal» = vídeo propio (.mp4 en public/fotos/noticias) que se ve en la misma noticia
+// (su descripción: noticias.lista[i].videoLocal).
 const noticias = [
   {
-    fecha: '2026-11-10', imagen: '/fotos/noticias/sacoso-portada.webp', ampliada: '/fotos/noticias/sacoso-equip.webp',
-    galeria: ['/fotos/noticias/sacoso-hesperides.webp', '/fotos/noticias/sacoso-fondejos.webp', '/fotos/noticias/sacoso-roseta.webp',
+    fecha: '2026-11-12', imagen: '/fotos/noticias/sacoso-cami-portada.webp', ampliada: '/fotos/noticias/sacoso-cami.webp',
+    galeria: ['/fotos/noticias/sacoso-palets.webp', '/fotos/noticias/sacoso-equip.webp',
+      '/fotos/noticias/sacoso-hesperides.webp', '/fotos/noticias/sacoso-fondejos.webp', '/fotos/noticias/sacoso-roseta.webp',
       '/fotos/noticias/sacoso-argo.webp', '/fotos/noticias/sacoso-instruments.webp', '/fotos/noticias/sacoso-iceberg.webp'],
+    videoLocal: '/fotos/noticias/sacoso-video.mp4',
     enlace: 'https://saco-so.icm.csic.es/ca/campanyes/sacoso27',
     video: 'https://www.instagram.com/reel/DGqq7iOs9Mx/'
   },
@@ -64,6 +68,8 @@ const backgroundStyle = computed(() => {
           <div class="fecha-noticia"><time :datetime="noticia.fecha">{{ formatoFecha(noticia.fecha) }}</time></div>
           <h3>{{ $t(`noticias.lista[${i}].titulo`) }}</h3>
           <p class="texto-noticia">{{ $t(`noticias.lista[${i}].texto`) }}</p>
+          <video v-if="noticia.videoLocal" class="video-noticia" :src="noticia.videoLocal" controls preload="metadata" playsinline
+            :aria-label="$t(`noticias.lista[${i}].videoLocal`)" :title="$t(`noticias.lista[${i}].videoLocal`)"></video>
           <div v-if="noticia.enlace || noticia.video" class="enlaces-noticia">
             <a v-if="noticia.enlace" :href="noticia.enlace" target="_blank" rel="noopener" class="enlace-noticia">{{ $t(`noticias.lista[${i}].enlace`) }} ↗</a>
             <a v-if="noticia.video" :href="noticia.video" target="_blank" rel="noopener" class="enlace-noticia">▶ {{ $t(`noticias.lista[${i}].video`) }}</a>
@@ -101,6 +107,7 @@ const backgroundStyle = computed(() => {
 .fecha-noticia { color: #8cc63f; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 25px 30px 5px 30px; }
 .tarjeta-noticia h3 { color: #012169; font-size: 1.25rem; margin: 0 0 15px 0; padding: 0 30px; line-height: 1.4; }
 .texto-noticia { color: #555; font-size: 0.95rem; line-height: 1.6; padding: 0 30px; margin: 0; }
+.video-noticia { display: block; width: calc(100% - 60px); max-height: 460px; margin: 16px 30px 0; border-radius: 8px; background: #000; }
 .enlaces-noticia { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 30px 0; }
 .enlace-noticia { background: #012169; color: white; text-decoration: none; font-weight: bold; font-size: 0.9rem; padding: 9px 16px; border-radius: 6px; transition: background 0.2s; }
 .enlace-noticia:hover { background: #0086c0; }
