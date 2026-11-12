@@ -107,7 +107,8 @@ const backgroundStyle = computed(() => {
 .fecha-noticia { color: #8cc63f; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 25px 30px 5px 30px; }
 .tarjeta-noticia h3 { color: #012169; font-size: 1.25rem; margin: 0 0 15px 0; padding: 0 30px; line-height: 1.4; }
 .texto-noticia { color: #555; font-size: 0.95rem; line-height: 1.6; padding: 0 30px; margin: 0; }
-.video-noticia { display: block; width: calc(100% - 60px); max-height: 460px; margin: 16px 30px 0; border-radius: 8px; background: #000; }
+/* El vídeo pren la seva forma (p. ex. vertical, de mòbil), centrat i sense franges negres als costats */
+.video-noticia { display: block; width: auto; height: auto; max-width: calc(100% - 60px); max-height: 460px; margin: 16px auto 0; border-radius: 8px; }
 .enlaces-noticia { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 30px 0; }
 .enlace-noticia { background: #012169; color: white; text-decoration: none; font-weight: bold; font-size: 0.9rem; padding: 9px 16px; border-radius: 6px; transition: background 0.2s; }
 .enlace-noticia:hover { background: #0086c0; }
