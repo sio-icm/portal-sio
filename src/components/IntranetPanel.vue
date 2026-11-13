@@ -6,6 +6,7 @@ import { traducirError, traducirValor } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import BibliotecaDocs from './BibliotecaDocs.vue'
+import ComprasSinProyecto from './ComprasSinProyecto.vue'
 import GestionEquipo from './GestionEquipo.vue'
 import DiarioActividad from './DiarioActividad.vue'
 import InformeSemestral from './InformeSemestral.vue'
@@ -33,7 +34,7 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'instrumentacion', 'proyecto'
+const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'compras', 'instrumentacion', 'proyecto'
 
 // Las secciones nuevas avisan si la sesión ha caducado
 const sesionCaducada = () => {
@@ -369,6 +370,7 @@ const eliminarProyecto = async (id) => {
           <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">{{ $t('intranet.panel.menu.informe') }}</a>
           <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">{{ $t('intranet.panel.menu.equipo') }}</a>
           <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">{{ $t('intranet.panel.menu.documentacion') }}</a>
+          <a href="#" @click.prevent="seccionActiva = 'compras'" :class="{ active: seccionActiva === 'compras' }">{{ $t('intranet.panel.menu.compras') }}</a>
           <a href="#" @click.prevent="seccionActiva = 'instrumentacion'" :class="{ active: seccionActiva === 'instrumentacion' }">
             {{ $t(editandoId ? 'intranet.panel.menu.editandoInstrumento' : 'intranet.panel.menu.altaInstrumento') }}
           </a>
@@ -392,6 +394,7 @@ const eliminarProyecto = async (id) => {
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
         <BibliotecaDocs v-else-if="seccionActiva === 'documentacion'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <ComprasSinProyecto v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
           <h2>{{ $t(editandoId ? 'intranet.panel.editarInstrumento' : 'intranet.panel.registrarInstrumento') }}</h2>

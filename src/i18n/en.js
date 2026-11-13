@@ -600,6 +600,8 @@ export default {
   noticias: {
     titulo: 'News and Updates',
     subtitulo: 'The latest news, campaigns and technological advances from the Oceanographic Engineering Service.',
+    leerMas: 'Read more',
+    cerrar: 'Close',
     lista: [
       {
         titulo: "Everything is on its way to Antarctica for the SACO-SO-27 cruise",

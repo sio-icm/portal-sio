@@ -350,6 +350,21 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   azul (o rojo) los días reservados, sin nombres ni motivos.
 - Tablas: `calendario`, `reservas`, `festius`, `ajustes` (se crean solas).
 
+## Compres sense projecte
+
+- Lista compartida de lo que hay que comprar sin proyecto (intranet → «🛒 Compres
+  sense projecte»), como el antiguo «Full Comanda»: qué se necesita, cantidad,
+  proveedor, referencia y precio unitario sin IVA. Cada uno cambia lo suyo; los
+  administradores, todo.
+- Los artículos de **RS** (proveedor con la palabra «RS») se suman. Al llegar a
+  **95 € sin IVA** (RS no cobra los ~16 € de portes) se activa el botón que envía
+  a RS (`Ofertas@rs.rsgroup.com`) un correo pidiendo presupuesto, con copia a quien
+  lo envía y a `SIO_CONTACTO_DESTINO`. Los artículos enviados pasan al historial y
+  la lista vuelve a empezar. Los de otros proveedores se quedan apuntados.
+- Usa el mismo servidor de correo que el formulario de contacto. Opcional en
+  `backend.env`: `SIO_COMPRAS_MINIMO` (95) y `SIO_COMPRAS_DESTINO`.
+- Tablas: `compras` y `compras_envios` (se crean solas).
+
 ## Equipo y Biblioteca de documentos
 
 - **Gestión del equipo** (intranet): son las fichas de la página pública `/equipo`.

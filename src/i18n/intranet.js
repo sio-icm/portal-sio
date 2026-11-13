@@ -110,6 +110,13 @@ export default {
     'Elige el instrumento': { ca: "Tria l'instrument", es: 'Elige el instrumento', en: 'Choose the instrument' },
     'Elige la persona': { ca: 'Tria la persona', es: 'Elige la persona', en: 'Choose the person' },
     'Fecha no válida (AAAA-MM-DD)': { ca: 'Data no vàlida (AAAA-MM-DD)', es: 'Fecha no válida (AAAA-MM-DD)', en: 'Invalid date (YYYY-MM-DD)' },
+    'Escribe qué se necesita': { ca: 'Escriu què cal', es: 'Escribe qué se necesita', en: 'Write what is needed' },
+    'Cantidad no válida': { ca: 'Quantitat no vàlida', es: 'Cantidad no válida', en: 'Invalid quantity' },
+    'Precio no válido': { ca: 'Preu no vàlid', es: 'Precio no válido', en: 'Invalid price' },
+    'Ya se ha enviado y no se puede cambiar': { ca: "Ja s'ha enviat i no es pot canviar", es: 'Ya se ha enviado y no se puede cambiar', en: 'It has already been sent and cannot be changed' },
+    'Solo puedes cambiar lo que has apuntado tú': { ca: 'Només pots canviar el que has apuntat tu', es: 'Solo puedes cambiar lo que has apuntado tú', en: 'You can only change what you added' },
+    'Todavía no se llega al importe mínimo': { ca: "Encara no s'arriba a l'import mínim", es: 'Todavía no se llega al importe mínimo', en: 'The minimum amount has not been reached yet' },
+    'No se ha podido enviar el correo': { ca: "No s'ha pogut enviar el correu", es: 'No se ha podido enviar el correo', en: 'The e-mail could not be sent' },
     'La fecha final es anterior a la inicial': { ca: 'La data final és anterior a la inicial', es: 'La fecha final es anterior a la inicial', en: 'The end date is before the start date' },
     'Hora no válida (HH:MM)': { ca: 'Hora no vàlida (HH:MM)', es: 'Hora no válida (HH:MM)', en: 'Invalid time (HH:MM)' },
     'Pon también la hora de inicio': { ca: "Posa també l'hora d'inici", es: 'Pon también la hora de inicio', en: 'Add the start time too' },
@@ -201,6 +208,7 @@ export default {
       informe: { ca: '🧾 Informe semestral', es: '🧾 Informe semestral', en: '🧾 Six-monthly report' },
       equipo: { ca: "👥 Gestió de l'equip", es: '👥 Gestión del equipo', en: '👥 Team management' },
       documentacion: { ca: '📚 Documentació i manuals', es: '📚 Documentación y manuales', en: '📚 Documents and manuals' },
+      compras: { ca: '🛒 Compres sense projecte', es: '🛒 Compras sin proyecto', en: '🛒 Purchases without project' },
       altaInstrumento: { ca: '🛠️ Alta instrument', es: '🛠️ Alta de instrumento', en: '🛠️ New instrument' },
       editandoInstrumento: { ca: '✏️ Editant instrument', es: '✏️ Editando instrumento', en: '✏️ Editing instrument' },
       altaProyecto: { ca: '🚀 Alta projecte', es: '🚀 Alta de proyecto', en: '🚀 New project' },
@@ -531,6 +539,56 @@ export default {
   },
 
   // Calendari d'equip
+  compras: {
+    titulo: { ca: '🛒 Compres sense projecte', es: '🛒 Compras sin proyecto', en: '🛒 Purchases without project' },
+    ayuda: {
+      ca: "Apunta aquí el que cal comprar sense projecte. Quan els articles de RS arribin a {minimo} (sense IVA), RS no cobra els ports (uns {portes}) i es pot enviar la llista per demanar-ne pressupost.",
+      es: 'Apunta aquí lo que hay que comprar sin proyecto. Cuando los artículos de RS lleguen a {minimo} (sin IVA), RS no cobra los portes (unos {portes}) y se puede enviar la lista para pedir presupuesto.',
+      en: 'Add here what needs to be bought without a project. When the RS items reach {minimo} (excl. VAT), RS does not charge shipping (about {portes}) and the list can be sent to ask for a quote.'
+    },
+    sinIva: { ca: '(sense IVA)', es: '(sin IVA)', en: '(excl. VAT)' },
+    alcanzado: { ca: 'Ja arribem al mínim: ja es pot enviar a RS.', es: 'Ya llegamos al mínimo: ya se puede enviar a RS.', en: 'Minimum reached: the list can now be sent to RS.' },
+    falta: { ca: 'Falten {falta} per arribar al mínim i estalviar-nos els ports.', es: 'Faltan {falta} para llegar al mínimo y ahorrarnos los portes.', en: '{falta} still needed to reach the minimum and save on shipping.' },
+    sinPrecio: { ca: '{n} article(s) de RS sense preu: no compten per al total.', es: '{n} artículo(s) de RS sin precio: no cuentan para el total.', en: '{n} RS item(s) without a price: they do not count towards the total.' },
+    enviar: { ca: 'Enviar a RS per demanar pressupost ({destino})', es: 'Enviar a RS para pedir presupuesto ({destino})', en: 'Send to RS to ask for a quote ({destino})' },
+    sinCorreo: { ca: "El servidor no té el correu configurat: no es pot enviar.", es: 'El servidor no tiene el correo configurado: no se puede enviar.', en: 'E-mail is not configured on the server: it cannot be sent.' },
+    confirmarEnviar: {
+      ca: "S'enviarà un correu a {destino} demanant pressupost de {n} article(s) de RS ({total} sense IVA), amb còpia per a tu i el servei. Vols enviar-lo?",
+      es: 'Se enviará un correo a {destino} pidiendo presupuesto de {n} artículo(s) de RS ({total} sin IVA), con copia para ti y el servicio. ¿Quieres enviarlo?',
+      en: 'An e-mail will be sent to {destino} asking for a quote for {n} RS item(s) ({total} excl. VAT), with a copy to you and the service. Send it?'
+    },
+    enviado: { ca: "Petició enviada a {destino}. La llista torna a començar.", es: 'Petición enviada a {destino}. La lista vuelve a empezar.', en: 'Request sent to {destino}. The list starts again.' },
+    nuevo: { ca: 'Afegir un article', es: 'Añadir un artículo', en: 'Add an item' },
+    descripcion: { ca: 'Què es necessita', es: 'Qué se necesita', en: 'What is needed' },
+    descripcionPh: { ca: 'ex.: Pila AAA RS PRO alcalina 1,5 V', es: 'ej.: Pila AAA RS PRO alcalina 1,5 V', en: 'e.g. RS PRO alkaline AAA battery 1.5 V' },
+    cantidad: { ca: 'Quantitat', es: 'Cantidad', en: 'Quantity' },
+    cantCorta: { ca: 'Quant.', es: 'Cant.', en: 'Qty' },
+    precio: { ca: 'Preu unitari (€ sense IVA)', es: 'Precio unitario (€ sin IVA)', en: 'Unit price (€ excl. VAT)' },
+    precioPh: { ca: 'opcional', es: 'opcional', en: 'optional' },
+    precioCorto: { ca: 'Preu u.', es: 'Precio u.', en: 'Unit price' },
+    importe: { ca: 'Import', es: 'Importe', en: 'Amount' },
+    proveedor: { ca: 'Proveïdor', es: 'Proveedor', en: 'Supplier' },
+    referencia: { ca: 'Ref. proveïdor', es: 'Ref. proveedor', en: 'Supplier ref.' },
+    referenciaPh: { ca: 'ex.: 744-2209', es: 'ej.: 744-2209', en: 'e.g. 744-2209' },
+    anadir: { ca: '+ Afegir', es: '+ Añadir', en: '+ Add' },
+    anadido: { ca: 'Article afegit.', es: 'Artículo añadido.', en: 'Item added.' },
+    guardado: { ca: 'Canvis desats.', es: 'Cambios guardados.', en: 'Changes saved.' },
+    confirmarBorrar: { ca: 'Vols esborrar «{descripcion}»?', es: '¿Quieres borrar «{descripcion}»?', en: 'Delete “{descripcion}”?' },
+    pendientes: { ca: 'Llista pendent ({n})', es: 'Lista pendiente ({n})', en: 'Pending list ({n})' },
+    ninguno: { ca: "No hi ha res apuntat.", es: 'No hay nada apuntado.', en: 'Nothing on the list.' },
+    fecha: { ca: 'Data', es: 'Fecha', en: 'Date' },
+    pedidoPor: { ca: 'Demanat per', es: 'Pedido por', en: 'Requested by' },
+    totalRs: { ca: 'Total RS', es: 'Total RS', en: 'RS total' },
+    noRs: { ca: 'no és de RS', es: 'no es de RS', en: 'not RS' },
+    notaOtros: {
+      ca: "Els articles d'altres proveïdors queden apuntats, però no compten per al mínim ni s'envien a RS.",
+      es: 'Los artículos de otros proveedores quedan apuntados, pero no cuentan para el mínimo ni se envían a RS.',
+      en: 'Items from other suppliers stay on the list, but do not count towards the minimum and are not sent to RS.'
+    },
+    historial: { ca: 'Peticions enviades', es: 'Peticiones enviadas', en: 'Requests sent' },
+    articulos: { ca: '{n} article(s)', es: '{n} artículo(s)', en: '{n} item(s)' },
+    errorCarga: { ca: "No s'ha pogut carregar la llista.", es: 'No se ha podido cargar la lista.', en: 'The list could not be loaded.' }
+  },
   calendario: {
     titulo: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },
     ayuda: {

@@ -600,6 +600,8 @@ export default {
   noticias: {
     titulo: 'Noticias y Actualidad',
     subtitulo: 'Últimas novedades, campañas y avances tecnológicos del Servicio de Ingeniería Oceanográfica.',
+    leerMas: 'Leer más',
+    cerrar: 'Cerrar',
     lista: [
       {
         titulo: "Ya está todo en camino hacia la Antártida para la campaña SACO-SO-27",

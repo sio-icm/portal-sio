@@ -600,6 +600,8 @@ export default {
   noticias: {
     titulo: 'Notícies i actualitat',
     subtitulo: "Últimes novetats, campanyes i avenços tecnològics del Servei d'Enginyeria Oceanogràfica.",
+    leerMas: 'Llegir més',
+    cerrar: 'Tancar',
     lista: [
       {
         titulo: "Ja és tot de camí cap a l'Antàrtida per a la campanya SACO-SO-27",

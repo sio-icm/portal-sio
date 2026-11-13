@@ -2126,6 +2126,218 @@ def archivo_documento(id):
 crear_tablas_equipo_docs()
 
 
+# ---------------------------------------------------------------------------
+# COMPRES SENSE PROJECTE
+# Llista compartida del que cal comprar sense projecte (sobretot a RS). Quan els
+# articles de RS pendents arriben a COMPRAS_MINIMO € (sense IVA), RS no cobra els
+# ports (~16 €) i es pot enviar la llista a RS per demanar-ne pressupost.
+# ---------------------------------------------------------------------------
+COMPRAS_MINIMO = float(os.environ.get('SIO_COMPRAS_MINIMO', '95'))
+COMPRAS_DESTINO = os.environ.get('SIO_COMPRAS_DESTINO', 'Ofertas@rs.rsgroup.com')
+COMPRAS_PROVEEDOR = 'RS Components'
+COMPRAS_PORTES = 16  # el que ens estalviem arribant al mínim (només informatiu)
+
+
+def crear_tablas_compras():
+    conexion = conectar_bd()
+    conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS compras (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL DEFAULT (date('now')),
+            usuario_id INTEGER REFERENCES usuarios(id),
+            pedido_por TEXT NOT NULL,
+            descripcion TEXT NOT NULL,
+            cantidad INTEGER NOT NULL DEFAULT 1,
+            proveedor TEXT NOT NULL DEFAULT 'RS Components',
+            referencia TEXT NOT NULL DEFAULT '',
+            precio REAL,                          -- preu unitari sense IVA (NULL = encara no se sap)
+            envio_id INTEGER REFERENCES compras_envios(id),  -- NULL = pendent
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS compras_envios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL DEFAULT (datetime('now')),
+            enviado_por TEXT NOT NULL,
+            destinatario TEXT NOT NULL,
+            total REAL NOT NULL,
+            articulos INTEGER NOT NULL
+        );
+    """)
+    conexion.commit()
+    conexion.close()
+
+
+crear_tablas_compras()
+
+
+def es_rs(proveedor):
+    # «RS Components», «RS», «RS-Online»... (la paraula «rs» dins del nom)
+    return 'rs' in re.split(r'[^a-z0-9]+', (proveedor or '').lower())
+
+
+def resumen_compras(conexion):
+    pendientes = [dict(f) for f in conexion.execute(
+        'SELECT * FROM compras WHERE envio_id IS NULL ORDER BY fecha, id')]
+    for f in pendientes:
+        f['editable'] = bool(session.get('es_admin')) or f['usuario_id'] == session.get('usuario_id')
+        f['es_rs'] = es_rs(f['proveedor'])
+    rs = [f for f in pendientes if f['es_rs']]
+    total = round(sum((f['precio'] or 0) * f['cantidad'] for f in rs), 2)
+    envios = [dict(e) for e in conexion.execute('SELECT * FROM compras_envios ORDER BY id DESC LIMIT 20')]
+    for e in envios:
+        e['items'] = [dict(f) for f in conexion.execute(
+            'SELECT descripcion, cantidad, referencia, precio, pedido_por FROM compras WHERE envio_id = ? ORDER BY id', (e['id'],))]
+    return {
+        'pendientes': pendientes,
+        'total_rs': total,
+        'sin_precio_rs': sum(1 for f in rs if f['precio'] is None),
+        'minimo': COMPRAS_MINIMO,
+        'portes': COMPRAS_PORTES,
+        'destino': COMPRAS_DESTINO,
+        'envios': envios,
+        'correo_configurado': bool(os.environ.get('SIO_SMTP_HOST')),
+    }
+
+
+def validar_compra(datos):
+    descripcion = str(datos.get('descripcion', '') or '').strip()
+    proveedor = str(datos.get('proveedor', '') or '').strip() or COMPRAS_PROVEEDOR
+    referencia = str(datos.get('referencia', '') or '').strip()
+    if not descripcion:
+        return None, "Escribe qué se necesita"
+    if len(descripcion) > 300 or len(proveedor) > 100 or len(referencia) > 60:
+        return None, "Algún campo es demasiado largo"
+    try:
+        cantidad = int(datos.get('cantidad', 1))
+    except (TypeError, ValueError):
+        return None, "Cantidad no válida"
+    if not 1 <= cantidad <= 9999:
+        return None, "Cantidad no válida"
+    precio = datos.get('precio')
+    if precio in ('', None):
+        precio = None
+    else:
+        try:
+            precio = round(float(str(precio).replace(',', '.')), 2)
+        except ValueError:
+            return None, "Precio no válido"
+        if not 0 <= precio <= 100000:
+            return None, "Precio no válido"
+    return (descripcion, cantidad, proveedor, referencia, precio), None
+
+
+@app.route('/api/compras', methods=['GET', 'POST'])
+@requiere_login
+def gestionar_compras():
+    conexion = conectar_bd()
+    if request.method == 'POST':
+        valores, error = validar_compra(request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        conexion.execute(
+            'INSERT INTO compras (usuario_id, pedido_por, descripcion, cantidad, proveedor, referencia, precio)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (session.get('usuario_id'), session.get('nombre') or ADMIN_USER) + valores)
+        conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta), (201 if request.method == 'POST' else 200)
+
+
+@app.route('/api/compras/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_compra(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM compras WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if fila['envio_id'] is not None:
+        conexion.close()
+        return jsonify({"error": "Ya se ha enviado y no se puede cambiar"}), 409
+    if not session.get('es_admin') and fila['usuario_id'] != session.get('usuario_id'):
+        conexion.close()
+        return jsonify({"error": "Solo puedes cambiar lo que has apuntado tú"}), 403
+    if request.method == 'DELETE':
+        conexion.execute('DELETE FROM compras WHERE id = ?', (id,))
+    else:
+        valores, error = validar_compra(request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        conexion.execute('UPDATE compras SET descripcion = ?, cantidad = ?, proveedor = ?, referencia = ?, precio = ? WHERE id = ?',
+                         valores + (id,))
+    conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta)
+
+
+def texto_peticion_rs(articulos, nombre, correo):
+    lineas = []
+    for n, a in enumerate(articulos, 1):
+        ref = f"Ref. RS {a['referencia']}" if a['referencia'] else 'Ref. RS (sin referencia)'
+        lineas.append(f"{n}. {ref} | Cantidad: {a['cantidad']} | {a['descripcion']}")
+    contacto = f"{nombre}" + (f" <{correo}>" if correo else '')
+    return (
+        "Buenos días:\n\n"
+        "Desde el Servicio de Ingeniería Oceanográfica del Institut de Ciències del Mar (ICM-CSIC) "
+        "les solicitamos una cotización de los siguientes artículos:\n\n"
+        + "\n".join(lineas) +
+        "\n\nLes agradeceríamos que en la oferta indicaran el precio unitario, el plazo de entrega "
+        "y los gastos de envío, si los hay.\n\n"
+        "Muchas gracias.\n\n"
+        f"{contacto}\n"
+        "Servicio de Ingeniería Oceanográfica (SIO)\n"
+        "Institut de Ciències del Mar (ICM-CSIC)\n"
+        "Passeig Marítim de la Barceloneta, 37-49\n"
+        "08003 Barcelona\n"
+    )
+
+
+@app.route('/api/compras/enviar', methods=['POST'])
+@requiere_login
+def enviar_compras():
+    """Envia a RS la petició de pressupost dels articles de RS pendents (si arriben al mínim)."""
+    if not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+    conexion = conectar_bd()
+    pendientes = [dict(f) for f in conexion.execute('SELECT * FROM compras WHERE envio_id IS NULL ORDER BY fecha, id')]
+    articulos = [f for f in pendientes if es_rs(f['proveedor'])]
+    total = round(sum((f['precio'] or 0) * f['cantidad'] for f in articulos), 2)
+    if not articulos or total < COMPRAS_MINIMO:
+        conexion.close()
+        return jsonify({"error": "Todavía no se llega al importe mínimo"}), 400
+    usuario = conexion.execute('SELECT nombre, email FROM usuarios WHERE id = ?', (session.get('usuario_id'),)).fetchone()
+    nombre = (usuario['nombre'] if usuario else None) or session.get('nombre') or ADMIN_USER
+    correo = (usuario['email'] if usuario else '') or ''
+
+    mensaje = EmailMessage()
+    mensaje['Subject'] = 'Solicitud de cotización - ICM-CSIC (Servicio de Ingeniería Oceanográfica)'
+    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+    mensaje['To'] = COMPRAS_DESTINO
+    copia = [c for c in {correo, CONTACTO_DESTINO} if c]
+    if copia:
+        mensaje['Cc'] = ', '.join(sorted(copia))
+    mensaje['Reply-To'] = correo or CONTACTO_DESTINO
+    mensaje.set_content(texto_peticion_rs(articulos, nombre, correo))
+    try:
+        enviar_correo(mensaje)
+    except Exception as e:
+        print(f"Error enviando la petición de compras: {e}", flush=True)
+        conexion.close()
+        return jsonify({"error": "No se ha podido enviar el correo"}), 502
+
+    cursor = conexion.execute('INSERT INTO compras_envios (enviado_por, destinatario, total, articulos) VALUES (?, ?, ?, ?)',
+                              (nombre, COMPRAS_DESTINO, total, len(articulos)))
+    conexion.executemany('UPDATE compras SET envio_id = ? WHERE id = ?', [(cursor.lastrowid, a['id']) for a in articulos])
+    conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta)
+
+
 if __name__ == '__main__':
     if not login_configurado():
         print("⚠️  Faltan SIO_SECRET_KEY, SIO_ADMIN_USER o SIO_ADMIN_PASSWORD_HASH: la intranet no podrá iniciar sesión")
