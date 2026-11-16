@@ -6,7 +6,7 @@ import { limpiarHtml } from '../utils/limpiarHtml'
 // Projectes i campanyes en carrusel: cada projecte ocupa tota l'amplada amb la seva imatge.
 // Fletxes, lliscar (mòbil), tecles ← → i miniatures per saltar. «Llegir més» obre el projecte
 // sencer a pantalla completa, amb les seves fotos també en carrusel.
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const proyectos = ref([])
 const cargando = ref(true)
 const errorCarga = ref(false)
@@ -30,15 +30,28 @@ const CATEGORIAS = {
 const categoria = (p) => CATEGORIAS[p?.categoria] || { clave: null, color: '#4a5a70', icono: '🌊' }
 const nombreCategoria = (p) => categoria(p).clave ? t(`proyectos.categorias.${categoria(p).clave}`) : (p?.categoria || '')
 
+// Textos en l'idioma de la web. Les columnes sense sufix són el català (text principal);
+// si falta la traducció: castellà -> català, anglès -> castellà -> català.
+const ORDEN_IDIOMAS = { ca: [''], es: ['_es', ''], en: ['_en', '_es', ''] }
+const textoEn = (p, campo) => {
+  for (const sufijo of ORDEN_IDIOMAS[locale.value] || ['']) {
+    const v = p?.[campo + sufijo]
+    if (v && v.replace(/<[^>]+>/g, '').trim()) return v
+  }
+  return p?.[campo] || ''
+}
+const corta = (p) => textoEn(p, 'descripcion_corta')
+const ampliada = (p) => textoEn(p, 'descripcion_ampliada')
+
 // Fotos d'un projecte: la portada triada a la intranet i les de la descripció ampliada
 const fotosDe = (p) => {
-  const html = limpiarHtml(p?.descripcion_ampliada || '')
+  const html = limpiarHtml(ampliada(p))
   const delTexto = [...html.matchAll(/<img[^>]+src="([^"]+)"/gi)].map(m => m[1])
   return [...new Set([p?.imagen, ...delTexto].filter(Boolean))]
 }
 const portada = (p) => fotosDe(p)[0] || ''
 // Descripció ampliada sense les fotos (es mostren a part, al carrusel de la finestra)
-const textoAmpliado = (p) => limpiarHtml(p?.descripcion_ampliada || '').replace(/<p>\s*(<img[^>]*>\s*)+<\/p>/gi, '').replace(/<img[^>]*>/gi, '')
+const textoAmpliado = (p) => limpiarHtml(ampliada(p)).replace(/<p>\s*(<img[^>]*>\s*)+<\/p>/gi, '').replace(/<img[^>]*>/gi, '')
 const tieneTexto = (html) => html.replace(/<[^>]+>/g, '').trim().length > 0
 
 const cargarProyectos = async () => {
@@ -155,7 +168,7 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; window.removeEventLis
               <span class="pastilla-tipo">{{ categoria(proyecto).icono }} {{ nombreCategoria(proyecto) }}</span>
             </div>
             <h2 class="titulo-proyecto">{{ proyecto.titulo }}</h2>
-            <p class="resumen">{{ proyecto.descripcion_corta }}</p>
+            <p class="resumen">{{ corta(proyecto) }}</p>
             <ul class="personas">
               <li v-if="proyecto.investigador_principal"><span class="rol">{{ $t('proyectos.ip') }}</span> {{ proyecto.investigador_principal }}</li>
               <li v-if="proyecto.pit"><span class="rol">{{ $t('proyectos.pit') }}</span> {{ proyecto.pit }}</li>
@@ -218,7 +231,7 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; window.removeEventLis
             <template v-if="proyecto.pit"><dt>{{ $t('proyectos.pit') }}</dt><dd>{{ proyecto.pit }}</dd></template>
           </dl>
           <div v-if="tieneTexto(textoAmpliado(proyecto))" class="contenido-html" v-html="textoAmpliado(proyecto)"></div>
-          <p v-else class="contenido-html">{{ proyecto.descripcion_corta }}</p>
+          <p v-else class="contenido-html">{{ corta(proyecto) }}</p>
           <a v-if="proyecto.wiki_url" :href="proyecto.wiki_url" target="_blank" rel="noopener" class="btn-web-proyecto">{{ $t('proyectos.web') }} ↗</a>
         </div>
       </article>

@@ -441,17 +441,34 @@ def modificar_instrumento(id):
 # RUTAS PARA PROYECTOS (Añadido con las nuevas descripciones y PIT)
 # =======================================================
 
+# Columnes afegides als projectes:
+#  - imagen: foto de portada opcional a la pàgina pública (ruta de la web, p. ex. /tortuga.webp)
+#  - descripcion_corta/ampliada en castellà (_es) i anglès (_en); les columnes sense sufix són el català
+#    (el text principal). Si falta una traducció, la web mostra el castellà o el català.
+TEXTOS_TRADUCIDOS = ('descripcion_corta_es', 'descripcion_ampliada_es', 'descripcion_corta_en', 'descripcion_ampliada_en')
+
+
 def crear_columnas_proyectos():
-    # Foto de portada opcional de cada projecte a la pàgina pública (ruta de la web, p. ex. /tortuga.webp)
     conexion = conectar_bd()
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(proyectos)')]
-    if columnas and 'imagen' not in columnas:
-        try:
-            conexion.execute("ALTER TABLE proyectos ADD COLUMN imagen TEXT NOT NULL DEFAULT ''")
-            conexion.commit()
-        except sqlite3.OperationalError:
-            pass  # l'altre procés de gunicorn l'ha afegida alhora
+    for columna in ('imagen',) + TEXTOS_TRADUCIDOS:
+        if columnas and columna not in columnas:
+            try:
+                conexion.execute(f"ALTER TABLE proyectos ADD COLUMN {columna} TEXT NOT NULL DEFAULT ''")
+                conexion.commit()
+            except sqlite3.OperationalError:
+                pass  # l'altre procés de gunicorn l'ha afegida alhora
     conexion.close()
+
+
+def extras_proyecto(conexion, datos, id=None):
+    """Imatge i traduccions. En editar, el que el formulari no envia (pantalla antiga) es manté."""
+    anterior = conexion.execute('SELECT * FROM proyectos WHERE id = ?', (id,)).fetchone() if id else None
+    def valor(clave, limpiar=lambda v: str(v or '')):
+        if clave in datos:
+            return limpiar(datos[clave])
+        return anterior[clave] if anterior is not None else ''
+    return (valor('imagen', imagen_proyecto),) + tuple(valor(c) for c in TEXTOS_TRADUCIDOS)
 
 
 crear_columnas_proyectos()
@@ -492,8 +509,9 @@ def gestionar_proyectos():
             # AÑADIDO: pit en el INSERT
             cursor.execute('''
                 INSERT INTO proyectos 
-                (titulo, categoria, estado, descripcion_corta, descripcion_ampliada, investigador_principal, pit, imagen)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (titulo, categoria, estado, descripcion_corta, descripcion_ampliada, investigador_principal, pit, imagen,
+                 descripcion_corta_es, descripcion_ampliada_es, descripcion_corta_en, descripcion_ampliada_en)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 datos.get('titulo', ''),
                 datos.get('categoria', ''),
@@ -502,8 +520,7 @@ def gestionar_proyectos():
                 datos.get('descripcion_ampliada', ''),
                 datos.get('investigador_principal', ''),
                 datos.get('pit', ''), # <-- Aquí recogemos el PIT
-                imagen_proyecto(datos.get('imagen'))
-            ))
+            ) + extras_proyecto(conexion, datos))
             
             conexion.commit()
             conexion.close()
@@ -538,7 +555,8 @@ def modificar_proyecto(id):
             cursor.execute('''
                 UPDATE proyectos 
                 SET titulo = ?, categoria = ?, estado = ?, 
-                    descripcion_corta = ?, descripcion_ampliada = ?, investigador_principal = ?, pit = ?, imagen = ?
+                    descripcion_corta = ?, descripcion_ampliada = ?, investigador_principal = ?, pit = ?, imagen = ?,
+                    descripcion_corta_es = ?, descripcion_ampliada_es = ?, descripcion_corta_en = ?, descripcion_ampliada_en = ?
                 WHERE id = ?
             ''', (
                 datos.get('titulo'), 
@@ -548,11 +566,7 @@ def modificar_proyecto(id):
                 datos.get('descripcion_ampliada'), 
                 datos.get('investigador_principal'),
                 datos.get('pit'), # <-- Aquí recogemos el PIT
-                # Si el formulari no envia la imatge (pantalla antiga), es manté la que hi havia
-                imagen_proyecto(datos['imagen']) if 'imagen' in datos
-                else (conn.execute('SELECT imagen FROM proyectos WHERE id = ?', (id,)).fetchone() or [''])[0],
-                id
-            ))
+            ) + extras_proyecto(conn, datos, id) + (id,))
             
             conn.commit()
             conn.close()

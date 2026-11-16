@@ -59,8 +59,13 @@ const nuevoEquipo = ref({
 })
 
 const nuevoProyecto = ref({
-  titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: ''
+  titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '',
+  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: ''
 })
+// Idioma de les descripcions que s'està editant: 'ca' (text principal), 'es' o 'en'
+const idiomaTexto = ref('ca')
+const IDIOMAS_TEXTO = ['ca', 'es', 'en']
+const sufijoTexto = computed(() => idiomaTexto.value === 'ca' ? '' : '_' + idiomaTexto.value)
 // Fotos de la web que es poden triar com a portada d'un projecte (també s'hi pot escriure una altra ruta o una adreça https)
 const FOTOS_WEB = ['/fondeo.webp', '/instrumentacion.webp', '/marmarejada.webp', '/niskin.webp', '/oficinatecnica.webp',
   '/pecesaguasalada.webp', '/peces.webp', '/pelagia.webp', '/reflexesmar.webp', '/rov.webp', '/salinometro.jpg', '/tortuga.webp',
@@ -239,7 +244,8 @@ const volverDashboard = () => {
   editandoId.value = null
   editandoProyectoId.value = null
   nuevoEquipo.value = { nombre: '', marca: '', numero_serie: '', categoria: '', subcategoria: '', ultima_calibracion: '', descripcion: '', parametros_tecnicos: '' }
-  nuevoProyecto.value = { titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '' }
+  nuevoProyecto.value = { titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '',
+  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: '' }
   seccionActiva.value = 'dashboard'
 }
 
@@ -298,8 +304,13 @@ const cargarParaEditarProyecto = (proj) => {
     descripcion_ampliada: proj.descripcion_ampliada || '',
     investigador_principal: proj.investigador_principal || '',
     pit: proj.pit || '',
-    imagen: proj.imagen || ''
+    imagen: proj.imagen || '',
+    descripcion_corta_es: proj.descripcion_corta_es || '',
+    descripcion_ampliada_es: proj.descripcion_ampliada_es || '',
+    descripcion_corta_en: proj.descripcion_corta_en || '',
+    descripcion_ampliada_en: proj.descripcion_ampliada_en || ''
   };
+  idiomaTexto.value = 'ca';
   seccionActiva.value = 'proyecto';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -315,7 +326,11 @@ const guardarProyecto = async () => {
     descripcion_ampliada: nuevoProyecto.value.descripcion_ampliada,
     investigador_principal: nuevoProyecto.value.investigador_principal,
     pit: nuevoProyecto.value.pit,
-    imagen: nuevoProyecto.value.imagen
+    imagen: nuevoProyecto.value.imagen,
+    descripcion_corta_es: nuevoProyecto.value.descripcion_corta_es,
+    descripcion_ampliada_es: nuevoProyecto.value.descripcion_ampliada_es,
+    descripcion_corta_en: nuevoProyecto.value.descripcion_corta_en,
+    descripcion_ampliada_en: nuevoProyecto.value.descripcion_ampliada_en
   };
   try {
     const res = await peticionApi(url, {
@@ -530,15 +545,22 @@ const eliminarProyecto = async (id) => {
               <datalist id="fotos-web"><option v-for="f in FOTOS_WEB" :key="f" :value="f"></option></datalist>
             </div>
 
+            <!-- Descripcions en tres idiomes: el català és el principal -->
+            <div class="pestanas-idioma" role="group" :aria-label="$t('intranet.panel.idiomaTextos')">
+              <button v-for="l in IDIOMAS_TEXTO" :key="l" type="button" :class="{ activa: idiomaTexto === l }" :aria-pressed="idiomaTexto === l" @click="idiomaTexto = l">
+                {{ l.toUpperCase() }}<span v-if="l !== 'ca' && !(nuevoProyecto['descripcion_corta_' + l] || '').trim()" class="falta" :title="$t('intranet.panel.sinTraducir')">·</span>
+              </button>
+              <span class="nota-idioma">{{ $t('intranet.panel.notaIdiomas') }}</span>
+            </div>
             <div style="margin-bottom: 15px;">
               <label>{{ $t('intranet.panel.descCorta') }}</label>
-              <textarea v-model="nuevoProyecto.descripcion_corta" rows="2" maxlength="150" :placeholder="$t('intranet.panel.descCortaPh')" style="width: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: inherit;"></textarea>
+              <textarea v-model="nuevoProyecto['descripcion_corta' + sufijoTexto]" rows="2" maxlength="300" :placeholder="$t('intranet.panel.descCortaPh')" style="width: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: inherit;"></textarea>
             </div>
 
             <div style="margin-bottom: 15px;">
               <label>{{ $t('intranet.panel.descAmpliada') }}</label>
               <div style="background: white; border: 1px solid #ddd;">
-                <QuillEditor theme="snow" v-model:content="nuevoProyecto.descripcion_ampliada" contentType="html" :toolbar="opcionsEditor" />
+                <QuillEditor :key="idiomaTexto" theme="snow" v-model:content="nuevoProyecto['descripcion_ampliada' + sufijoTexto]" contentType="html" :toolbar="opcionsEditor" />
               </div>
             </div>
 
@@ -666,6 +688,11 @@ const eliminarProyecto = async (id) => {
 
 .acordeon-dash { background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); overflow: hidden; }
 .acordeon-dash-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #ffffff; border-bottom: 1px solid #eee; cursor: pointer; }
+.pestanas-idioma { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.pestanas-idioma button { padding: 6px 14px; border: 1px solid #ccd5df; background: white; border-radius: 16px; font-weight: bold; cursor: pointer; color: #012169; }
+.pestanas-idioma button.activa { background: #012169; color: white; border-color: #012169; }
+.pestanas-idioma .falta { color: #d9661a; font-size: 1.4rem; line-height: 0; margin-left: 2px; }
+.nota-idioma { font-size: 0.8rem; color: #666; }
 .campo-imagen { display: flex; gap: 10px; align-items: center; }
 .campo-imagen .input-texto { flex: 1; }
 .vista-imagen { width: 96px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
