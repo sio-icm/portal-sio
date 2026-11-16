@@ -433,11 +433,12 @@ const FASE_ACTUAL = 1
 .btn-cta:hover { background: #a5d65f; }
 
 @media (max-width: 768px) {
-  .hero-bluelab { padding-top: 150px; }
-  .hero-flex { flex-direction: column; gap: 12px; text-align: center; }
-  .hero-text-group { align-items: center; }
-  .logo-hero { height: 75px; }
-  .subtitle-hero { font-size: 1.15rem !important; text-align: center; }
+  /* Menys blau a dalt: just sota la capçalera, logo més petit i el lema en una sola línia */
+  .hero-bluelab { padding: 118px 0 18px; margin-bottom: 22px; }
+  .hero-flex { flex-direction: column; gap: 8px; text-align: center; }
+  .hero-text-group { align-items: center; max-width: 100%; }
+  .logo-hero { height: 58px; }
+  .subtitle-hero { font-size: min(1.15rem, 3.8vw) !important; letter-spacing: 0.3px !important; white-space: nowrap; text-align: center; }
   .bg-ligero { padding: 20px; }
   .grid-2-cols { grid-template-columns: 1fr; }
   .cta { padding: 28px 18px; }

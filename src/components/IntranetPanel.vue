@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { traducirError, traducirValor } from '../i18n'
@@ -198,6 +198,37 @@ const cerrarSesion = async () => {
   router.push('/') // en sortir, a la pàgina principal de la web
 }
 
+// ---------- MENÚ ----------
+// Opcions agrupades per seccions. Al mòbil el menú es plega en un botó «☰» que diu on ets.
+const menuAbierto = ref(false)
+const gruposMenu = computed(() => [
+  { titulo: 'intranet.panel.menu.grupoEquipo', items: [
+    { id: 'dashboard', texto: 'intranet.panel.menu.general' },
+    { id: 'calendari', texto: 'intranet.panel.menu.calendario' },
+    { id: 'diario', texto: 'intranet.panel.menu.diario' },
+    { id: 'informe', texto: 'intranet.panel.menu.informe' },
+    { id: 'equipo', texto: 'intranet.panel.menu.equipo' }
+  ] },
+  { titulo: 'intranet.panel.menu.grupoRecursos', items: [
+    { id: 'documentacion', texto: 'intranet.panel.menu.documentacion' },
+    { id: 'compras', texto: 'intranet.panel.menu.compras' }
+  ] },
+  { titulo: 'intranet.panel.menu.grupoAltas', items: [
+    { id: 'instrumentacion', texto: editandoId.value ? 'intranet.panel.menu.editandoInstrumento' : 'intranet.panel.menu.altaInstrumento' },
+    { id: 'proyecto', texto: editandoProyectoId.value ? 'intranet.panel.menu.editandoProyecto' : 'intranet.panel.menu.altaProyecto' }
+  ] },
+  { titulo: 'intranet.panel.menu.grupoCuenta', items: [
+    { id: 'cuenta', texto: 'intranet.panel.menu.cuenta' },
+    ...(sesion.value?.es_admin ? [{ id: 'usuarios', texto: 'intranet.panel.menu.usuarios' }] : [])
+  ] }
+])
+const opcionActual = computed(() => gruposMenu.value.flatMap(g => g.items).find(i => i.id === seccionActiva.value))
+const irA = (id) => {
+  if (id === 'dashboard') volverDashboard()
+  else seccionActiva.value = id
+  menuAbierto.value = false
+}
+
 const volverDashboard = () => {
   editandoId.value = null
   editandoProyectoId.value = null
@@ -360,29 +391,30 @@ const eliminarProyecto = async (id) => {
 
     <div v-else class="dashboard-grid">
 
-      <aside class="sidebar">
-        <h3 class="sidebar-title">{{ $t('intranet.panel.menu.titulo') }}</h3>
-        <p class="sidebar-usuario">👤 {{ sesion.nombre }}</p>
-<nav class="sidebar-nav">
-          <a href="#" @click.prevent="volverDashboard" :class="{ active: seccionActiva === 'dashboard' }">{{ $t('intranet.panel.menu.general') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'calendari'" :class="{ active: seccionActiva === 'calendari' }">{{ $t('intranet.panel.menu.calendario') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'diario'" :class="{ active: seccionActiva === 'diario' }">{{ $t('intranet.panel.menu.diario') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'informe'" :class="{ active: seccionActiva === 'informe' }">{{ $t('intranet.panel.menu.informe') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'equipo'" :class="{ active: seccionActiva === 'equipo' }">{{ $t('intranet.panel.menu.equipo') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'documentacion'" :class="{ active: seccionActiva === 'documentacion' }">{{ $t('intranet.panel.menu.documentacion') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'compras'" :class="{ active: seccionActiva === 'compras' }">{{ $t('intranet.panel.menu.compras') }}</a>
-          <a href="#" @click.prevent="seccionActiva = 'instrumentacion'" :class="{ active: seccionActiva === 'instrumentacion' }">
-            {{ $t(editandoId ? 'intranet.panel.menu.editandoInstrumento' : 'intranet.panel.menu.altaInstrumento') }}
-          </a>
-          <a href="#" @click.prevent="seccionActiva = 'proyecto'" :class="{ active: seccionActiva === 'proyecto' }">
-            {{ $t(editandoProyectoId ? 'intranet.panel.menu.editandoProyecto' : 'intranet.panel.menu.altaProyecto') }}
-          </a>
-          <a href="#" @click.prevent="seccionActiva = 'cuenta'" :class="{ active: seccionActiva === 'cuenta' }">{{ $t('intranet.panel.menu.cuenta') }}</a>
-          <a v-if="sesion.es_admin" href="#" @click.prevent="seccionActiva = 'usuarios'" :class="{ active: seccionActiva === 'usuarios' }">{{ $t('intranet.panel.menu.usuarios') }}</a>
-          <!-- Este lo dejamos sin prevent porque SÍ queremos que abra una pestaña nueva hacia la web pública -->
-          <a href="/" target="_blank" class="btn-web">{{ $t('intranet.panel.menu.webPublica') }}</a>
+      <aside class="sidebar" :class="{ abierto: menuAbierto }">
+        <div class="sidebar-cabecera">
+          <div class="sidebar-quien">
+            <h3 class="sidebar-title">{{ $t('intranet.panel.menu.titulo') }}</h3>
+            <p class="sidebar-usuario">👤 {{ sesion.nombre }}</p>
+          </div>
+          <!-- Només al mòbil: plega i desplega el menú -->
+          <button type="button" class="btn-menu-movil" :aria-expanded="menuAbierto" aria-controls="menu-intranet" @click="menuAbierto = !menuAbierto">
+            <span class="btn-menu-icono" aria-hidden="true">{{ menuAbierto ? '✕' : '☰' }}</span>
+            <span class="btn-menu-texto">{{ opcionActual ? $t(opcionActual.texto) : $t('intranet.panel.menu.titulo') }}</span>
+          </button>
+        </div>
+        <nav id="menu-intranet" class="sidebar-nav" :aria-label="$t('intranet.panel.menu.titulo')">
+          <div v-for="g in gruposMenu" :key="g.titulo" class="grupo-menu">
+            <p class="grupo-titulo">{{ $t(g.titulo) }}</p>
+            <a v-for="item in g.items" :key="item.id" href="#" :class="{ active: seccionActiva === item.id }"
+              :aria-current="seccionActiva === item.id ? 'page' : null" @click.prevent="irA(item.id)">{{ $t(item.texto) }}</a>
+          </div>
         </nav>
-        <button @click="cerrarSesion" class="btn-logout">{{ $t('intranet.panel.cerrarSesion') }}</button>
+        <div class="sidebar-pie">
+          <!-- Sense prevent: sí que ha d'obrir la web pública en una pestanya nova -->
+          <a href="/" target="_blank" class="btn-web">{{ $t('intranet.panel.menu.webPublica') }}</a>
+          <button @click="cerrarSesion" class="btn-logout">{{ $t('intranet.panel.cerrarSesion') }}</button>
+        </div>
       </aside>
 
       <main class="main-content">
@@ -574,8 +606,6 @@ const eliminarProyecto = async (id) => {
   min-height: 150px;
 }
 
-.btn-web { background: #8cc63f; color: white !important; margin-top: 15px; border-radius: 4px; padding: 10px; text-align: center; }
-.btn-web:hover { background: #7ab335; }
 .tabla-instrumentos { width: 100%; border-collapse: collapse; background: white; }
 .tabla-instrumentos td { padding: 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
 .btn-delete { background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
@@ -596,11 +626,21 @@ const eliminarProyecto = async (id) => {
 .login-box button { width: 100%; padding: 10px; background: #8cc63f; color: #012169; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
 
 .dashboard-grid { display: flex; min-height: 100vh; }
-.sidebar { width: 250px; flex-shrink: 0; background: #012169; color: white; padding: 20px; display: flex; flex-direction: column; }
-.sidebar-usuario { color: #8cc63f; font-size: 0.85rem; margin: -5px 0 15px; }
-.sidebar-nav a { display: block; color: #ccc; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
-.sidebar-nav a.active { color: white; font-weight: bold; border-left: 3px solid #8cc63f; background: rgba(255, 255, 255, 0.05); }
-.btn-logout { margin-top: 12px; background: none; border: 1px solid white; color: white; padding: 10px; cursor: pointer; border-radius: 4px; }
+.sidebar { width: 260px; flex-shrink: 0; background: #012169; color: white; padding: 22px 16px; display: flex; flex-direction: column; }
+.sidebar-title { margin: 0 0 4px; padding: 0 8px; font-size: 1.15rem; }
+.sidebar-usuario { color: #8cc63f; font-size: 0.85rem; margin: 0 0 6px; padding: 0 8px; }
+.btn-menu-movil { display: none; }
+.grupo-titulo { margin: 16px 0 4px; padding: 0 10px; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #8fa3c8; }
+.sidebar-nav a { display: block; color: #d6deeb; padding: 8px 10px; margin-bottom: 2px; text-decoration: none; border-radius: 6px; border-left: 3px solid transparent;
+  font-size: 0.92rem; line-height: 1.3; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a:hover { background: rgba(255, 255, 255, 0.08); color: white; }
+.sidebar-nav a.active { color: white; font-weight: bold; border-left-color: #8cc63f; background: rgba(140, 198, 63, 0.16); }
+.sidebar-nav a:focus-visible, .btn-menu-movil:focus-visible { outline: 2px solid #8cc63f; outline-offset: 2px; }
+.sidebar-pie { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+.btn-web { display: block; background: #8cc63f; color: #012169 !important; font-weight: bold; border-radius: 6px; padding: 9px 10px; text-align: center; text-decoration: none; font-size: 0.9rem; }
+.btn-web:hover { background: #a5d65f; }
+.btn-logout { background: none; border: 1px solid rgba(255, 255, 255, 0.6); color: white; padding: 8px 10px; cursor: pointer; border-radius: 6px; font: inherit; font-size: 0.9rem; }
+.btn-logout:hover { background: rgba(255, 255, 255, 0.1); }
 
 .main-content { flex-grow: 1; min-width: 0; padding: 40px; background: #f4f7f9; }
 .grid-form { display: grid; gap: 10px; max-width: 800px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
@@ -614,12 +654,24 @@ const eliminarProyecto = async (id) => {
 /* Móvil: el menú pasa arriba y el contenido ocupa todo el ancho */
 @media (max-width: 768px) {
   .dashboard-grid { flex-direction: column; min-height: 0; }
-  .sidebar { width: auto; padding: 12px 14px; }
-  .sidebar-title { margin: 0 0 4px; }
-  .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; }
-  .sidebar-nav a { margin: 0; padding: 6px 9px; font-size: 0.85rem; background: rgba(255, 255, 255, 0.06); }
-  .sidebar-nav a.active { border-left: none; box-shadow: inset 0 -2px 0 #8cc63f; }
-  .btn-logout { margin-top: 10px; padding: 6px; }
+  /* Una sola barra: qui ets + botó «☰ secció actual»; en obrir-lo, graella de 2 columnes */
+  .sidebar { width: auto; padding: 10px 12px; }
+  .sidebar-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sidebar-quien { min-width: 0; }
+  .sidebar-title { font-size: 1rem; padding: 0; }
+  .sidebar-usuario { margin: 0; padding: 0; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btn-menu-movil { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 62%; padding: 8px 12px; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.35); color: white; font: inherit; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+  .btn-menu-icono { font-size: 1.05rem; line-height: 1; }
+  .btn-menu-texto { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar-nav, .sidebar-pie { display: none; }
+  .sidebar.abierto .sidebar-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .grupo-menu { display: contents; }
+  .grupo-titulo { grid-column: 1 / -1; margin: 6px 0 0; padding: 0 2px; }
+  .sidebar-nav a { margin: 0; padding: 9px 10px; font-size: 0.84rem; background: rgba(255, 255, 255, 0.07); border-left: none; }
+  .sidebar-nav a.active { background: rgba(140, 198, 63, 0.25); box-shadow: inset 0 -2px 0 #8cc63f; }
+  .sidebar.abierto .sidebar-pie { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+  .btn-web, .btn-logout { padding: 8px; font-size: 0.84rem; }
   .main-content { padding: 14px 10px; min-width: 0; }
 }
 .cambio-obligatorio { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 40px 15px; background: #f4f7f9; }

@@ -219,12 +219,14 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .header-solido-contacto + .main-content .pagina-contacto { padding-top: 40px; }
 
 @media (max-width: 768px) {
-  .header-inner { flex-direction: column; gap: 15px; }
-  .header-left { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 12px; width: 100%; }
+  /* Capçalera més compacta però amb els logos més grans (s'ajusten a l'amplada: també caben en mòbils de 360 px) */
+  .header-transparente { padding: 12px 0; }
+  .header-inner { flex-direction: column; gap: 10px; }
+  .header-left { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; width: 100%; }
   .divider { display: none; }
-  .logo-principal { height: 33px; flex-shrink: 0; }
+  .logo-principal { height: min(42px, 10.5vw); flex-shrink: 0; }
   .logos-grupo { display: flex; flex-direction: row; align-items: center; gap: 6px; }
-  .logo-pequeno { height: 18px; flex-shrink: 0; }
+  .logo-pequeno { height: min(22px, 5.6vw); flex-shrink: 0; }
   .nav-menu { flex-wrap: wrap; justify-content: center; gap: 12px; }
   .nav-item { font-size: 12px; }
   .contacto-unacolumna { padding: 0 10px; }

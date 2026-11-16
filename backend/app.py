@@ -2213,16 +2213,16 @@ def validar_compra(datos):
         return None, "Cantidad no válida"
     if not 1 <= cantidad <= 9999:
         return None, "Cantidad no válida"
+    # Preu unitari sense IVA: obligatori, perquè sense preu no se sap si s'arriba al mínim
     precio = datos.get('precio')
     if precio in ('', None):
-        precio = None
-    else:
-        try:
-            precio = round(float(str(precio).replace(',', '.')), 2)
-        except ValueError:
-            return None, "Precio no válido"
-        if not 0 <= precio <= 100000:
-            return None, "Precio no válido"
+        return None, "Pon el precio unitario sin IVA"
+    try:
+        precio = round(float(str(precio).replace(',', '.')), 2)
+    except ValueError:
+        return None, "Precio no válido"
+    if not 0 < precio <= 100000:
+        return None, "Precio no válido"
     return (descripcion, cantidad, proveedor, referencia, precio), None
 
 

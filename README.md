@@ -354,7 +354,7 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 
 - Lista compartida de lo que hay que comprar sin proyecto (intranet → «🛒 Compres
   sense projecte»), como el antiguo «Full Comanda»: qué se necesita, cantidad,
-  proveedor, referencia y precio unitario sin IVA. Cada uno cambia lo suyo; los
+  proveedor, referencia y precio unitario sin IVA (obligatorio). Cada uno cambia lo suyo; los
   administradores, todo.
 - Los artículos de **RS** (proveedor con la palabra «RS») se suman. Al llegar a
   **95 € sin IVA** (RS no cobra los ~16 € de portes) se activa el botón que envía

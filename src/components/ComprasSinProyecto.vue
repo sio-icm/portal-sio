@@ -118,7 +118,7 @@ const enviar = async () => {
             <input v-model.number="nuevo.cantidad" type="number" min="1" max="9999" required>
           </label>
           <label class="corto">{{ $t('intranet.compras.precio') }}
-            <input v-model="nuevo.precio" type="number" min="0" step="0.01" inputmode="decimal" :placeholder="$t('intranet.compras.precioPh')">
+            <input v-model="nuevo.precio" type="number" min="0.01" step="0.01" inputmode="decimal" required :placeholder="$t('intranet.compras.precioPh')">
           </label>
         </div>
         <div class="fila">
@@ -153,10 +153,10 @@ const enviar = async () => {
                   <td><input v-model.number="editando.cantidad" class="input-fila corto" type="number" min="1" max="9999" :aria-label="$t('intranet.compras.cantidad')"></td>
                   <td><input v-model="editando.proveedor" class="input-fila" maxlength="100" list="proveedores-compras" :aria-label="$t('intranet.compras.proveedor')"></td>
                   <td><input v-model="editando.referencia" class="input-fila" maxlength="60" :aria-label="$t('intranet.compras.referencia')"></td>
-                  <td><input v-model="editando.precio" class="input-fila corto" type="number" min="0" step="0.01" :aria-label="$t('intranet.compras.precio')"></td>
+                  <td><input v-model="editando.precio" class="input-fila corto" type="number" min="0.01" step="0.01" required :aria-label="$t('intranet.compras.precio')"></td>
                   <td></td>
                   <td class="acciones">
-                    <button class="btn-mini guardar" @click="guardarEdicion">{{ $t('intranet.comun.guardar') }}</button>
+                    <button class="btn-mini guardar" :disabled="editando.precio === '' || editando.precio == null" @click="guardarEdicion">{{ $t('intranet.comun.guardar') }}</button>
                     <button class="btn-mini" @click="editando = null">{{ $t('intranet.comun.cancelar') }}</button>
                   </td>
                 </template>
