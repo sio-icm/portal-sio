@@ -413,6 +413,17 @@ export default {
     vacio: 'No hi ha projectes en aquesta fase.',
     detalle: 'Veure el detall',
     ocultarDetalle: 'Amagar el detall',
+    todos: 'Tots',
+    buscar: 'Cerca un projecte, una persona…',
+    verTodos: 'Veure-ho tot',
+    sinResultados: 'Cap projecte coincideix amb els filtres.',
+    verMas: 'Veure més',
+    cerrar: 'Tancar',
+    ip: 'Investigació principal',
+    pit: 'Equip del SIO',
+    web: 'Web del projecte',
+    estado: 'Estat',
+    tipo: 'Tipus',
     grupos: {
       enCurso: { titulo: 'En curs', texto: "Activitats i campanyes en fase d'execució tècnica actualment." },
       aprobados: { titulo: 'Aprovats', texto: "Projectes confirmats a l'espera de l'inici tècnic." },
@@ -420,6 +431,7 @@ export default {
       finalizados: { titulo: 'Finalitzats', texto: 'Històric de campanyes i projectes conclosos.' }
     },
     categorias: {
+      campanya: 'Campanya',
       infraestructura: 'Infraestructura',
       contrato: 'Contracte',
       planNacional: 'Pla Nacional',

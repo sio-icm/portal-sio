@@ -59,8 +59,14 @@ const nuevoEquipo = ref({
 })
 
 const nuevoProyecto = ref({
-  titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: ''
+  titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: ''
 })
+// Fotos de la web que es poden triar com a portada d'un projecte (també s'hi pot escriure una altra ruta o una adreça https)
+const FOTOS_WEB = ['/fondeo.webp', '/instrumentacion.webp', '/marmarejada.webp', '/niskin.webp', '/oficinatecnica.webp',
+  '/pecesaguasalada.webp', '/peces.webp', '/pelagia.webp', '/reflexesmar.webp', '/rov.webp', '/salinometro.jpg', '/tortuga.webp',
+  '/fotos/noticias/sacoso-portada.webp', '/fotos/noticias/sacoso-hesperides.webp', '/fotos/noticias/sacoso-fondejos.webp',
+  '/fotos/noticias/somorrostro-boia.webp', '/fotos/noticias/somorrostro-portada.webp', '/fotos/noticias/donana-portada.webp',
+  '/fotos/noticias/fnob-portada.webp']
 
 // CONFIGURACIÓ DE LA BARRA D'EINES (Amb icona d'Imatge 🖼️)
 const opcionsEditor = [
@@ -233,7 +239,7 @@ const volverDashboard = () => {
   editandoId.value = null
   editandoProyectoId.value = null
   nuevoEquipo.value = { nombre: '', marca: '', numero_serie: '', categoria: '', subcategoria: '', ultima_calibracion: '', descripcion: '', parametros_tecnicos: '' }
-  nuevoProyecto.value = { titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '' }
+  nuevoProyecto.value = { titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '' }
   seccionActiva.value = 'dashboard'
 }
 
@@ -291,7 +297,8 @@ const cargarParaEditarProyecto = (proj) => {
     descripcion_corta: proj.descripcion_corta || '',
     descripcion_ampliada: proj.descripcion_ampliada || '',
     investigador_principal: proj.investigador_principal || '',
-    pit: proj.pit || ''
+    pit: proj.pit || '',
+    imagen: proj.imagen || ''
   };
   seccionActiva.value = 'proyecto';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -307,7 +314,8 @@ const guardarProyecto = async () => {
     descripcion_corta: nuevoProyecto.value.descripcion_corta,
     descripcion_ampliada: nuevoProyecto.value.descripcion_ampliada,
     investigador_principal: nuevoProyecto.value.investigador_principal,
-    pit: nuevoProyecto.value.pit 
+    pit: nuevoProyecto.value.pit,
+    imagen: nuevoProyecto.value.imagen
   };
   try {
     const res = await peticionApi(url, {
@@ -513,6 +521,15 @@ const eliminarProyecto = async (id) => {
               <input type="text" v-model="nuevoProyecto.pit" placeholder="Ex: Raül Ferrando" class="input-texto">
             </div>
 
+            <div class="campo-form">
+              <label>{{ $t('intranet.panel.imagenProyecto') }}</label>
+              <div class="campo-imagen">
+                <input type="text" v-model="nuevoProyecto.imagen" list="fotos-web" :placeholder="$t('intranet.panel.imagenProyectoPh')" class="input-texto">
+                <img v-if="nuevoProyecto.imagen" :src="nuevoProyecto.imagen" alt="" class="vista-imagen">
+              </div>
+              <datalist id="fotos-web"><option v-for="f in FOTOS_WEB" :key="f" :value="f"></option></datalist>
+            </div>
+
             <div style="margin-bottom: 15px;">
               <label>{{ $t('intranet.panel.descCorta') }}</label>
               <textarea v-model="nuevoProyecto.descripcion_corta" rows="2" maxlength="150" :placeholder="$t('intranet.panel.descCortaPh')" style="width: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: inherit;"></textarea>
@@ -649,6 +666,9 @@ const eliminarProyecto = async (id) => {
 
 .acordeon-dash { background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); overflow: hidden; }
 .acordeon-dash-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #ffffff; border-bottom: 1px solid #eee; cursor: pointer; }
+.campo-imagen { display: flex; gap: 10px; align-items: center; }
+.campo-imagen .input-texto { flex: 1; }
+.vista-imagen { width: 96px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
 .btn-nou { background: #8cc63f; color: #012169; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
 /* Móvil: el menú pasa arriba y el contenido ocupa todo el ancho */

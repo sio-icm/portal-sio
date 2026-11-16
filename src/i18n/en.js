@@ -413,6 +413,17 @@ export default {
     vacio: 'There are no projects at this stage.',
     detalle: 'Show details',
     ocultarDetalle: 'Hide details',
+    todos: 'All',
+    buscar: 'Search a project or a person…',
+    verTodos: 'Show all',
+    sinResultados: 'No project matches the filters.',
+    verMas: 'Read more',
+    cerrar: 'Close',
+    ip: 'Principal investigator',
+    pit: 'SIO team',
+    web: 'Project website',
+    estado: 'Status',
+    tipo: 'Type',
     grupos: {
       enCurso: { titulo: 'In Progress', texto: 'Activities and campaigns currently being carried out.' },
       aprobados: { titulo: 'Approved', texto: 'Confirmed projects awaiting technical start.' },
@@ -420,6 +431,7 @@ export default {
       finalizados: { titulo: 'Completed', texto: 'Archive of completed campaigns and projects.' }
     },
     categorias: {
+      campanya: 'Campaign',
       infraestructura: 'Infrastructure',
       contrato: 'Contract',
       planNacional: 'National Plan',

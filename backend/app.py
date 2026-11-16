@@ -441,6 +441,32 @@ def modificar_instrumento(id):
 # RUTAS PARA PROYECTOS (Añadido con las nuevas descripciones y PIT)
 # =======================================================
 
+def crear_columnas_proyectos():
+    # Foto de portada opcional de cada projecte a la pàgina pública (ruta de la web, p. ex. /tortuga.webp)
+    conexion = conectar_bd()
+    columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(proyectos)')]
+    if columnas and 'imagen' not in columnas:
+        try:
+            conexion.execute("ALTER TABLE proyectos ADD COLUMN imagen TEXT NOT NULL DEFAULT ''")
+            conexion.commit()
+        except sqlite3.OperationalError:
+            pass  # l'altre procés de gunicorn l'ha afegida alhora
+    conexion.close()
+
+
+crear_columnas_proyectos()
+
+
+def imagen_proyecto(valor):
+    """Només rutes de la pròpia web (/...) o adreces https; si no, cap imatge."""
+    valor = str(valor or '').strip()
+    if len(valor) > 300 or '..' in valor or any(c in valor for c in '"\'<> '):
+        return ''
+    if (valor.startswith('/') and not valor.startswith('//')) or valor.startswith('https://'):
+        return valor
+    return ''
+
+
 @app.route('/api/proyectos', methods=['GET', 'POST'])
 def gestionar_proyectos():
     
@@ -466,8 +492,8 @@ def gestionar_proyectos():
             # AÑADIDO: pit en el INSERT
             cursor.execute('''
                 INSERT INTO proyectos 
-                (titulo, categoria, estado, descripcion_corta, descripcion_ampliada, investigador_principal, pit)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (titulo, categoria, estado, descripcion_corta, descripcion_ampliada, investigador_principal, pit, imagen)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 datos.get('titulo', ''),
                 datos.get('categoria', ''),
@@ -475,7 +501,8 @@ def gestionar_proyectos():
                 datos.get('descripcion_corta', ''),
                 datos.get('descripcion_ampliada', ''),
                 datos.get('investigador_principal', ''),
-                datos.get('pit', '') # <-- Aquí recogemos el PIT
+                datos.get('pit', ''), # <-- Aquí recogemos el PIT
+                imagen_proyecto(datos.get('imagen'))
             ))
             
             conexion.commit()
@@ -511,7 +538,7 @@ def modificar_proyecto(id):
             cursor.execute('''
                 UPDATE proyectos 
                 SET titulo = ?, categoria = ?, estado = ?, 
-                    descripcion_corta = ?, descripcion_ampliada = ?, investigador_principal = ?, pit = ?
+                    descripcion_corta = ?, descripcion_ampliada = ?, investigador_principal = ?, pit = ?, imagen = ?
                 WHERE id = ?
             ''', (
                 datos.get('titulo'), 
@@ -521,6 +548,9 @@ def modificar_proyecto(id):
                 datos.get('descripcion_ampliada'), 
                 datos.get('investigador_principal'),
                 datos.get('pit'), # <-- Aquí recogemos el PIT
+                # Si el formulari no envia la imatge (pantalla antiga), es manté la que hi havia
+                imagen_proyecto(datos['imagen']) if 'imagen' in datos
+                else (conn.execute('SELECT imagen FROM proyectos WHERE id = ?', (id,)).fetchone() or [''])[0],
                 id
             ))
             

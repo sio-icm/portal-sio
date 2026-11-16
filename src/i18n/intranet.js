@@ -252,6 +252,8 @@ export default {
     categoriaDos: { ca: 'Categoria:', es: 'Categoría:', en: 'Category:' },
     estado: { ca: 'Estat:', es: 'Estado:', en: 'Status:' },
     ip: { ca: 'IP (investigador principal):', es: 'IP (investigador principal):', en: 'PI (principal investigator):' },
+    imagenProyecto: { ca: 'Imatge de portada (opcional)', es: 'Imagen de portada (opcional)', en: 'Cover image (optional)' },
+    imagenProyectoPh: { ca: 'Tria una foto de la llista o escriu una ruta, p. ex. /tortuga.webp', es: 'Elige una foto de la lista o escribe una ruta, p. ej. /tortuga.webp', en: 'Pick a photo from the list or type a path, e.g. /tortuga.webp' },
     pit: { ca: 'PIT (personal tècnic SIO):', es: 'PIT (personal técnico SIO):', en: 'Technical staff (SIO):' },
     descCorta: { ca: 'Descripció curta (resum, màx. 2 línies):', es: 'Descripción corta (resumen, máx. 2 líneas):', en: 'Short description (summary, max. 2 lines):' },
     descCortaPh: { ca: 'Escriu un breu resum aquí...', es: 'Escribe un breve resumen aquí...', en: 'Write a short summary here...' },

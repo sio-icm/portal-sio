@@ -413,6 +413,17 @@ export default {
     vacio: 'No hay proyectos en esta fase.',
     detalle: 'Ver detalle',
     ocultarDetalle: 'Ocultar detalle',
+    todos: 'Todos',
+    buscar: 'Busca un proyecto, una persona…',
+    verTodos: 'Ver todo',
+    sinResultados: 'Ningún proyecto coincide con los filtros.',
+    verMas: 'Ver más',
+    cerrar: 'Cerrar',
+    ip: 'Investigación principal',
+    pit: 'Equipo del SIO',
+    web: 'Web del proyecto',
+    estado: 'Estado',
+    tipo: 'Tipo',
     grupos: {
       enCurso: { titulo: 'En Curso', texto: 'Actividades y campañas en fase de ejecución técnica actualmente.' },
       aprobados: { titulo: 'Aprobados', texto: 'Proyectos confirmados a la espera de inicio técnico.' },
@@ -420,6 +431,7 @@ export default {
       finalizados: { titulo: 'Finalizados', texto: 'Histórico de campañas y proyectos concluidos.' }
     },
     categorias: {
+      campanya: 'Campaña',
       infraestructura: 'Infraestructura',
       contrato: 'Contrato',
       planNacional: 'Plan Nacional',
