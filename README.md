@@ -354,8 +354,15 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 
 - Lista compartida de lo que hay que comprar (intranet → «🛒 Compres»), como el
   antiguo «Full Comanda»: qué se necesita, cantidad, proveedor, referencia, precio
-  unitario sin IVA (obligatorio) y **para quién**: el departamento (sin proyecto) o
-  un proyecto de la lista. Cada uno cambia lo suyo; los administradores, todo.
+  unitario sin IVA (obligatorio), **para quién** (el departamento o un proyecto) y
+  **quién lo pide** (una persona del servicio; por defecto, quien lo apunta).
+- Para el departamento puede apuntar todo el mundo (y cambiar lo suyo). Para un
+  proyecto, como va a su cuenta, solo los **autorizados** de ese proyecto y los
+  administradores (tabla `compras_autorizados`; la marcan los administradores en
+  «Qui pot comprar per a cada projecte»). La primera vez se rellena con los nombres
+  del campo PIT de cada proyecto.
+- La lista pendiente se agrupa por proyecto o por proveedor, con subtotales, y cada
+  proveedor muestra cuánto es de cada proyecto.
 - **Proveedores** (tabla `compras_proveedores`): cualquiera del personal puede
   añadirlos y ajustar el pedido mínimo sin portes, los portes y el correo para
   pedir presupuesto. Solo se puede borrar un proveedor sin compras (quien lo creó o
@@ -370,7 +377,7 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   historial y deja de contar.
 - **Gastos por proyecto**: pendiente, pedido y total de cada proyecto y del
   departamento, y el total de todas las compras (sin IVA ni portes).
-- Tablas: `compras`, `compras_envios` y `compras_proveedores` (se crean y migran solas).
+- Tablas: `compras`, `compras_envios`, `compras_proveedores` y `compras_autorizados` (se crean y migran solas).
 
 ## Páginas de documentación (wiki interna)
 

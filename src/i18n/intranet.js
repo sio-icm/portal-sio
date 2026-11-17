@@ -88,6 +88,9 @@ export default {
 
   // Errores que devuelve el servidor (en castellano); traducirError() los busca aquí
   errores: {
+    'No estás autorizado a comprar para este proyecto': { ca: 'No estàs autoritzat a comprar per a aquest projecte', es: 'No estás autorizado a comprar para este proyecto', en: 'You are not authorised to buy for this project' },
+    'Elige quién lo pide': { ca: 'Tria qui ho demana', es: 'Elige quién lo pide', en: 'Choose who is requesting it' },
+    'Datos incorrectos': { ca: 'Dades incorrectes', es: 'Datos incorrectos', en: 'Invalid data' },
     'Elige el proveedor': { ca: 'Tria el proveïdor', es: 'Elige el proveedor', en: 'Choose the supplier' },
     'Escribe el nombre del proveedor': { ca: 'Escriu el nom del proveïdor', es: 'Escribe el nombre del proveedor', en: 'Enter the supplier name' },
     'Importe no válido': { ca: 'Import no vàlid', es: 'Importe no válido', en: 'Invalid amount' },
@@ -649,6 +652,26 @@ export default {
     fecha: { ca: 'Data', es: 'Fecha', en: 'Date' },
     pedidoPor: { ca: 'Demanat per', es: 'Pedido por', en: 'Requested by' },
     totalPendiente: { ca: 'Total pendent', es: 'Total pendiente', en: 'Total pending' },
+    notaProyecto: {
+      ca: "Per al departament hi pot apuntar tothom; per a un projecte (va al seu compte), només qui n'està autoritzat.",
+      es: 'Para el departamento puede apuntar todo el mundo; para un proyecto (va a su cuenta), solo quien está autorizado.',
+      en: 'Anyone can add items for the department; for a project (charged to its account), only authorised people.'
+    },
+    apuntadoPor: { ca: 'apuntat per {nombre}', es: 'apuntado por {nombre}', en: 'added by {nombre}' },
+    agruparPor: { ca: 'Agrupa per:', es: 'Agrupa por:', en: 'Group by:' },
+    autorizados: { ca: 'Qui pot comprar per a cada projecte', es: 'Quién puede comprar para cada proyecto', en: 'Who can buy for each project' },
+    ayudaAutorizados: {
+      ca: "Les compres d'un projecte van al seu compte: només les poden apuntar aquestes persones i els administradors. Si has de comprar per a un projecte, demana-ho a un administrador.",
+      es: 'Las compras de un proyecto van a su cuenta: solo pueden apuntarlas estas personas y los administradores. Si tienes que comprar para un proyecto, pídeselo a un administrador.',
+      en: "A project's purchases are charged to its account: only these people and the administrators can add them. If you need to buy for a project, ask an administrator."
+    },
+    ayudaAutorizadosAdmin: {
+      ca: "Marca qui pot apuntar compres per a cada projecte (van al seu compte). Els administradors sempre poden. Al principi s'ha omplert amb el camp PIT de cada projecte.",
+      es: 'Marca quién puede apuntar compras para cada proyecto (van a su cuenta). Los administradores siempre pueden. Al principio se ha rellenado con el campo PIT de cada proyecto.',
+      en: 'Tick who can add purchases for each project (charged to its account). Administrators always can. It was first filled in from the technical staff field of each project.'
+    },
+    yAdmins: { ca: 'i els administradors', es: 'y los administradores', en: 'and the administrators' },
+    autorizadosGuardados: { ca: 'Autoritzats de {proyecto} desats.', es: 'Autorizados de {proyecto} guardados.', en: '{proyecto} authorised people saved.' },
     // Despeses
     gastos: { ca: 'Despeses per projecte', es: 'Gastos por proyecto', en: 'Expenses by project' },
     ayudaGastos: { ca: 'Sense IVA ni ports. «Demanat» és el que ja ha passat a l\'historial.', es: 'Sin IVA ni portes. «Pedido» es lo que ya ha pasado al historial.', en: 'Excl. VAT and shipping. “Ordered” is what is already in the history.' },

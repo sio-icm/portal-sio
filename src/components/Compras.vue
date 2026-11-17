@@ -8,7 +8,8 @@ import { peticionIntranet } from '../utils/diario'
 // Cada article és d'un proveïdor (amb la seva comanda mínima per no pagar ports) i del
 // departament o d'un projecte. Quan un proveïdor arriba al mínim es demana el pressupost
 // (per correu si el proveïdor en té) i els articles passen a l'historial i a les despeses.
-defineProps({ sesion: { type: Object, required: true } })
+// Per al departament tothom pot apuntar; per a un projecte, només els seus autoritzats.
+const props = defineProps({ sesion: { type: Object, required: true } })
 const emit = defineEmits(['sesion-caducada'])
 const { t, locale } = useI18n()
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
@@ -22,7 +23,7 @@ const enviando = ref(null) // id del proveïdor que s'està enviant
 const ultimoProveedor = () => {
   try { return Number(localStorage.getItem('sio_compras_proveedor')) || '' } catch { return '' }
 }
-const vacio = () => ({ descripcion: '', cantidad: 1, precio: '', proveedor_id: ultimoProveedor(), referencia: '', proyecto_id: '' })
+const vacio = () => ({ descripcion: '', cantidad: 1, precio: '', proveedor_id: ultimoProveedor(), referencia: '', proyecto_id: '', solicitante_id: props.sesion.usuario_id || '' })
 const nuevo = ref(vacio())
 const editando = ref(null) // còpia de la fila que s'està editant
 const formProveedor = ref(null) // { id?, nombre, minimo, portes, email }
@@ -30,6 +31,35 @@ const formProveedor = ref(null) // { id?, nombre, minimo, portes, email }
 const euros = (n) => new Intl.NumberFormat(locale.value, { style: 'currency', currency: 'EUR' }).format(n || 0)
 const fecha = (iso) => iso ? new Intl.DateTimeFormat(locale.value, { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(iso.slice(0, 10) + 'T12:00:00')) : ''
 const nombreProyecto = (g) => g.proyecto_id == null ? t('intranet.compras.departamento') : g.proyecto
+const nombreUsuario = (id) => datos.value?.usuarios.find(u => u.id === id)?.nombre || ''
+// Projectes on pot comprar qui ha entrat (els administradors, a tots)
+const proyectosPermitidos = computed(() => (datos.value?.proyectos || []).filter(pr => pr.puedo))
+
+// Llista pendent agrupada per projecte (departament primer) o per proveïdor, amb subtotals
+const agrupar = ref('proyecto')
+const grupos = computed(() => {
+  const mapa = new Map()
+  for (const f of datos.value?.pendientes || []) {
+    const porProyecto = agrupar.value === 'proyecto'
+    const clave = porProyecto ? (f.proyecto_id ?? 0) : f.proveedor_id
+    if (!mapa.has(clave)) {
+      mapa.set(clave, { clave, titulo: porProyecto ? (f.proyecto_id ? f.proyecto : t('intranet.compras.departamento')) : f.proveedor, filas: [], total: 0 })
+    }
+    const g = mapa.get(clave)
+    g.filas.push(f)
+    g.total += f.importe
+  }
+  return [...mapa.values()].sort((a, b) => (a.clave !== 0) - (b.clave !== 0) || a.titulo.localeCompare(b.titulo))
+})
+// Desglossament per projecte dins la targeta de cada proveïdor
+const desglose = (p) => {
+  const mapa = new Map()
+  for (const f of (datos.value?.pendientes || []).filter(x => x.proveedor_id === p.id)) {
+    const nom = f.proyecto_id ? f.proyecto : t('intranet.compras.departamentoCorto')
+    mapa.set(nom, (mapa.get(nom) || 0) + f.importe)
+  }
+  return [...mapa.entries()].map(([nombre, total]) => ({ nombre, total }))
+}
 
 // Primer els proveïdors amb coses pendents
 const proveedores = computed(() => [...(datos.value?.proveedores || [])].sort((a, b) => (b.pendientes > 0) - (a.pendientes > 0)))
@@ -78,7 +108,7 @@ const anadir = async () => {
     guardando.value = false
   }
 }
-const empezarEdicion = (f) => { editando.value = { ...f, proyecto_id: f.proyecto_id ?? '' } }
+const empezarEdicion = (f) => { editando.value = { ...f, proyecto_id: f.proyecto_id ?? '', solicitante_id: f.solicitante_id ?? '' } }
 const guardarEdicion = async () => {
   const cuerpo = { ...editando.value, proyecto_id: editando.value.proyecto_id || null }
   if (await respuesta(await api(`/api/compras/${editando.value.id}`, json('PUT', cuerpo)), t('intranet.compras.guardado'))) editando.value = null
@@ -105,6 +135,12 @@ const enviar = async (p, forzar = false) => {
   } finally {
     enviando.value = null
   }
+}
+
+// ---------- Qui pot comprar per a cada projecte (ho canvien els administradors) ----------
+const cambiarAutorizado = async (pr, uid, marcado) => {
+  const usuarios = marcado ? [...pr.autorizados, uid] : pr.autorizados.filter(x => x !== uid)
+  await respuesta(await api(`/api/compras/autorizados/${pr.id}`, json('PUT', { usuarios })), t('intranet.compras.autorizadosGuardados', { proyecto: pr.titulo }))
 }
 
 // ---------- Proveïdors ----------
@@ -187,6 +223,9 @@ const borrarProveedor = async (p) => {
             </p>
             <template v-if="p.pendientes">
               <div class="cifras"><strong>{{ euros(p.total) }}</strong><span v-if="p.minimo > 0"> / {{ euros(p.minimo) }}</span> <span class="gris">{{ $t('intranet.compras.sinIva') }}</span></div>
+              <ul class="desglose">
+                <li v-for="x in desglose(p)" :key="x.nombre"><span>{{ x.nombre }}</span><span>{{ euros(x.total) }}</span></li>
+              </ul>
               <div v-if="p.minimo > 0" class="barra" role="progressbar" :aria-valuenow="porcentaje(p)" aria-valuemin="0" aria-valuemax="100"><i :style="{ width: porcentaje(p) + '%' }"></i></div>
               <p v-if="llega(p)" class="estado-ok">✅ {{ p.minimo > 0 ? $t('intranet.compras.alcanzado') : $t('intranet.compras.listo') }}</p>
               <p v-else class="estado">{{ $t('intranet.compras.falta', { falta: euros(p.minimo - p.total) }) }}</p>
@@ -229,20 +268,34 @@ const borrarProveedor = async (p) => {
           <label>{{ $t('intranet.compras.referencia') }}
             <input v-model="nuevo.referencia" maxlength="60" :placeholder="$t('intranet.compras.referenciaPh')">
           </label>
+        </div>
+        <div class="fila">
           <label class="ancho">{{ $t('intranet.compras.paraQuien') }}
             <select v-model="nuevo.proyecto_id">
               <option value="">{{ $t('intranet.compras.departamento') }}</option>
-              <option v-for="pr in datos.proyectos" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
+              <option v-for="pr in proyectosPermitidos" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
+            </select>
+          </label>
+          <label>{{ $t('intranet.compras.pedidoPor') }}
+            <select v-model="nuevo.solicitante_id" required>
+              <option v-for="u in datos.usuarios" :key="u.id" :value="u.id">{{ u.nombre }}</option>
             </select>
           </label>
           <button type="submit" class="btn-principal" :disabled="guardando">{{ $t('intranet.compras.anadir') }}</button>
         </div>
-        <p class="nota">{{ $t('intranet.compras.notaProveedor') }}</p>
+        <p class="nota">{{ $t('intranet.compras.notaProyecto') }} {{ $t('intranet.compras.notaProveedor') }}</p>
       </form>
 
       <!-- Llista pendent -->
       <section class="caja">
-        <h3>{{ $t('intranet.compras.pendientes', { n: datos.pendientes.length }) }}</h3>
+        <div class="cabecera">
+          <h3>{{ $t('intranet.compras.pendientes', { n: datos.pendientes.length }) }}</h3>
+          <div v-if="datos.pendientes.length" class="selector" role="group" :aria-label="$t('intranet.compras.agruparPor')">
+            <span>{{ $t('intranet.compras.agruparPor') }}</span>
+            <button type="button" :class="{ activo: agrupar === 'proyecto' }" @click="agrupar = 'proyecto'">{{ $t('intranet.compras.proyecto') }}</button>
+            <button type="button" :class="{ activo: agrupar === 'proveedor' }" @click="agrupar = 'proveedor'">{{ $t('intranet.compras.proveedor') }}</button>
+          </div>
+        </div>
         <p v-if="!datos.pendientes.length" class="vacio">{{ $t('intranet.compras.ninguno') }}</p>
         <div v-else class="tabla-scroll">
           <table class="tabla">
@@ -253,17 +306,25 @@ const borrarProveedor = async (p) => {
               <th>{{ $t('intranet.compras.proveedor') }}</th>
               <th class="num">{{ $t('intranet.compras.precioCorto') }}</th><th class="num">{{ $t('intranet.compras.importe') }}</th><th></th>
             </tr></thead>
-            <tbody>
-              <tr v-for="f in datos.pendientes" :key="f.id">
+            <tbody v-for="g in grupos" :key="agrupar + g.clave">
+              <tr class="grupo">
+                <th colspan="6">{{ g.titulo }} <span class="gris">· {{ $t('intranet.compras.articulos', { n: g.filas.length }) }}</span></th>
+                <th class="num">{{ euros(g.total) }}</th><th></th>
+              </tr>
+              <tr v-for="f in g.filas" :key="f.id">
                 <template v-if="editando && editando.id === f.id">
-                  <td>{{ f.pedido_por }}<br><span class="gris">{{ fecha(f.fecha) }}</span></td>
+                  <td>
+                    <select v-model="editando.solicitante_id" class="input-fila" :aria-label="$t('intranet.compras.pedidoPor')">
+                      <option v-for="u in datos.usuarios" :key="u.id" :value="u.id">{{ u.nombre }}</option>
+                    </select>
+                  </td>
                   <td class="desc"><input v-model="editando.descripcion" class="input-fila" maxlength="300" :aria-label="$t('intranet.compras.descripcion')">
                     <input v-model="editando.referencia" class="input-fila ref" maxlength="60" :placeholder="$t('intranet.compras.referencia')" :aria-label="$t('intranet.compras.referencia')"></td>
                   <td><input v-model.number="editando.cantidad" class="input-fila corto" type="number" min="1" max="9999" :aria-label="$t('intranet.compras.cantidad')"></td>
                   <td>
                     <select v-model="editando.proyecto_id" class="input-fila" :aria-label="$t('intranet.compras.proyecto')">
                       <option value="">{{ $t('intranet.compras.departamento') }}</option>
-                      <option v-for="pr in datos.proyectos" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
+                      <option v-for="pr in proyectosPermitidos" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
                     </select>
                   </td>
                   <td>
@@ -279,7 +340,7 @@ const borrarProveedor = async (p) => {
                   </div></td>
                 </template>
                 <template v-else>
-                  <td>{{ f.pedido_por }}<br><span class="gris">{{ fecha(f.fecha) }}</span></td>
+                  <td>{{ f.pedido_por }}<br><span class="gris">{{ fecha(f.fecha) }}<template v-if="f.usuario_id && f.usuario_id !== f.solicitante_id"> · {{ $t('intranet.compras.apuntadoPor', { nombre: nombreUsuario(f.usuario_id) }) }}</template></span></td>
                   <td class="desc">{{ f.descripcion }}<br v-if="f.referencia"><span v-if="f.referencia" class="gris">{{ $t('intranet.compras.refCorta') }} {{ f.referencia }}</span></td>
                   <td class="num">{{ f.cantidad }}</td>
                   <td><span class="etiqueta" :class="{ dpto: !f.proyecto_id }">{{ f.proyecto_id ? f.proyecto : $t('intranet.compras.departamentoCorto') }}</span></td>
@@ -332,6 +393,27 @@ const borrarProveedor = async (p) => {
           </table>
         </div>
       </section>
+
+      <!-- Qui pot comprar per a cada projecte -->
+      <details class="caja autorizados">
+        <summary><h3>{{ $t('intranet.compras.autorizados') }}</h3></summary>
+        <p class="nota">{{ datos.es_admin ? $t('intranet.compras.ayudaAutorizadosAdmin') : $t('intranet.compras.ayudaAutorizados') }}</p>
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <tbody>
+              <tr v-for="pr in datos.proyectos" :key="pr.id">
+                <th>{{ pr.titulo }}</th>
+                <td v-if="datos.es_admin" class="casillas">
+                  <label v-for="u in datos.usuarios" :key="u.id">
+                    <input type="checkbox" :checked="pr.autorizados.includes(u.id)" @change="cambiarAutorizado(pr, u.id, $event.target.checked)"> {{ u.nombre }}
+                  </label>
+                </td>
+                <td v-else>{{ pr.autorizados.map(nombreUsuario).filter(Boolean).join(', ') || '—' }}<span class="gris"> · {{ $t('intranet.compras.yAdmins') }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
 
       <!-- Comandes anteriors -->
       <section v-if="datos.envios.length" class="caja">
@@ -425,6 +507,19 @@ const borrarProveedor = async (p) => {
 .envio ul { margin: 8px 0 0; padding-left: 20px; font-size: 0.88rem; }
 .envio li { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 3px 0; border-bottom: 1px dashed #e3e8ee; }
 .gris { color: #777; }
+.desglose { list-style: none; margin: 2px 0; padding: 0; font-size: 0.83rem; color: #444; }
+.desglose li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted #dde3ea; padding: 1px 0; }
+.selector { display: flex; align-items: center; gap: 4px; font-size: 0.83rem; color: #555; }
+.selector button { background: white; border: 1px solid #ccd5df; padding: 4px 10px; cursor: pointer; font: inherit; }
+.selector button:first-of-type { border-radius: 4px 0 0 4px; }
+.selector button:last-of-type { border-radius: 0 4px 4px 0; margin-left: -5px; }
+.selector button.activo { background: #012169; color: white; border-color: #012169; }
+.tabla tr.grupo th { background: #e8eef5; color: #012169; font-size: 0.9rem; }
+.autorizados summary { cursor: pointer; }
+.autorizados summary h3 { display: inline; }
+.autorizados .tabla th { width: 220px; white-space: normal; color: #012169; }
+.casillas { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.casillas label { white-space: nowrap; cursor: pointer; }
 
 @media (max-width: 768px) {
   .panel-compras { padding: 14px; }
