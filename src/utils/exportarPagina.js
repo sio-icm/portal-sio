@@ -19,8 +19,8 @@ const ESTILOS = `
 
 const escapar = (s) => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
-// Quill 2 -> HTML estàndard
-const normalizar = (html) => {
+// Quill 2 -> HTML estàndard (també el fa servir l'editor per obrir pàgines antigues)
+export const normalizarHtml = (html, { exportar = false } = {}) => {
   const doc = new DOMParser().parseFromString(`<div>${limpiarHtml(html)}</div>`, 'text/html')
   const raiz = doc.body.firstChild
   raiz.querySelectorAll('.ql-ui').forEach(n => n.remove())
@@ -38,6 +38,11 @@ const normalizar = (html) => {
       items.forEach(li => { li.removeAttribute('data-list'); ul.appendChild(li) })
       ol.replaceWith(ul)
     } else items.forEach(li => li.removeAttribute('data-list'))
+  })
+  // Tasques (editor nou): en exportar, la casella es converteix en ☑ / ☐ (en editar es mantenen)
+  if (exportar) raiz.querySelectorAll('ul[data-type="taskList"] > li').forEach(li => {
+    li.querySelector(':scope > label')?.remove()
+    li.prepend(li.getAttribute('data-checked') === 'true' ? '☑ ' : '☐ ')
   })
   // Paràgrafs buits de l'editor (<p><br></p>)
   raiz.querySelectorAll('p').forEach(p => { if (p.innerHTML === '<br>') p.remove() })
@@ -64,7 +69,7 @@ const cuerpoHtml = (pagina, textos) => {
     : ''
   return `<h1>${escapar(pagina.titulo)}</h1>
 <p class="meta">${escapar(textos.meta)}</p>
-${normalizar(pagina.contenido)}
+${normalizarHtml(pagina.contenido, { exportar: true })}
 ${adjuntos}`
 }
 

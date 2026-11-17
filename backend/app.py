@@ -451,7 +451,7 @@ TEXTOS_TRADUCIDOS = ('descripcion_corta_es', 'descripcion_ampliada_es', 'descrip
 def crear_columnas_proyectos():
     conexion = conectar_bd()
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(proyectos)')]
-    for columna in ('imagen',) + TEXTOS_TRADUCIDOS:
+    for columna in ('imagen', 'nextcloud') + TEXTOS_TRADUCIDOS:
         if columnas and columna not in columnas:
             try:
                 conexion.execute(f"ALTER TABLE proyectos ADD COLUMN {columna} TEXT NOT NULL DEFAULT ''")
@@ -468,7 +468,13 @@ def extras_proyecto(conexion, datos, id=None):
         if clave in datos:
             return limpiar(datos[clave])
         return anterior[clave] if anterior is not None else ''
-    return (valor('imagen', imagen_proyecto),) + tuple(valor(c) for c in TEXTOS_TRADUCIDOS)
+    return (valor('imagen', imagen_proyecto),) + tuple(valor(c) for c in TEXTOS_TRADUCIDOS) + (valor('nextcloud', enlace_nextcloud),)
+
+
+def enlace_nextcloud(valor):
+    """Enllaç a la carpeta del projecte al Nextcloud (SACO): només adreces https; només el veu el personal."""
+    valor = str(valor or '').strip()
+    return valor if valor.startswith('https://') and len(valor) <= 500 and not any(c in valor for c in '"\'<> ') else ''
 
 
 crear_columnas_proyectos()
@@ -493,7 +499,9 @@ def gestionar_proyectos():
             conexion = conectar_bd()
             proyectos = conexion.execute('SELECT * FROM proyectos').fetchall()
             conexion.close()
-            return jsonify([dict(fila) for fila in proyectos])
+            # L'enllaç al Nextcloud (carpeta compartida) només per al personal amb sessió
+            privados = () if session.get('autenticado') else ('nextcloud',)
+            return jsonify([{k: v for k, v in dict(fila).items() if k not in privados} for fila in proyectos])
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
@@ -510,8 +518,8 @@ def gestionar_proyectos():
             cursor.execute('''
                 INSERT INTO proyectos 
                 (titulo, categoria, estado, descripcion_corta, descripcion_ampliada, investigador_principal, pit, imagen,
-                 descripcion_corta_es, descripcion_ampliada_es, descripcion_corta_en, descripcion_ampliada_en)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 descripcion_corta_es, descripcion_ampliada_es, descripcion_corta_en, descripcion_ampliada_en, nextcloud)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 datos.get('titulo', ''),
                 datos.get('categoria', ''),
@@ -556,7 +564,8 @@ def modificar_proyecto(id):
                 UPDATE proyectos 
                 SET titulo = ?, categoria = ?, estado = ?, 
                     descripcion_corta = ?, descripcion_ampliada = ?, investigador_principal = ?, pit = ?, imagen = ?,
-                    descripcion_corta_es = ?, descripcion_ampliada_es = ?, descripcion_corta_en = ?, descripcion_ampliada_en = ?
+                    descripcion_corta_es = ?, descripcion_ampliada_es = ?, descripcion_corta_en = ?, descripcion_ampliada_en = ?,
+                    nextcloud = ?
                 WHERE id = ?
             ''', (
                 datos.get('titulo'), 

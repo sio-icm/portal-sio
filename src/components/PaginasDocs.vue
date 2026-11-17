@@ -1,12 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { QuillEditor } from '@vueup/vue-quill'
-import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
+import EditorRico from './EditorRico.vue'
 import { traducirError } from '../i18n'
 import { peticionIntranet } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
-import { exportarPagina, FORMATOS } from '../utils/exportarPagina'
+import { exportarPagina, FORMATOS, normalizarHtml } from '../utils/exportarPagina'
 
 // Pàgines de documentació escrites a la intranet (una wiki interna): llista, lectura,
 // edició amb historial (qui i quan) i recuperació de versions anteriors.
@@ -25,15 +24,6 @@ const buscador = ref('')
 const error = ref('')
 const mensaje = ref('')
 const guardando = ref(false)
-
-const TOOLBAR = [
-  [{ header: [2, 3, false] }],
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ list: 'ordered' }, { list: 'bullet' }],
-  ['blockquote', 'code-block'],
-  ['link', 'image'],
-  ['clean']
-]
 
 // El mateix control que fa el servidor, per avisar abans de desar
 const PATRON_CONTRASENA = /\b(password|passwd|pwd|pass|passphrase|contrase(?:ñ|n)a|contrasenya|clau|clave|secret|token)\b\s*[:=]\s*(\S+)/gi
@@ -73,6 +63,27 @@ const agrupadas = computed(() => {
 })
 const categorias = computed(() => [...new Set(paginas.value.map(p => p.categoria).filter(Boolean))].sort())
 
+// Navegació com un gestor de fitxers: carpetes (categories) i, a dins, les pàgines
+const carpeta = ref(null) // null = inici de la documentació
+const SIN_CATEGORIA = () => t('intranet.paginas.sinCategoria')
+const carpetas = computed(() => {
+  const n = {}
+  for (const p of paginas.value) { const g = p.categoria || SIN_CATEGORIA(); n[g] = (n[g] || 0) + 1 }
+  return Object.entries(n).sort(([a], [b]) => a.localeCompare(b))
+})
+const buscando = computed(() => buscador.value.trim().length > 0)
+// Pàgines que es mostren: les de la carpeta oberta o, si es cerca, totes les que coincideixen
+const visibles = computed(() => {
+  if (buscando.value) return agrupadas.value.flatMap(([, l]) => l)
+  return paginas.value.filter(p => (p.categoria || SIN_CATEGORIA()) === carpeta.value)
+    .sort((a, b) => a.titulo.localeCompare(b.titulo))
+})
+// Tipus de la fitxa: el del primer adjunt o «WEB» si només és text escrit aquí
+const tipoFicha = (p) => p.adjuntos?.length ? (p.adjuntos[0] || '').toUpperCase() : 'WEB'
+const COLOR_TIPO = { PDF: '#d93025', DOC: '#1a5fb4', DOCX: '#1a5fb4', XLS: '#1e7e34', XLSX: '#1e7e34', CSV: '#1e7e34', PPT: '#d35400', PPTX: '#d35400', JPG: '#8e44ad', JPEG: '#8e44ad', PNG: '#8e44ad', ZIP: '#6c757d', TXT: '#6c757d', WEB: '#17a2b8' }
+const colorTipo = (p) => COLOR_TIPO[tipoFicha(p)] || '#6c757d'
+const fechaCorta = (iso) => iso ? new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso.replace(' ', 'T') + 'Z')) : ''
+
 const abrir = async (id) => {
   error.value = ''; mensaje.value = ''
   const r = await api(`/api/paginas/${id}`)
@@ -85,12 +96,13 @@ const volver = async () => { vista.value = 'lista'; pagina.value = null; version
 
 const nueva = () => {
   error.value = ''; mensaje.value = ''
-  borrador.value = { id: null, titulo: '', categoria: '', contenido: '' }
+  borrador.value = { id: null, titulo: '', categoria: carpeta.value && carpeta.value !== SIN_CATEGORIA() ? carpeta.value : '', contenido: '' }
   vista.value = 'editar'
 }
 const editar = () => {
   error.value = ''; mensaje.value = ''
-  borrador.value = { id: pagina.value.id, titulo: pagina.value.titulo, categoria: pagina.value.categoria, contenido: pagina.value.contenido }
+  // Les pàgines fetes amb l'editor antic (Quill) es passen a HTML estàndard per a l'editor nou
+  borrador.value = { id: pagina.value.id, titulo: pagina.value.titulo, categoria: pagina.value.categoria, contenido: normalizarHtml(pagina.value.contenido) }
   vista.value = 'editar'
 }
 const cancelar = () => { vista.value = borrador.value.id ? 'ver' : 'lista' }
@@ -192,7 +204,7 @@ const restaurar = async () => {
     <p v-if="mensaje" class="aviso-ok" role="status">{{ mensaje }}</p>
     <p v-if="error" class="aviso-error" role="alert">{{ error }}</p>
 
-    <!-- LLISTA -->
+    <!-- LLISTA: carpetes i fitxes, com un gestor de fitxers -->
     <template v-if="vista === 'lista'">
       <div class="cabecera">
         <div>
@@ -204,20 +216,43 @@ const restaurar = async () => {
           <button type="button" class="btn-principal" @click="nueva">{{ $t('intranet.paginas.nueva') }}</button>
         </div>
       </div>
+
+      <!-- Ruta: Documentació › carpeta -->
+      <nav class="ruta" :aria-label="$t('intranet.paginas.ruta')">
+        <button type="button" :class="{ actual: !carpeta && !buscando }" @click="carpeta = null; buscador = ''">📚 {{ $t('intranet.paginas.inicio') }}</button>
+        <template v-if="buscando"><span aria-hidden="true">›</span><span class="actual">🔍 {{ $t('intranet.paginas.resultados', { n: visibles.length }) }}</span></template>
+        <template v-else-if="carpeta"><span aria-hidden="true">›</span><span class="actual">📂 {{ carpeta }}</span></template>
+      </nav>
+
       <p v-if="!paginas.length" class="vacio">{{ $t('intranet.paginas.ninguna') }}</p>
-      <p v-else-if="!agrupadas.length" class="vacio">{{ $t('intranet.paginas.sinResultados') }}</p>
-      <section v-for="[categoria, lista] in agrupadas" :key="categoria" class="grupo">
-        <h3>📂 {{ categoria }}</h3>
-        <ul class="lista">
-          <li v-for="p in lista" :key="p.id">
-            <button type="button" class="item" @click="abrir(p.id)">
-              <span class="item-titulo">{{ p.adjuntos?.length && !p.texto?.trim() ? icono(p.adjuntos[0]) : '📝' }} {{ p.titulo }}</span>
-              <span v-if="p.adjuntos?.length" class="item-adjuntos">📎 {{ p.adjuntos.join(', ') }}</span>
-              <span class="item-meta">{{ $t('intranet.paginas.actualizadaPor', { quien: p.actualizado_por, fecha: fecha(p.actualizado) }) }}</span>
+
+      <!-- Inici: carpetes -->
+      <ul v-else-if="!carpeta && !buscando" class="graella carpetas">
+        <li v-for="[nombre, n] in carpetas" :key="nombre">
+          <button type="button" class="carpeta" @click="carpeta = nombre">
+            <span class="icono-carpeta" aria-hidden="true"></span>
+            <span class="nombre">{{ nombre }}</span>
+            <span class="detalle">{{ $t('intranet.paginas.elementos', { n }) }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Dins d'una carpeta o resultats de la cerca: fitxes -->
+      <template v-else>
+        <p v-if="!visibles.length" class="vacio">{{ $t('intranet.paginas.sinResultados') }}</p>
+        <ul class="graella fichas">
+          <li v-for="p in visibles" :key="p.id">
+            <button type="button" class="ficha" @click="abrir(p.id)" :title="p.titulo">
+              <span class="hoja" :style="{ '--tipo': colorTipo(p) }">
+                <span class="etiqueta-tipo">{{ tipoFicha(p) }}</span>
+                <span v-if="p.adjuntos?.length > 1" class="clip">📎 {{ p.adjuntos.length }}</span>
+              </span>
+              <span class="nombre">{{ p.titulo }}</span>
+              <span class="detalle"><template v-if="buscando">📂 {{ p.categoria || SIN_CATEGORIA() }} · </template>{{ fechaCorta(p.actualizado) }}</span>
             </button>
           </li>
         </ul>
-      </section>
+      </template>
     </template>
 
     <!-- LECTURA -->
@@ -303,7 +338,7 @@ const restaurar = async () => {
           <datalist id="categorias-paginas"><option v-for="c in categorias" :key="c" :value="c"></option></datalist>
         </div>
         <div class="editor">
-          <QuillEditor theme="snow" v-model:content="borrador.contenido" contentType="html" :toolbar="TOOLBAR" />
+          <EditorRico v-model="borrador.contenido" :placeholder="$t('intranet.editor.placeholder')" />
         </div>
         <div class="botones">
           <button type="submit" class="btn-principal" :disabled="guardando">{{ $t('intranet.comun.guardar') }}</button>
@@ -332,6 +367,31 @@ const restaurar = async () => {
 .aviso-error { color: #b02a37; font-weight: bold; background: #fdecea; padding: 10px 14px; border-radius: 6px; }
 .vacio { color: #666; font-style: italic; }
 
+.ruta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; font-size: 0.95rem; color: #777; }
+.ruta button { background: none; border: none; padding: 4px 6px; border-radius: 4px; color: #0086c0; font: inherit; font-weight: bold; cursor: pointer; }
+.ruta button:hover { background: #eef5fa; }
+.ruta .actual { color: #012169; font-weight: bold; }
+.ruta button.actual { color: #012169; cursor: default; }
+.graella { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.carpetas { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.fichas { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.carpeta, .ficha { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; background: white; border: 1px solid transparent;
+  border-radius: 10px; cursor: pointer; font: inherit; text-align: center; transition: background 0.15s, border-color 0.15s, transform 0.15s; }
+.carpeta:hover, .ficha:hover { background: #f2f8fc; border-color: #cfe3f0; transform: translateY(-2px); }
+.carpeta:focus-visible, .ficha:focus-visible { outline: 2px solid #0086c0; outline-offset: 2px; }
+/* Carpeta dibuixada amb CSS (pestanya + cos) */
+.icono-carpeta { position: relative; width: 96px; height: 72px; margin-top: 8px; border-radius: 6px 8px 8px 8px; background: linear-gradient(180deg, #4a90d9, #2f6fb8); box-shadow: 0 4px 10px rgba(47, 111, 184, 0.25); }
+.icono-carpeta::before { content: ''; position: absolute; left: 0; top: -10px; width: 40px; height: 14px; border-radius: 6px 6px 0 0; background: #2f6fb8; }
+.icono-carpeta::after { content: ''; position: absolute; left: 6px; right: 6px; top: 10px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.35); }
+/* Full amb la cantonada doblegada i el tipus de fitxer */
+.hoja { position: relative; width: 74px; height: 96px; border-radius: 4px; background: white; border: 1px solid #d5dbe2; box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; box-sizing: border-box; }
+.hoja::before { content: ''; position: absolute; top: -1px; right: -1px; width: 20px; height: 20px; background: linear-gradient(225deg, #f4f7f9 50%, #d5dbe2 50%); border-bottom-left-radius: 3px; }
+.hoja::after { content: ''; position: absolute; left: 12px; right: 12px; top: 26px; height: 30px; background: repeating-linear-gradient(#e8ecf0 0 3px, transparent 3px 8px); }
+.etiqueta-tipo { position: relative; z-index: 1; background: var(--tipo); color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 3px; }
+.clip { position: absolute; top: -8px; left: -10px; background: white; border: 1px solid #d5dbe2; border-radius: 10px; padding: 0 6px; font-size: 0.72rem; color: #555; }
+.carpeta .nombre, .ficha .nombre { color: #012169; font-weight: bold; font-size: 0.88rem; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.carpeta .detalle, .ficha .detalle { color: #888; font-size: 0.76rem; }
 .grupo h3 { color: #012169; font-size: 1.05rem; margin: 18px 0 8px; }
 .lista { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
 .item { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e3e8ee; border-left: 4px solid #17a2b8; border-radius: 6px; cursor: pointer; font: inherit; }
@@ -357,6 +417,17 @@ const restaurar = async () => {
 .contenido-wiki :deep(.ql-ui) { display: none; }
 .contenido-wiki :deep(.ql-code-block-container) { background: #0f1b2d; color: #e6edf3; padding: 12px 14px; border-radius: 6px; overflow-x: auto; margin: 0 0 12px;
   font-family: 'Courier New', monospace; font-size: 0.88rem; line-height: 1.5; white-space: pre; }
+.contenido-wiki :deep(h1) { color: #012169; font-size: 1.6rem; margin: 24px 0 10px; }
+.contenido-wiki :deep(h4) { color: #012169; font-size: 1rem; margin: 14px 0 4px; }
+.contenido-wiki :deep(hr) { border: none; border-top: 2px solid #d5dbe2; margin: 18px 0; }
+.contenido-wiki :deep(mark) { padding: 0 2px; border-radius: 2px; }
+.contenido-wiki :deep(th) { background: #eef3f8; text-align: left; }
+.contenido-wiki :deep(table) { width: 100%; }
+.contenido-wiki :deep(ul[data-type="taskList"]) { list-style: none; padding-left: 4px; margin-left: 0; }
+.contenido-wiki :deep(ul[data-type="taskList"] li) { display: flex; gap: 8px; align-items: flex-start; }
+.contenido-wiki :deep(ul[data-type="taskList"] li > label) { margin-top: 3px; pointer-events: none; }
+.contenido-wiki :deep(ul[data-type="taskList"] li > div) { flex: 1; }
+.contenido-wiki :deep(ul[data-type="taskList"] li[data-checked="true"] > div) { color: #6b7785; text-decoration: line-through; }
 .contenido-wiki :deep(code) { font-family: 'Courier New', monospace; }
 .contenido-wiki :deep(img) { max-width: 100%; height: auto; border-radius: 6px; margin: 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 .contenido-wiki :deep(a) { color: #0086c0; }

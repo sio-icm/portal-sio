@@ -370,6 +370,14 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 - Intranet → «📚 Documentació i manuals» → pestaña «📝 Pàgines»: documentos escritos
   directamente en la web (títulos, listas, enlaces, bloques de código, imágenes pegadas),
   agrupados por categoría (p. ej. «Boia Somorrostro»). Solo con sesión: nunca son públicos.
+- Editor de textos completo (TipTap, `src/components/EditorRico.vue`): títulos, negrita/cursiva/
+  subrayado, colores y marcador, alineación, subíndice/superíndice, listas y listas de tareas,
+  tablas, bloques de código, citas, separadores, enlaces e imágenes (pegadas, arrastradas o
+  elegidas, máx. 3 MB cada una). Las páginas antiguas (Quill) se convierten al editarlas.
+- La intranet se abre en el «Calendari d'equip». «Projectes» e «Instruments» tienen su propia
+  sección en el menú, con el botón de alta. Cada proyecto puede tener el enlace a su carpeta
+  del Nextcloud del CSIC (SACO), donde se comparte la documentación con los investigadores:
+  solo lo ve el personal (la API pública no lo envía).
 - Cualquiera del personal puede crear y editar (como una wiki). Cada guardado queda en el
   historial (quién y cuándo) y se puede ver y recuperar una versión anterior. Borrar: quien
   la creó o un administrador.

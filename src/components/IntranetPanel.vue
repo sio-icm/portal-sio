@@ -13,7 +13,6 @@ import InformeSemestral from './InformeSemestral.vue'
 import GestionUsuarios from './GestionUsuarios.vue'
 import MiCuenta from './MiCuenta.vue'
 import CalendariEquip from './CalendariEquip.vue'
-import ResumenCalendario from './ResumenCalendario.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -34,7 +33,7 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'compras', 'instrumentacion', 'proyecto'
+const seccionActiva = ref('calendari') // 'calendari' (en entrar), 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'compras', 'proyectos', 'instrumentos', 'instrumentacion' (formulari), 'proyecto' (formulari)
 
 // Las secciones nuevas avisan si la sesión ha caducado
 const sesionCaducada = () => {
@@ -60,7 +59,7 @@ const nuevoEquipo = ref({
 
 const nuevoProyecto = ref({
   titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '',
-  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: ''
+  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: '', nextcloud: ''
 })
 // Idioma de les descripcions que s'està editant: 'ca' (text principal), 'es' o 'en'
 const idiomaTexto = ref('ca')
@@ -82,15 +81,6 @@ const opcionsEditor = [
   ['clean']
 ]
 
-// CONTROL DELS ACORDIONS DEL DASHBOARD
-const acordeonesDash = ref({
-  proyectos: true,
-  instrumentos: true
-})
-
-const toggleDashboard = (seccion) => {
-  acordeonesDash.value[seccion] = !acordeonesDash.value[seccion]
-}
 
 // ==============================
 // CÀRREGUES INICIALS
@@ -186,7 +176,7 @@ const iniciarSesion = async () => {
     password.value = ''
     if (respuesta.ok) {
       sesion.value = await respuesta.json()
-      seccionActiva.value = 'dashboard'
+      seccionActiva.value = 'calendari'
       estaLogueado.value = true
       cargarInstrumentos()
       cargarProyectos()
@@ -214,39 +204,42 @@ const cerrarSesion = async () => {
 const menuAbierto = ref(false)
 const gruposMenu = computed(() => [
   { titulo: 'intranet.panel.menu.grupoEquipo', items: [
-    { id: 'dashboard', texto: 'intranet.panel.menu.general' },
     { id: 'calendari', texto: 'intranet.panel.menu.calendario' },
     { id: 'diario', texto: 'intranet.panel.menu.diario' },
     { id: 'informe', texto: 'intranet.panel.menu.informe' },
     { id: 'equipo', texto: 'intranet.panel.menu.equipo' }
   ] },
   { titulo: 'intranet.panel.menu.grupoRecursos', items: [
+    { id: 'proyectos', texto: 'intranet.panel.menu.proyectos' },
+    { id: 'instrumentos', texto: 'intranet.panel.menu.instrumentos' },
     { id: 'documentacion', texto: 'intranet.panel.menu.documentacion' },
     { id: 'compras', texto: 'intranet.panel.menu.compras' }
-  ] },
-  { titulo: 'intranet.panel.menu.grupoAltas', items: [
-    { id: 'instrumentacion', texto: editandoId.value ? 'intranet.panel.menu.editandoInstrumento' : 'intranet.panel.menu.altaInstrumento' },
-    { id: 'proyecto', texto: editandoProyectoId.value ? 'intranet.panel.menu.editandoProyecto' : 'intranet.panel.menu.altaProyecto' }
   ] },
   { titulo: 'intranet.panel.menu.grupoCuenta', items: [
     { id: 'cuenta', texto: 'intranet.panel.menu.cuenta' },
     ...(sesion.value?.es_admin ? [{ id: 'usuarios', texto: 'intranet.panel.menu.usuarios' }] : [])
   ] }
 ])
-const opcionActual = computed(() => gruposMenu.value.flatMap(g => g.items).find(i => i.id === seccionActiva.value))
+// Els formularis d'alta compten com la seva llista (per marcar el menú)
+const SECCION_DEL_MENU = { proyecto: 'proyectos', instrumentacion: 'instrumentos' }
+const seccionMenu = computed(() => SECCION_DEL_MENU[seccionActiva.value] || seccionActiva.value)
+const opcionActual = computed(() => gruposMenu.value.flatMap(g => g.items).find(i => i.id === seccionMenu.value))
+// En tornar a prémer «Documentació» es torna a l'inici de la documentació
+const docsKey = ref(0)
 const irA = (id) => {
-  if (id === 'dashboard') volverDashboard()
+  if (id === 'documentacion') docsKey.value++
+  if (id === 'proyectos' || id === 'instrumentos') volverDashboard(id)
   else seccionActiva.value = id
   menuAbierto.value = false
 }
 
-const volverDashboard = () => {
+const volverDashboard = (destino = 'calendari') => {
   editandoId.value = null
   editandoProyectoId.value = null
   nuevoEquipo.value = { nombre: '', marca: '', numero_serie: '', categoria: '', subcategoria: '', ultima_calibracion: '', descripcion: '', parametros_tecnicos: '' }
   nuevoProyecto.value = { titulo: '', categoria: '', estado: '', descripcion_corta: '', descripcion_ampliada: '', investigador_principal: '', pit: '', imagen: '',
-  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: '' }
-  seccionActiva.value = 'dashboard'
+  descripcion_corta_es: '', descripcion_ampliada_es: '', descripcion_corta_en: '', descripcion_ampliada_en: '', nextcloud: '' }
+  seccionActiva.value = typeof destino === 'string' ? destino : 'calendari'
 }
 
 // ==============================
@@ -274,7 +267,7 @@ const guardarInstrumento = async () => {
     })
     if (respuesta.ok) {
       alert(editandoId.value ? t('intranet.panel.instrumentoActualizado') : t('intranet.panel.instrumentoRegistrado'))
-      volverDashboard()
+      volverDashboard('instrumentos')
       cargarInstrumentos()
     }
   } catch (error) { console.error(error) }
@@ -308,7 +301,8 @@ const cargarParaEditarProyecto = (proj) => {
     descripcion_corta_es: proj.descripcion_corta_es || '',
     descripcion_ampliada_es: proj.descripcion_ampliada_es || '',
     descripcion_corta_en: proj.descripcion_corta_en || '',
-    descripcion_ampliada_en: proj.descripcion_ampliada_en || ''
+    descripcion_ampliada_en: proj.descripcion_ampliada_en || '',
+    nextcloud: proj.nextcloud || ''
   };
   idiomaTexto.value = 'ca';
   seccionActiva.value = 'proyecto';
@@ -330,7 +324,8 @@ const guardarProyecto = async () => {
     descripcion_corta_es: nuevoProyecto.value.descripcion_corta_es,
     descripcion_ampliada_es: nuevoProyecto.value.descripcion_ampliada_es,
     descripcion_corta_en: nuevoProyecto.value.descripcion_corta_en,
-    descripcion_ampliada_en: nuevoProyecto.value.descripcion_ampliada_en
+    descripcion_ampliada_en: nuevoProyecto.value.descripcion_ampliada_en,
+    nextcloud: nuevoProyecto.value.nextcloud
   };
   try {
     const res = await peticionApi(url, {
@@ -340,7 +335,7 @@ const guardarProyecto = async () => {
     });
     if (res.ok) {
       alert(t('intranet.panel.proyectoGuardado'));
-      volverDashboard();
+      volverDashboard('proyectos');
       cargarProyectos();
     } else {
       const data = await res.json();
@@ -429,8 +424,8 @@ const eliminarProyecto = async (id) => {
         <nav id="menu-intranet" class="sidebar-nav" :aria-label="$t('intranet.panel.menu.titulo')">
           <div v-for="g in gruposMenu" :key="g.titulo" class="grupo-menu">
             <p class="grupo-titulo">{{ $t(g.titulo) }}</p>
-            <a v-for="item in g.items" :key="item.id" href="#" :class="{ active: seccionActiva === item.id }"
-              :aria-current="seccionActiva === item.id ? 'page' : null" @click.prevent="irA(item.id)">{{ $t(item.texto) }}</a>
+            <a v-for="item in g.items" :key="item.id" href="#" :class="{ active: seccionMenu === item.id }"
+              :aria-current="seccionMenu === item.id ? 'page' : null" @click.prevent="irA(item.id)">{{ $t(item.texto) }}</a>
           </div>
         </nav>
         <div class="sidebar-pie">
@@ -449,10 +444,11 @@ const eliminarProyecto = async (id) => {
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
         <!-- Documentació: tot són pàgines (amb els fitxers adjunts) -->
-        <PaginasDocs v-else-if="seccionActiva === 'documentacion'" @sesion-caducada="sesionCaducada" />
+        <PaginasDocs v-else-if="seccionActiva === 'documentacion'" :key="docsKey" @sesion-caducada="sesionCaducada" />
         <ComprasSinProyecto v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
+          <button type="button" class="btn-tornar" @click="volverDashboard('instrumentos')">← {{ $t('intranet.panel.volverInstrumentos') }}</button>
           <h2>{{ $t(editandoId ? 'intranet.panel.editarInstrumento' : 'intranet.panel.registrarInstrumento') }}</h2>
           <form @submit.prevent="guardarInstrumento" class="grid-form">
             <div style="grid-column: span 2; display: flex; gap: 10px; margin-bottom: 5px;">
@@ -500,7 +496,7 @@ const eliminarProyecto = async (id) => {
               <button type="submit" style="flex: 1; padding: 12px; font-weight: bold; background: #012169; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 {{ $t(editandoId ? 'intranet.panel.guardarCambios' : 'intranet.panel.registrarCatalogo') }}
               </button>
-              <button v-if="editandoId" type="button" @click="volverDashboard" style="flex: 0.3; background: #ccc; color: #333; font-weight: bold; padding: 12px; border: none; border-radius: 4px; cursor: pointer;">
+              <button v-if="editandoId" type="button" @click="volverDashboard('instrumentos')" style="flex: 0.3; background: #ccc; color: #333; font-weight: bold; padding: 12px; border: none; border-radius: 4px; cursor: pointer;">
                 {{ $t('intranet.panel.cancelarX') }}
               </button>
             </div>
@@ -508,6 +504,7 @@ const eliminarProyecto = async (id) => {
         </div>
 
         <div v-else-if="seccionActiva === 'proyecto'" class="admin-panel">
+          <button type="button" class="btn-tornar" @click="volverDashboard('proyectos')">← {{ $t('intranet.panel.volverProyectos') }}</button>
           <h2>{{ $t(editandoProyectoId ? 'intranet.panel.editarProyecto' : 'intranet.panel.registrarProyecto') }}</h2>
           <form @submit.prevent="guardarProyecto" class="grid-form">
             <label>{{ $t('intranet.panel.titulo') }}</label>
@@ -535,6 +532,12 @@ const eliminarProyecto = async (id) => {
             <div class="campo-form">
               <label>{{ $t('intranet.panel.pit') }}</label>
               <input type="text" v-model="nuevoProyecto.pit" placeholder="Ex: Raül Ferrando" class="input-texto">
+            </div>
+
+            <div class="campo-form">
+              <label>{{ $t('intranet.panel.nextcloud') }}</label>
+              <input type="url" v-model="nuevoProyecto.nextcloud" pattern="https://.*" :placeholder="$t('intranet.panel.nextcloudPh')" class="input-texto">
+              <small class="ayuda-campo">{{ $t('intranet.panel.nextcloudAyuda') }}</small>
             </div>
 
             <div class="campo-form">
@@ -571,69 +574,53 @@ const eliminarProyecto = async (id) => {
           </form>
         </div>
 
-        <div v-else class="dashboard-view">
-          <ResumenCalendario :sesion="sesion" @abrir="seccionActiva = 'calendari'" @sesion-caducada="sesionCaducada" />
-          
-          <div class="acordeon-dash">
-            <div class="acordeon-dash-header" @click="toggleDashboard('proyectos')">
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <h3 style="margin: 0; color: #012169;">{{ $t('intranet.panel.proyectos', { n: proyectos.length }) }}</h3>
-              </div>
-              <div style="display: flex; align-items: center; gap: 20px;">
-                <button @click.stop="seccionActiva = 'proyecto'" class="btn-nou">{{ $t('intranet.panel.nuevoProyecto') }}</button>
-                <span style="font-size: 1.5rem; color: #0086c0; font-weight: bold; width: 20px; text-align: center;">
-                  {{ acordeonesDash.proyectos ? '−' : '+' }}
-                </span>
-              </div>
-            </div>
-            <div class="acordeon-dash-body" v-show="acordeonesDash.proyectos">
-              <table class="tabla-instrumentos">
-                <tr v-for="proj in proyectos" :key="proj.id">
-                  <td>
-                    <strong style="color: #0086c0; font-size: 1.1rem;">{{ proj.titulo }}</strong> <br>
-                    <small style="color: #666;">{{ traducirValor(proj.categoria) }} | IP: {{ proj.investigador_principal || $t('intranet.panel.sinAsignar') }}</small>
-                  </td>
-                  <td><span class="badge-estado">{{ traducirValor(proj.estado) }}</span></td>
-                  <td style="text-align: right; width: 220px;">
-                    <button @click="cargarParaEditarProyecto(proj)" class="btn-edit" style="margin-right: 5px;">{{ $t('intranet.comun.editar') }}</button>
-                    <button @click="eliminarProyecto(proj.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
-                  </td>
-                </tr>
-              </table>
-            </div>
+        <!-- Projectes i campanyes -->
+        <div v-else-if="seccionActiva === 'proyectos'" class="panel-lista">
+          <div class="panel-lista-cabecera">
+            <h2>{{ $t('intranet.panel.proyectos', { n: proyectos.length }) }}</h2>
+            <button type="button" @click="seccionActiva = 'proyecto'" class="btn-nou">{{ $t('intranet.panel.nuevoProyecto') }}</button>
           </div>
-
-          <div class="acordeon-dash">
-            <div class="acordeon-dash-header" @click="toggleDashboard('instrumentos')">
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <h3 style="margin: 0; color: #012169;">{{ $t('intranet.panel.instrumentos', { n: instrumentos.length }) }}</h3>
-              </div>
-              <div style="display: flex; align-items: center; gap: 20px;">
-                <button @click.stop="seccionActiva = 'instrumentacion'" class="btn-nou">{{ $t('intranet.panel.nuevoInstrumento') }}</button>
-                <span style="font-size: 1.5rem; color: #0086c0; font-weight: bold; width: 20px; text-align: center;">
-                  {{ acordeonesDash.instrumentos ? '−' : '+' }}
-                </span>
-              </div>
-            </div>
-            <div class="acordeon-dash-body" v-show="acordeonesDash.instrumentos">
-              <table class="tabla-instrumentos">
-                <tr v-for="inst in instrumentos" :key="inst.id">
-                  <td>
-                    <strong>{{ inst.nombre }}</strong> <br>
-                    <small>{{ inst.marca }}</small>
-                    <span v-if="inst.numero_serie" style="color: #d32f2f; font-size: 0.85em; margin-left: 10px; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
-                      🔒 SN: {{ inst.numero_serie }}
-                    </span>
-                  </td>
-                  <td style="text-align: right; width: 220px;">
-                    <button @click="cargarParaEditar(inst)" class="btn-edit" style="margin-right: 5px;">{{ $t('intranet.comun.editar') }}</button>
-                    <button @click="eliminarInstrumento(inst.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
-                  </td>
-                </tr>
-              </table>
-            </div>
+          <div class="tabla-scroll">
+            <table class="tabla-instrumentos">
+              <tr v-for="proj in proyectos" :key="proj.id">
+                <td>
+                  <strong style="color: #0086c0; font-size: 1.1rem;">{{ proj.titulo }}</strong> <br>
+                  <small style="color: #666;">{{ traducirValor(proj.categoria) }} | IP: {{ proj.investigador_principal || $t('intranet.panel.sinAsignar') }}</small>
+                </td>
+                <td><span class="badge-estado">{{ traducirValor(proj.estado) }}</span></td>
+                <td class="acciones-fila">
+                  <a v-if="proj.nextcloud" :href="proj.nextcloud" target="_blank" rel="noopener noreferrer" class="btn-saco" :title="$t('intranet.panel.abrirNextcloud')">📂 SACO</a>
+                  <button @click="cargarParaEditarProyecto(proj)" class="btn-edit">{{ $t('intranet.comun.editar') }}</button>
+                  <button @click="eliminarProyecto(proj.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
+                </td>
+              </tr>
+            </table>
           </div>
+        </div>
 
+        <!-- Inventari d'instruments -->
+        <div v-else-if="seccionActiva === 'instrumentos'" class="panel-lista">
+          <div class="panel-lista-cabecera">
+            <h2>{{ $t('intranet.panel.instrumentos', { n: instrumentos.length }) }}</h2>
+            <button type="button" @click="seccionActiva = 'instrumentacion'" class="btn-nou">{{ $t('intranet.panel.nuevoInstrumento') }}</button>
+          </div>
+          <div class="tabla-scroll">
+            <table class="tabla-instrumentos">
+              <tr v-for="inst in instrumentos" :key="inst.id">
+                <td>
+                  <strong>{{ inst.nombre }}</strong> <br>
+                  <small>{{ inst.marca }}</small>
+                  <span v-if="inst.numero_serie" style="color: #d32f2f; font-size: 0.85em; margin-left: 10px; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+                    🔒 SN: {{ inst.numero_serie }}
+                  </span>
+                </td>
+                <td class="acciones-fila">
+                  <button @click="cargarParaEditar(inst)" class="btn-edit">{{ $t('intranet.comun.editar') }}</button>
+                  <button @click="eliminarInstrumento(inst.id)" class="btn-delete">{{ $t('intranet.comun.borrar') }}</button>
+                </td>
+              </tr>
+            </table>
+          </div>
         </div>
       </main>
     </div>
@@ -700,6 +687,16 @@ const eliminarProyecto = async (id) => {
 .pestanas-docs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -4px; }
 .pestanas-docs button { padding: 9px 18px; border: 1px solid #ccd5df; border-bottom: none; background: #e9eef3; color: #012169; border-radius: 8px 8px 0 0; font: inherit; font-weight: bold; cursor: pointer; }
 .pestanas-docs button.activa { background: white; border-color: #17a2b8; box-shadow: 0 -2px 0 #17a2b8 inset; }
+.panel-lista { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid #012169; }
+.panel-lista-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.panel-lista-cabecera h2 { margin: 0; color: #012169; font-size: 1.4rem; }
+.tabla-scroll { overflow-x: auto; }
+.acciones-fila { text-align: right; white-space: nowrap; }
+.acciones-fila .btn-edit { margin-right: 5px; }
+.btn-saco { display: inline-block; margin-right: 5px; padding: 8px 12px; border-radius: 4px; background: #e8f1fb; color: #0b5cad; font-weight: bold; text-decoration: none; border: 1px solid #c4dbf2; }
+.btn-saco:hover { background: #d6e8fa; }
+.ayuda-campo { color: #777; font-size: 0.8rem; }
+.btn-tornar { background: none; border: none; color: #0086c0; font: inherit; font-weight: bold; cursor: pointer; padding: 0; margin-bottom: 10px; }
 .btn-nou { background: #8cc63f; color: #012169; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
 /* Móvil: el menú pasa arriba y el contenido ocupa todo el ancho */
