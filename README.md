@@ -376,7 +376,16 @@ Se rellena sola con el diario de actividad y el calendari d'equip
 - **No se guardan contraseñas**: si el texto tiene algo como «contrasenya: xxx» o
   «password = xxx», no se guarda (lo comprueban el navegador y el servidor). Hay que indicar
   dónde está, p. ej. «Contrasenya: (la té la Clara)».
-- Tablas: `paginas` y `paginas_versiones` (se crean solas). Máximo 8 MB por página.
+- **Archivos adjuntos**: cada página puede tener archivos (PDF, Word, Excel, imágenes...,
+  máx. 40 MB cada uno). Se guardan en `datos/documentos/` y solo se descargan con sesión.
+  Si hay un PDF, se puede leer dentro de la página.
+- **Descargar la página** en PDF (por defecto), Word, HTML, Markdown o texto (botón
+  «⬇ Descarregar»; se genera en el navegador con jsPDF/html2canvas y turndown).
+- Los antiguos documentos de «Fitxers i manuals» (los manuales de `public/manuals/` y los
+  subidos) se pasaron a páginas el 17/11/2026, cada uno con su archivo adjunto.
+  `BibliotecaDocs.vue` ya no se usa.
+- Tablas: `paginas`, `paginas_versiones` y `paginas_adjuntos` (se crean solas). Máximo 8 MB
+  de texto e imágenes pegadas por página.
 
 ## Equipo y Biblioteca de documentos
 

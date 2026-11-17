@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { traducirError, traducirValor } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
-import BibliotecaDocs from './BibliotecaDocs.vue'
 import PaginasDocs from './PaginasDocs.vue'
 import ComprasSinProyecto from './ComprasSinProyecto.vue'
 import GestionEquipo from './GestionEquipo.vue'
@@ -35,7 +34,6 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
-const pestanaDocs = ref('archivos') // Documentació: 'archivos' (fitxers i manuals) o 'paginas' (pàgines escrites aquí)
 const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'compras', 'instrumentacion', 'proyecto'
 
 // Las secciones nuevas avisan si la sesión ha caducado
@@ -450,14 +448,8 @@ const eliminarProyecto = async (id) => {
         <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
-        <div v-else-if="seccionActiva === 'documentacion'">
-          <div class="pestanas-docs" role="tablist">
-            <button type="button" role="tab" :aria-selected="pestanaDocs === 'archivos'" :class="{ activa: pestanaDocs === 'archivos' }" @click="pestanaDocs = 'archivos'">{{ $t('intranet.paginas.pestanaArchivos') }}</button>
-            <button type="button" role="tab" :aria-selected="pestanaDocs === 'paginas'" :class="{ activa: pestanaDocs === 'paginas' }" @click="pestanaDocs = 'paginas'">{{ $t('intranet.paginas.pestanaPaginas') }}</button>
-          </div>
-          <BibliotecaDocs v-if="pestanaDocs === 'archivos'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
-          <PaginasDocs v-else @sesion-caducada="sesionCaducada" />
-        </div>
+        <!-- Documentació: tot són pàgines (amb els fitxers adjunts) -->
+        <PaginasDocs v-else-if="seccionActiva === 'documentacion'" @sesion-caducada="sesionCaducada" />
         <ComprasSinProyecto v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">

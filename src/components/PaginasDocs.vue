@@ -6,6 +6,7 @@ import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són d
 import { traducirError } from '../i18n'
 import { peticionIntranet } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
+import { exportarPagina, FORMATOS } from '../utils/exportarPagina'
 
 // Pàgines de documentació escrites a la intranet (una wiki interna): llista, lectura,
 // edició amb historial (qui i quan) i recuperació de versions anteriors.
@@ -111,6 +112,58 @@ const guardar = async () => {
   }
 }
 
+// ---------- ADJUNTS ----------
+const MAX_MB = 40
+const ICONOS = { PDF: '📕', DOC: '📘', DOCX: '📘', XLS: '📗', XLSX: '📗', CSV: '📗', PPT: '📙', PPTX: '📙', JPG: '🖼️', JPEG: '🖼️', PNG: '🖼️', ZIP: '🗜️', TXT: '📄' }
+const icono = (formato) => ICONOS[(formato || '').toUpperCase()] || '📎'
+const tamano = (b) => !b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} kB`
+const subiendo = ref(false)
+const inputArchivo = ref(null)
+const verVisor = ref(true)
+const pdfVisor = computed(() => (pagina.value?.adjuntos || []).find(a => (a.formato || '').toUpperCase() === 'PDF'))
+const subirAdjunto = async (e) => {
+  const fichero = e.target.files[0]
+  e.target.value = ''
+  if (!fichero) return
+  if (fichero.size > MAX_MB * 1048576) { error.value = t('intranet.paginas.adjuntoGrande', { max: MAX_MB }); return }
+  error.value = ''; subiendo.value = true
+  try {
+    const datos = new FormData()
+    datos.append('archivo', fichero)
+    const r = await api(`/api/paginas/${pagina.value.id}/adjuntos`, { method: 'POST', body: datos })
+    if (!r.ok) return fallo(r)
+    await abrir(pagina.value.id)
+    mensaje.value = t('intranet.paginas.adjuntoSubido')
+  } finally {
+    subiendo.value = false
+  }
+}
+const quitarAdjunto = async (a) => {
+  if (!confirm(t('intranet.paginas.confirmarQuitar', { nombre: a.nombre }))) return
+  const r = await api(`/api/paginas/${pagina.value.id}/adjuntos/${a.id}`, { method: 'DELETE' })
+  if (!r.ok) return fallo(r)
+  await abrir(pagina.value.id)
+}
+
+// ---------- DESCARREGAR LA PÀGINA ----------
+const formatoDescarga = ref('pdf')
+const exportando = ref(false)
+const descargar = async (formato) => {
+  exportando.value = true; error.value = ''
+  try {
+    const p = pagina.value
+    await exportarPagina(p, formato, {
+      adjuntos: t('intranet.paginas.adjuntos', { n: p.adjuntos.length }),
+      meta: [p.categoria, t('intranet.paginas.actualizadaPor', { quien: p.actualizado_por, fecha: fecha(p.actualizado) })].filter(Boolean).join(' · ')
+    })
+  } catch (e) {
+    console.error(e)
+    error.value = t('intranet.paginas.errorExportar')
+  } finally {
+    exportando.value = false
+  }
+}
+
 const borrar = async () => {
   if (!confirm(t('intranet.paginas.confirmarBorrar', { titulo: pagina.value.titulo }))) return
   const r = await api(`/api/paginas/${pagina.value.id}`, { method: 'DELETE' })
@@ -158,7 +211,8 @@ const restaurar = async () => {
         <ul class="lista">
           <li v-for="p in lista" :key="p.id">
             <button type="button" class="item" @click="abrir(p.id)">
-              <span class="item-titulo">📝 {{ p.titulo }}</span>
+              <span class="item-titulo">{{ p.adjuntos?.length && !p.texto?.trim() ? icono(p.adjuntos[0]) : '📝' }} {{ p.titulo }}</span>
+              <span v-if="p.adjuntos?.length" class="item-adjuntos">📎 {{ p.adjuntos.join(', ') }}</span>
               <span class="item-meta">{{ $t('intranet.paginas.actualizadaPor', { quien: p.actualizado_por, fecha: fecha(p.actualizado) }) }}</span>
             </button>
           </li>
@@ -179,8 +233,37 @@ const restaurar = async () => {
         <div class="botones">
           <button type="button" class="btn-principal" @click="editar">✏️ {{ $t('intranet.paginas.editar') }}</button>
           <button v-if="pagina.puede_borrar" type="button" class="btn-peligro" @click="borrar">🗑️ {{ $t('intranet.comun.borrar') }}</button>
+          <span class="descarga">
+            <button type="button" class="btn-descarga" :disabled="exportando" @click="descargar(formatoDescarga)">⬇ {{ $t('intranet.paginas.descargar') }}</button>
+            <select v-model="formatoDescarga" :aria-label="$t('intranet.paginas.formato')">
+              <option v-for="f in FORMATOS" :key="f" :value="f">{{ $t(`intranet.paginas.formatos.${f}`) }}</option>
+            </select>
+          </span>
         </div>
-        <div class="contenido-wiki" v-html="limpiarHtml(pagina.contenido)"></div>
+        <div v-if="textoPlano(pagina.contenido).trim() || /<img/i.test(pagina.contenido || '')" class="contenido-wiki" v-html="limpiarHtml(pagina.contenido)"></div>
+
+        <!-- Fitxers adjunts -->
+        <section class="adjuntos">
+          <div class="adjuntos-cabecera">
+            <h2>📎 {{ $t('intranet.paginas.adjuntos', { n: pagina.adjuntos.length }) }}</h2>
+            <button type="button" class="btn-secundario" :disabled="subiendo" @click="inputArchivo.click()">
+              {{ $t(subiendo ? 'intranet.paginas.subiendo' : 'intranet.paginas.adjuntar') }}
+            </button>
+            <input ref="inputArchivo" type="file" hidden @change="subirAdjunto">
+          </div>
+          <ul v-if="pagina.adjuntos.length" class="lista-adjuntos">
+            <li v-for="a in pagina.adjuntos" :key="a.id">
+              <span class="icono-adjunto" aria-hidden="true">{{ icono(a.formato) }}</span>
+              <a :href="a.href" target="_blank" rel="noopener">{{ a.nombre }}</a>
+              <span class="gris">{{ a.formato }}<template v-if="a.tamano"> · {{ tamano(a.tamano) }}</template></span>
+              <button v-if="a.puede_borrar" type="button" class="btn-mini peligro" @click="quitarAdjunto(a)" :aria-label="$t('intranet.paginas.quitar')">✕</button>
+            </li>
+          </ul>
+          <template v-if="pdfVisor">
+            <button type="button" class="btn-volver" @click="verVisor = !verVisor">{{ $t(verVisor ? 'intranet.paginas.ocultarVisor' : 'intranet.paginas.mostrarVisor') }}</button>
+            <iframe v-if="verVisor" :src="pdfVisor.href" class="visor-pdf" :title="pdfVisor.nombre"></iframe>
+          </template>
+        </section>
       </article>
       <details class="historial">
         <summary>🕘 {{ $t('intranet.paginas.historial', { n: pagina.versiones.length }) }}</summary>
@@ -256,7 +339,7 @@ const restaurar = async () => {
 .item-titulo { color: #012169; font-weight: bold; }
 .item-meta { color: #777; font-size: 0.8rem; }
 
-.pagina { max-width: 860px; }
+.pagina { max-width: 1000px; }
 .pagina h1 { color: #012169; font-size: 1.8rem; margin: 4px 0 6px; }
 .categoria { color: #17a2b8; font-weight: bold; margin: 0; font-size: 0.9rem; }
 .meta { color: #777; font-size: 0.85rem; margin: 0 0 12px; }
@@ -280,6 +363,24 @@ const restaurar = async () => {
 .contenido-wiki :deep(table) { border-collapse: collapse; margin: 0 0 12px; }
 .contenido-wiki :deep(td), .contenido-wiki :deep(th) { border: 1px solid #ddd; padding: 6px 10px; }
 
+.item-adjuntos { color: #17a2b8; font-size: 0.78rem; font-weight: bold; }
+.descarga { display: inline-flex; margin-left: auto; }
+.btn-descarga { background: #012169; color: white; border: none; padding: 9px 16px; border-radius: 6px 0 0 6px; font: inherit; font-weight: bold; cursor: pointer; }
+.btn-descarga:hover { background: #0086c0; }
+.btn-descarga:disabled { opacity: 0.6; cursor: wait; }
+.descarga select { border: 1px solid #012169; border-left: none; border-radius: 0 6px 6px 0; padding: 0 8px; font: inherit; color: #012169; background: white; cursor: pointer; }
+.adjuntos { margin-top: 22px; border-top: 1px solid #eee; padding-top: 14px; }
+.adjuntos-cabecera { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.adjuntos-cabecera h2 { color: #012169; font-size: 1.1rem; margin: 0; }
+.lista-adjuntos { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.lista-adjuntos li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e3e8ee; border-radius: 6px; }
+.lista-adjuntos a { color: #0086c0; font-weight: bold; text-decoration: none; overflow-wrap: anywhere; }
+.lista-adjuntos a:hover { text-decoration: underline; }
+.lista-adjuntos .btn-mini { margin-left: auto; }
+.icono-adjunto { font-size: 1.2rem; }
+.gris { color: #777; font-size: 0.82rem; white-space: nowrap; }
+.btn-mini.peligro { color: #b02a37; }
+.visor-pdf { width: 100%; height: 75vh; border: 1px solid #d8dde3; border-radius: 6px; margin-top: 6px; background: #f4f7f9; }
 .historial { margin-top: 26px; background: #f8fafc; border-radius: 8px; padding: 10px 14px; max-width: 860px; }
 .historial summary { cursor: pointer; font-weight: bold; color: #012169; }
 .historial ol { margin: 10px 0 0; padding-left: 20px; font-size: 0.88rem; }

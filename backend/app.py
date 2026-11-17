@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from email.message import EmailMessage
 from functools import wraps
 
-from flask import Flask, jsonify, request, send_from_directory, session
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from PIL import Image, ImageOps, UnidentifiedImageError
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -2434,6 +2434,20 @@ def crear_tablas_paginas():
             editado_por TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS paginas_versiones_pagina ON paginas_versiones(pagina_id);
+        -- Fitxers adjunts d'una pàgina: un fitxer pujat (archivo, a DOCS_DIR) o un fitxer públic de la web (url, p. ex. /manuals/x.pdf)
+        CREATE TABLE IF NOT EXISTS paginas_adjuntos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pagina_id INTEGER NOT NULL REFERENCES paginas(id) ON DELETE CASCADE,
+            nombre TEXT NOT NULL,
+            archivo TEXT NOT NULL DEFAULT '',
+            url TEXT NOT NULL DEFAULT '',
+            formato TEXT NOT NULL DEFAULT '',
+            tamano INTEGER NOT NULL DEFAULT 0,
+            subido_por TEXT NOT NULL DEFAULT '',
+            subido_por_id INTEGER,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS paginas_adjuntos_pagina ON paginas_adjuntos(pagina_id);
     """)
     conexion.commit()
     conexion.close()
@@ -2485,12 +2499,16 @@ def gestionar_paginas():
         return jsonify({"id": cursor.lastrowid}), 201
     # Llista (amb el text pla per poder cercar dins de les pàgines, sense les imatges)
     filas = conexion.execute('SELECT * FROM paginas ORDER BY categoria, titulo').fetchall()
+    adjuntos = {}
+    for a in conexion.execute('SELECT pagina_id, formato FROM paginas_adjuntos ORDER BY id'):
+        adjuntos.setdefault(a['pagina_id'], []).append(a['formato'])
     conexion.close()
     return jsonify([{
         'id': f['id'], 'titulo': f['titulo'], 'categoria': f['categoria'],
         'creado': f['creado'], 'creado_por': f['creado_por'],
         'actualizado': f['actualizado'], 'actualizado_por': f['actualizado_por'],
         'texto': re.sub(r'\s+', ' ', texto_plano(f['contenido']))[:5000],
+        'adjuntos': adjuntos.get(f['id'], []),
     } for f in filas])
 
 
@@ -2505,13 +2523,18 @@ def pagina(id):
     if request.method == 'GET':
         versiones = [dict(v) for v in conexion.execute(
             'SELECT id, fecha, editado_por FROM paginas_versiones WHERE pagina_id = ? ORDER BY id DESC', (id,))]
+        adjuntos = [adjunto_json(a, fila) for a in conexion.execute('SELECT * FROM paginas_adjuntos WHERE pagina_id = ? ORDER BY id', (id,))]
         conexion.close()
-        return jsonify({**dict(fila), 'versiones': versiones, 'puede_borrar': puede_borrar_pagina(fila)})
+        return jsonify({**dict(fila), 'versiones': versiones, 'adjuntos': adjuntos, 'puede_borrar': puede_borrar_pagina(fila)})
     if request.method == 'DELETE':
         if not puede_borrar_pagina(fila):
             conexion.close()
             return jsonify({"error": "Solo puede borrarla quien la creó o un administrador"}), 403
+        archivos = [a['archivo'] for a in conexion.execute('SELECT archivo FROM paginas_adjuntos WHERE pagina_id = ?', (id,)) if a['archivo']]
+        conexion.execute('DELETE FROM paginas_adjuntos WHERE pagina_id = ?', (id,))
         conexion.execute('DELETE FROM paginas_versiones WHERE pagina_id = ?', (id,))
+        for archivo in archivos:
+            borrar_archivo_doc(archivo)
         conexion.execute('DELETE FROM paginas WHERE id = ?', (id,))
         conexion.commit()
         conexion.close()
@@ -2532,6 +2555,92 @@ def pagina(id):
     conexion.commit()
     conexion.close()
     return jsonify({"id": id})
+
+
+def borrar_archivo_doc(archivo):
+    try:
+        os.remove(os.path.join(DOCS_DIR, archivo))
+    except FileNotFoundError:
+        pass
+
+
+def adjunto_json(a, pagina):
+    return {
+        'id': a['id'], 'nombre': a['nombre'], 'formato': a['formato'], 'tamano': a['tamano'],
+        'subido_por': a['subido_por'], 'creado': a['creado'],
+        # Fitxer públic de la web (manuals) o el nostre enllaç protegit
+        'href': a['url'] or f"/api/paginas/{a['pagina_id']}/adjuntos/{a['id']}",
+        'en_linea': (a['formato'] or '').lower() in ('pdf', 'jpg', 'jpeg', 'png', 'txt'),
+        'puede_borrar': bool(session.get('es_admin')) or a['subido_por_id'] == session.get('usuario_id')
+                        or pagina['creado_por_id'] == session.get('usuario_id'),
+    }
+
+
+def tocar_pagina(conexion, id):
+    """Afegir o treure un adjunt també compta com a modificació (qui i quan)."""
+    conexion.execute("UPDATE paginas SET actualizado = datetime('now'), actualizado_por = ? WHERE id = ?", (nombre_sesion(), id))
+
+
+@app.route('/api/paginas/<int:id>/adjuntos', methods=['POST'])
+@requiere_login
+def subir_adjunto(id):
+    conexion = conectar_bd()
+    pagina_fila = conexion.execute('SELECT * FROM paginas WHERE id = ?', (id,)).fetchone()
+    if not pagina_fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    fichero = request.files.get('archivo')
+    extension = fichero.filename.rsplit('.', 1)[-1].lower() if fichero and '.' in fichero.filename else ''
+    error = None
+    if not fichero:
+        error = "No se ha recibido ningún archivo"
+    elif extension not in EXTENSIONES_DOC:
+        error = "Tipo de archivo no permitido"
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    nombre = f'{uuid.uuid4().hex}.{extension}'
+    ruta = os.path.join(DOCS_DIR, nombre)
+    fichero.save(ruta)
+    original = os.path.basename(fichero.filename.replace('\\', '/'))[:200] or nombre
+    cursor = conexion.execute(
+        'INSERT INTO paginas_adjuntos (pagina_id, nombre, archivo, formato, tamano, subido_por, subido_por_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (id, original, nombre, EXTENSIONES_DOC[extension], os.path.getsize(ruta), nombre_sesion(), session.get('usuario_id')))
+    tocar_pagina(conexion, id)
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM paginas_adjuntos WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    conexion.close()
+    return jsonify(adjunto_json(fila, pagina_fila)), 201
+
+
+@app.route('/api/paginas/<int:id>/adjuntos/<int:aid>', methods=['GET', 'DELETE'])
+@requiere_login
+def adjunto(id, aid):
+    conexion = conectar_bd()
+    a = conexion.execute('SELECT * FROM paginas_adjuntos WHERE id = ? AND pagina_id = ?', (aid, id)).fetchone()
+    pagina_fila = conexion.execute('SELECT * FROM paginas WHERE id = ?', (id,)).fetchone()
+    if not a or not pagina_fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'DELETE':
+        if not adjunto_json(a, pagina_fila)['puede_borrar']:
+            conexion.close()
+            return jsonify({"error": "Solo puede quitarlo quien lo subió, quien creó la página o un administrador"}), 403
+        conexion.execute('DELETE FROM paginas_adjuntos WHERE id = ?', (aid,))
+        tocar_pagina(conexion, id)
+        conexion.commit()
+        conexion.close()
+        if a['archivo']:
+            borrar_archivo_doc(a['archivo'])
+        return '', 204
+    conexion.close()
+    if a['url']:
+        return redirect(a['url'])
+    extension = a['archivo'].rsplit('.', 1)[-1]
+    respuesta = send_from_directory(DOCS_DIR, a['archivo'], download_name=a['nombre'],
+                                    as_attachment=extension not in EXTENSIONES_EN_LINEA, max_age=0)
+    respuesta.headers['X-Content-Type-Options'] = 'nosniff'
+    return respuesta
 
 
 @app.route('/api/paginas/<int:id>/versiones/<int:vid>', methods=['GET'])

@@ -121,6 +121,7 @@ export default {
     'Pon un título a la página': { ca: 'Posa un títol a la pàgina', es: 'Pon un título a la página', en: 'Give the page a title' },
     'La página es demasiado grande (máximo 8 MB, imágenes incluidas)': { ca: 'La pàgina és massa gran (màxim 8 MB, imatges incloses)', es: 'La página es demasiado grande (máximo 8 MB, imágenes incluidas)', en: 'The page is too big (max. 8 MB, images included)' },
     'Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda': { ca: 'Sembla que hi ha una contrasenya escrita. A la web no es desen contrasenyes: indica on es guarda', es: 'Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda', en: 'It looks like a password is written. Passwords are not stored on the website: say where it is kept' },
+    'Solo puede quitarlo quien lo subió, quien creó la página o un administrador': { ca: "Només el pot treure qui l'ha pujat, qui ha creat la pàgina o un administrador", es: 'Solo puede quitarlo quien lo subió, quien creó la página o un administrador', en: 'Only the uploader, the page creator or an administrator can remove it' },
     'Solo puede borrarla quien la creó o un administrador': { ca: "Només la pot esborrar qui la va crear o un administrador", es: 'Solo puede borrarla quien la creó o un administrador', en: 'Only its creator or an administrator can delete it' },
     'La fecha final es anterior a la inicial': { ca: 'La data final és anterior a la inicial', es: 'La fecha final es anterior a la inicial', en: 'The end date is before the start date' },
     'Hora no válida (HH:MM)': { ca: 'Hora no vàlida (HH:MM)', es: 'Hora no válida (HH:MM)', en: 'Invalid time (HH:MM)' },
@@ -608,9 +609,9 @@ export default {
     pestanaPaginas: { ca: '📝 Pàgines', es: '📝 Páginas', en: '📝 Pages' },
     titulo: { ca: '📝 Pàgines de documentació', es: '📝 Páginas de documentación', en: '📝 Documentation pages' },
     subtitulo: {
-      ca: "Documentació escrita aquí mateix, com una wiki: configuracions, procediments, el que arriba per correu... Només la veu el personal del SIO.",
-      es: 'Documentación escrita aquí mismo, como una wiki: configuraciones, procedimientos, lo que llega por correo... Solo la ve el personal del SIO.',
-      en: 'Documentation written right here, like a wiki: configurations, procedures, things that arrive by e-mail... Only SIO staff can see it.'
+      ca: "Manuals, configuracions, procediments, el que arriba per correu... Cada pàgina pot tenir text i fitxers adjunts, i es pot descarregar en PDF. Només la veu el personal del SIO.",
+      es: 'Manuales, configuraciones, procedimientos, lo que llega por correo... Cada página puede tener texto y archivos adjuntos, y se puede descargar en PDF. Solo la ve el personal del SIO.',
+      en: 'Manuals, configurations, procedures, things that arrive by e-mail... Each page can have text and attached files, and can be downloaded as PDF. Only SIO staff can see it.'
     },
     buscar: { ca: '🔍 Cerca a les pàgines...', es: '🔍 Busca en las páginas...', en: '🔍 Search the pages...' },
     nueva: { ca: '+ Nova pàgina', es: '+ Nueva página', en: '+ New page' },
@@ -647,7 +648,26 @@ export default {
     categoria: { ca: 'Categoria', es: 'Categoría', en: 'Category' },
     categoriaPh: { ca: 'ex.: Boia Somorrostro', es: 'ej.: Boia Somorrostro', en: 'e.g. Somorrostro buoy' },
     guardada: { ca: 'Pàgina desada.', es: 'Página guardada.', en: 'Page saved.' },
-    errorCarga: { ca: "No s'han pogut carregar les pàgines.", es: 'No se han podido cargar las páginas.', en: 'The pages could not be loaded.' }
+    errorCarga: { ca: "No s'han pogut carregar les pàgines.", es: 'No se han podido cargar las páginas.', en: 'The pages could not be loaded.' },
+    adjuntos: { ca: 'Fitxers adjunts ({n})', es: 'Archivos adjuntos ({n})', en: 'Attached files ({n})' },
+    adjuntar: { ca: '+ Adjuntar fitxer', es: '+ Adjuntar archivo', en: '+ Attach file' },
+    subiendo: { ca: 'Pujant...', es: 'Subiendo...', en: 'Uploading...' },
+    adjuntoSubido: { ca: 'Fitxer adjuntat.', es: 'Archivo adjuntado.', en: 'File attached.' },
+    adjuntoGrande: { ca: 'El fitxer és massa gran (màxim {max} MB).', es: 'El archivo es demasiado grande (máximo {max} MB).', en: 'The file is too big (max. {max} MB).' },
+    confirmarQuitar: { ca: 'Vols treure «{nombre}» de la pàgina?', es: '¿Quieres quitar «{nombre}» de la página?', en: 'Remove “{nombre}” from the page?' },
+    quitar: { ca: 'Treure el fitxer', es: 'Quitar el archivo', en: 'Remove the file' },
+    mostrarVisor: { ca: '▸ Veure el PDF aquí', es: '▸ Ver el PDF aquí', en: '▸ Show the PDF here' },
+    ocultarVisor: { ca: '▾ Amagar el visor', es: '▾ Ocultar el visor', en: '▾ Hide the viewer' },
+    descargar: { ca: 'Descarregar', es: 'Descargar', en: 'Download' },
+    formato: { ca: 'Format de descàrrega', es: 'Formato de descarga', en: 'Download format' },
+    formatos: {
+      pdf: { ca: 'PDF', es: 'PDF', en: 'PDF' },
+      docx: { ca: 'Word', es: 'Word', en: 'Word' },
+      html: { ca: 'HTML', es: 'HTML', en: 'HTML' },
+      md: { ca: 'Markdown', es: 'Markdown', en: 'Markdown' },
+      txt: { ca: 'Text', es: 'Texto', en: 'Text' }
+    },
+    errorExportar: { ca: "No s'ha pogut generar el fitxer.", es: 'No se ha podido generar el archivo.', en: 'The file could not be generated.' }
   },
   calendario: {
     titulo: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },
