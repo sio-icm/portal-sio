@@ -2253,7 +2253,8 @@ def crear_tablas_compras():
               ('compras', 'proyecto_id', 'INTEGER REFERENCES proyectos(id)'),
               ('compras', 'solicitante_id', 'INTEGER REFERENCES usuarios(id)'),  # qui ho demana (pot no ser qui ho apunta)
               ('compras_envios', 'proveedor_id', 'INTEGER REFERENCES compras_proveedores(id)'),
-              ('compras_envios', 'proveedor', "TEXT NOT NULL DEFAULT ''"))
+              ('compras_envios', 'proveedor', "TEXT NOT NULL DEFAULT ''"),
+              ('compras_envios', 'proyecto_id', 'INTEGER REFERENCES proyectos(id)'))  # NULL = departament
     for tabla, columna, definicion in nuevas:
         if columna not in [f['name'] for f in conexion.execute(f'PRAGMA table_info({tabla})')]:
             try:
@@ -2573,7 +2574,7 @@ def modificar_proveedor(id):
     return jsonify(respuesta)
 
 
-def texto_peticion(articulos, proveedor, nombre, correo):
+def texto_peticion(articulos, proveedor, nombre, correo, proyecto=''):
     lineas = []
     for n, a in enumerate(articulos, 1):
         ref = f"Ref. {a['referencia']}" if a['referencia'] else 'Sin referencia'
@@ -2582,7 +2583,8 @@ def texto_peticion(articulos, proveedor, nombre, correo):
     return (
         "Buenos días:\n\n"
         "Desde el Servicio de Ingeniería Oceanográfica del Institut de Ciències del Mar (ICM-CSIC) "
-        f"les solicitamos una cotización de los siguientes artículos ({proveedor}):\n\n"
+        f"les solicitamos una cotización de los siguientes artículos ({proveedor})"
+        + (f" para el proyecto {proyecto}" if proyecto else '') + ":\n\n"
         + "\n".join(lineas) +
         "\n\nLes agradeceríamos que en la oferta indicaran el precio unitario, el plazo de entrega "
         "y los gastos de envío, si los hay.\n\n"
@@ -2598,16 +2600,31 @@ def texto_peticion(articulos, proveedor, nombre, correo):
 @app.route('/api/compras/enviar/<int:proveedor_id>', methods=['POST'])
 @requiere_login
 def enviar_compras(proveedor_id):
-    """Comanda d'un proveïdor: si té correu, s'hi envia la petició de pressupost; si no, només es
-    marca com a demanada. Per sota del mínim només amb «forzar» (es pagaran ports)."""
+    """Comanda d'un proveïdor per al departament (proyecto_id null) o per a un projecte: cadascú
+    paga la seva, així que el mínim compta per separat. Si el proveïdor té correu, s'hi envia la
+    petició de pressupost; si no, només es marca com a demanada. Per sota del mínim només amb
+    «forzar» (es pagaran ports). La d'un projecte només la fan els seus autoritzats."""
     datos = request.get_json(silent=True) or {}
     conexion = conectar_bd()
     pv = conexion.execute('SELECT * FROM compras_proveedores WHERE id = ?', (proveedor_id,)).fetchone()
     if not pv:
         conexion.close()
         return jsonify({"error": "No existe"}), 404
+    proyecto = None
+    if datos.get('proyecto_id') not in ('', None):
+        try:
+            proyecto = conexion.execute('SELECT id, titulo FROM proyectos WHERE id = ?', (int(datos['proyecto_id']),)).fetchone()
+        except (TypeError, ValueError):
+            proyecto = None
+        if not proyecto:
+            conexion.close()
+            return jsonify({"error": "El proyecto no existe"}), 404
+        if not puede_comprar_para(conexion, proyecto['id']):
+            conexion.close()
+            return jsonify({"error": "No estás autorizado a comprar para este proyecto"}), 403
     articulos = [dict(f) for f in conexion.execute(
-        'SELECT * FROM compras WHERE envio_id IS NULL AND proveedor_id = ? ORDER BY fecha, id', (proveedor_id,))]
+        'SELECT * FROM compras WHERE envio_id IS NULL AND proveedor_id = ? AND proyecto_id IS ? ORDER BY fecha, id',
+        (proveedor_id, proyecto['id'] if proyecto else None))]
     total = round(sum(importe(f) for f in articulos), 2)
     if not articulos:
         conexion.close()
@@ -2631,7 +2648,7 @@ def enviar_compras(proveedor_id):
         if copia:
             mensaje['Cc'] = ', '.join(sorted(copia))
         mensaje['Reply-To'] = correo or CONTACTO_DESTINO
-        mensaje.set_content(texto_peticion(articulos, pv['nombre'], nombre, correo))
+        mensaje.set_content(texto_peticion(articulos, pv['nombre'], nombre, correo, proyecto['titulo'] if proyecto else ''))
         try:
             enviar_correo(mensaje)
         except Exception as e:
@@ -2640,8 +2657,9 @@ def enviar_compras(proveedor_id):
             return jsonify({"error": "No se ha podido enviar el correo"}), 502
         destinatario = pv['email']
     cursor = conexion.execute(
-        'INSERT INTO compras_envios (enviado_por, destinatario, total, articulos, proveedor_id, proveedor) VALUES (?, ?, ?, ?, ?, ?)',
-        (nombre, destinatario, total, len(articulos), pv['id'], pv['nombre']))
+        'INSERT INTO compras_envios (enviado_por, destinatario, total, articulos, proveedor_id, proveedor, proyecto_id)'
+        ' VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (nombre, destinatario, total, len(articulos), pv['id'], pv['nombre'], proyecto['id'] if proyecto else None))
     conexion.executemany('UPDATE compras SET envio_id = ? WHERE id = ?', [(cursor.lastrowid, a['id']) for a in articulos])
     conexion.commit()
     respuesta = resumen_compras(conexion)

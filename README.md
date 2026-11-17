@@ -361,8 +361,12 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   administradores (tabla `compras_autorizados`; la marcan los administradores en
   «Qui pot comprar per a cada projecte»). La primera vez se rellena con los nombres
   del campo PIT de cada proyecto.
-- La lista pendiente se agrupa por proyecto o por proveedor, con subtotales, y cada
-  proveedor muestra cuánto es de cada proyecto.
+- Arriba se elige **de quién son las compras** («Compres de:» el departamento o un
+  proyecto) y todo lo de debajo es solo de esa cuenta: el pedido en curso de cada
+  proveedor, el formulario para añadir (solo si se puede comprar), la lista pendiente
+  y los pedidos hechos. Cada cuenta hace **su propio pedido**: el mínimo sin portes
+  cuenta por separado (`/api/compras/enviar/<proveedor>` con `proyecto_id`). Al final,
+  el resumen de gastos de todas las compras.
 - **Proveedores** (tabla `compras_proveedores`): cualquiera del personal puede
   añadirlos y ajustar el pedido mínimo sin portes, los portes y el correo para
   pedir presupuesto. Solo se puede borrar un proveedor sin compras (quien lo creó o

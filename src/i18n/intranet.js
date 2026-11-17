@@ -574,11 +574,39 @@ export default {
   // Calendari d'equip
   compras: {
     titulo: { ca: '🛒 Compres', es: '🛒 Compras', en: '🛒 Purchases' },
-    ayuda: {
-      ca: "Apunta aquí el que cal comprar, per al departament o per a un projecte. Cada proveïdor té la seva comanda mínima per no pagar ports: quan s'hi arriba, es demana el pressupost. A baix hi ha les despeses de cada projecte.",
-      es: 'Apunta aquí lo que hay que comprar, para el departamento o para un proyecto. Cada proveedor tiene su pedido mínimo para no pagar portes: cuando se llega, se pide el presupuesto. Abajo están los gastos de cada proyecto.',
-      en: 'Add here what needs to be bought, for the department or for a project. Each supplier has its own minimum order to avoid shipping costs: when it is reached, the quote is requested. Below are the expenses of each project.'
+    verComprasDe: { ca: 'Compres de:', es: 'Compras de:', en: 'Purchases for:' },
+    grupoPuedo: { ca: 'Projectes on pots comprar', es: 'Proyectos donde puedes comprar', en: 'Projects you can buy for' },
+    grupoConsulta: { ca: 'Altres projectes (només consulta)', es: 'Otros proyectos (solo consulta)', en: 'Other projects (view only)' },
+    tituloDepartamento: { ca: '🏢 Compres del departament', es: '🏢 Compras del departamento', en: '🏢 Department purchases' },
+    tituloProyecto: { ca: '📁 Compres del projecte {proyecto}', es: '📁 Compras del proyecto {proyecto}', en: '📁 Purchases for project {proyecto}' },
+    ayudaCtxDepartamento: {
+      ca: "Material del servei que no és de cap projecte. Hi pot apuntar tothom. Cada proveïdor té la seva comanda mínima per no pagar ports: quan s'hi arriba, es demana el pressupost.",
+      es: 'Material del servicio que no es de ningún proyecto. Puede apuntar todo el mundo. Cada proveedor tiene su pedido mínimo para no pagar portes: cuando se llega, se pide el presupuesto.',
+      en: 'Service material that does not belong to any project. Anyone can add items. Each supplier has its own minimum order to avoid shipping costs: when it is reached, the quote is requested.'
     },
+    ayudaCtxProyecto: {
+      ca: "Va al compte del projecte i fa la seva pròpia comanda. Hi poden comprar: {nombres} i els administradors.",
+      es: 'Va a la cuenta del proyecto y hace su propio pedido. Pueden comprar: {nombres} y los administradores.',
+      en: "Charged to the project's account, with its own order. Who can buy: {nombres} and the administrators."
+    },
+    ayudaCtxProyectoNadie: {
+      ca: "Va al compte del projecte i fa la seva pròpia comanda. Encara no hi ha ningú autoritzat: només hi poden comprar els administradors.",
+      es: 'Va a la cuenta del proyecto y hace su propio pedido. Todavía no hay nadie autorizado: solo pueden comprar los administradores.',
+      en: "Charged to the project's account, with its own order. Nobody is authorised yet: only administrators can buy."
+    },
+    comandaEnCurso: { ca: 'Comanda en curs per proveïdor', es: 'Pedido en curso por proveedor', en: 'Current order by supplier' },
+    otrosProveedores: { ca: 'Altres proveïdors:', es: 'Otros proveedores:', en: 'Other suppliers:' },
+    anadirDepartamento: { ca: 'Afegir un article per al departament', es: 'Añadir un artículo para el departamento', en: 'Add an item for the department' },
+    anadirProyecto: { ca: 'Afegir un article per a {proyecto}', es: 'Añadir un artículo para {proyecto}', en: 'Add an item for {proyecto}' },
+    sinPermiso: {
+      ca: "No estàs autoritzat a comprar per a aquest projecte: aquí només pots consultar què hi ha pendent i què s'ha demanat.",
+      es: 'No estás autorizado a comprar para este proyecto: aquí solo puedes consultar qué hay pendiente y qué se ha pedido.',
+      en: 'You are not authorised to buy for this project: here you can only see what is pending and what has been ordered.'
+    },
+    paraProyecto: { ca: 'Comanda del projecte {proyecto} (va al seu compte).', es: 'Pedido del proyecto {proyecto} (va a su cuenta).', en: 'Order for project {proyecto} (charged to its account).' },
+    sinHistorial: { ca: "Encara no s'ha fet cap comanda.", es: 'Todavía no se ha hecho ningún pedido.', en: 'No orders yet.' },
+    resumenTodo: { ca: '📊 Resum de despeses de totes les compres', es: '📊 Resumen de gastos de todas las compras', en: '📊 Expense summary of all purchases' },
+    ayudaResumenTodo: { ca: 'Clica un projecte per veure les seves compres.', es: 'Pulsa un proyecto para ver sus compras.', en: 'Click a project to see its purchases.' },
     // Proveïdors
     proveedores: { ca: 'Proveïdors', es: 'Proveedores', en: 'Suppliers' },
     nuevoProveedor: { ca: '+ Afegir proveïdor', es: '+ Añadir proveedor', en: '+ Add supplier' },
@@ -639,7 +667,6 @@ export default {
     referencia: { ca: 'Ref. proveïdor', es: 'Ref. proveedor', en: 'Supplier ref.' },
     refCorta: { ca: 'Ref.', es: 'Ref.', en: 'Ref.' },
     referenciaPh: { ca: 'ex.: 744-2209', es: 'ej.: 744-2209', en: 'e.g. 744-2209' },
-    paraQuien: { ca: 'Per a', es: 'Para', en: 'For' },
     proyecto: { ca: 'Projecte', es: 'Proyecto', en: 'Project' },
     departamento: { ca: 'Departament (sense projecte)', es: 'Departamento (sin proyecto)', en: 'Department (no project)' },
     departamentoCorto: { ca: 'Departament', es: 'Departamento', en: 'Department' },
@@ -652,13 +679,7 @@ export default {
     fecha: { ca: 'Data', es: 'Fecha', en: 'Date' },
     pedidoPor: { ca: 'Demanat per', es: 'Pedido por', en: 'Requested by' },
     totalPendiente: { ca: 'Total pendent', es: 'Total pendiente', en: 'Total pending' },
-    notaProyecto: {
-      ca: "Per al departament hi pot apuntar tothom; per a un projecte (va al seu compte), només qui n'està autoritzat.",
-      es: 'Para el departamento puede apuntar todo el mundo; para un proyecto (va a su cuenta), solo quien está autorizado.',
-      en: 'Anyone can add items for the department; for a project (charged to its account), only authorised people.'
-    },
     apuntadoPor: { ca: 'apuntat per {nombre}', es: 'apuntado por {nombre}', en: 'added by {nombre}' },
-    agruparPor: { ca: 'Agrupa per:', es: 'Agrupa por:', en: 'Group by:' },
     autorizados: { ca: 'Qui pot comprar per a cada projecte', es: 'Quién puede comprar para cada proyecto', en: 'Who can buy for each project' },
     ayudaAutorizados: {
       ca: "Les compres d'un projecte van al seu compte: només les poden apuntar aquestes persones i els administradors. Si has de comprar per a un projecte, demana-ho a un administrador.",
