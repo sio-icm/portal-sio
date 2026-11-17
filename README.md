@@ -350,20 +350,27 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   azul (o rojo) los días reservados, sin nombres ni motivos.
 - Tablas: `calendario`, `reservas`, `festius`, `ajustes` (se crean solas).
 
-## Compres sense projecte
+## Compres
 
-- Lista compartida de lo que hay que comprar sin proyecto (intranet → «🛒 Compres
-  sense projecte»), como el antiguo «Full Comanda»: qué se necesita, cantidad,
-  proveedor, referencia y precio unitario sin IVA (obligatorio). Cada uno cambia lo suyo; los
-  administradores, todo.
-- Los artículos de **RS** (proveedor con la palabra «RS») se suman. Al llegar a
-  **95 € sin IVA** (RS no cobra los ~16 € de portes) se activa el botón que envía
-  a RS (`Ofertas@rs.rsgroup.com`) un correo pidiendo presupuesto, con copia a quien
-  lo envía y a `SIO_CONTACTO_DESTINO`. Los artículos enviados pasan al historial y
-  la lista vuelve a empezar. Los de otros proveedores se quedan apuntados.
-- Usa el mismo servidor de correo que el formulario de contacto. Opcional en
-  `backend.env`: `SIO_COMPRAS_MINIMO` (95) y `SIO_COMPRAS_DESTINO`.
-- Tablas: `compras` y `compras_envios` (se crean solas).
+- Lista compartida de lo que hay que comprar (intranet → «🛒 Compres»), como el
+  antiguo «Full Comanda»: qué se necesita, cantidad, proveedor, referencia, precio
+  unitario sin IVA (obligatorio) y **para quién**: el departamento (sin proyecto) o
+  un proyecto de la lista. Cada uno cambia lo suyo; los administradores, todo.
+- **Proveedores** (tabla `compras_proveedores`): cualquiera del personal puede
+  añadirlos y ajustar el pedido mínimo sin portes, los portes y el correo para
+  pedir presupuesto. Solo se puede borrar un proveedor sin compras (quien lo creó o
+  un administrador). Al arrancar se crea «RS Components» (95 €, 16 €,
+  `Ofertas@rs.rsgroup.com`; ajustable con `SIO_COMPRAS_MINIMO` y
+  `SIO_COMPRAS_DESTINO` en `backend.env`).
+- Cada proveedor tiene su barra hasta el mínimo. Al llegar se puede pedir: si tiene
+  correo, se le envía la petición de presupuesto (copia a quien la envía y a
+  `SIO_CONTACTO_DESTINO`); si no, solo se marca como pedido. Por debajo del mínimo
+  también se puede pedir, avisando de que se pagarán portes.
+- Lo pedido pasa al historial. Si al final algo no se compró, se borra desde el
+  historial y deja de contar.
+- **Gastos por proyecto**: pendiente, pedido y total de cada proyecto y del
+  departamento, y el total de todas las compras (sin IVA ni portes).
+- Tablas: `compras`, `compras_envios` y `compras_proveedores` (se crean y migran solas).
 
 ## Páginas de documentación (wiki interna)
 

@@ -2180,20 +2180,34 @@ crear_tablas_equipo_docs()
 
 
 # ---------------------------------------------------------------------------
-# COMPRES SENSE PROJECTE
-# Llista compartida del que cal comprar sense projecte (sobretot a RS). Quan els
-# articles de RS pendents arriben a COMPRAS_MINIMO € (sense IVA), RS no cobra els
-# ports (~16 €) i es pot enviar la llista a RS per demanar-ne pressupost.
+# COMPRES (del departament i dels projectes)
+# Llista compartida del que cal comprar. Cada article és d'un proveïdor (configurable:
+# comanda mínima per no pagar ports, ports i correu per demanar pressupost) i d'un projecte
+# o del departament (proyecto_id NULL). Quan un proveïdor arriba al mínim es pot enviar la
+# petició de pressupost; el que s'envia passa a l'historial (i en surten les despeses).
 # ---------------------------------------------------------------------------
-COMPRAS_MINIMO = float(os.environ.get('SIO_COMPRAS_MINIMO', '95'))
-COMPRAS_DESTINO = os.environ.get('SIO_COMPRAS_DESTINO', 'Ofertas@rs.rsgroup.com')
-COMPRAS_PROVEEDOR = 'RS Components'
-COMPRAS_PORTES = 16  # el que ens estalviem arribant al mínim (només informatiu)
+PROVEEDOR_INICIAL = {
+    'nombre': 'RS Components',
+    'minimo': float(os.environ.get('SIO_COMPRAS_MINIMO', '95')),
+    'portes': 16.0,
+    'email': os.environ.get('SIO_COMPRAS_DESTINO', 'Ofertas@rs.rsgroup.com'),
+}
+PATRON_EMAIL = re.compile(r'^[^@\s,;<>"]+@[^@\s,;<>"]+\.[A-Za-z]{2,}$')
 
 
 def crear_tablas_compras():
     conexion = conectar_bd()
     conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS compras_proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            minimo REAL NOT NULL DEFAULT 0,     -- comanda mínima (€ sense IVA) per no pagar ports
+            portes REAL NOT NULL DEFAULT 0,     -- ports si no s'hi arriba (informatiu)
+            email TEXT NOT NULL DEFAULT '',     -- on s'envia la petició de pressupost ('' = no s'envia correu)
+            creado_por TEXT NOT NULL DEFAULT '',
+            creado_por_id INTEGER,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha TEXT NOT NULL DEFAULT (date('now')),
@@ -2203,7 +2217,7 @@ def crear_tablas_compras():
             cantidad INTEGER NOT NULL DEFAULT 1,
             proveedor TEXT NOT NULL DEFAULT 'RS Components',
             referencia TEXT NOT NULL DEFAULT '',
-            precio REAL,                          -- preu unitari sense IVA (NULL = encara no se sap)
+            precio REAL,
             envio_id INTEGER REFERENCES compras_envios(id),  -- NULL = pendent
             creado TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -2216,6 +2230,28 @@ def crear_tablas_compras():
             articulos INTEGER NOT NULL
         );
     """)
+    # Columnes noves (dades anteriors: tot era de RS i sense projecte)
+    nuevas = (('compras', 'proveedor_id', 'INTEGER REFERENCES compras_proveedores(id)'),
+              ('compras', 'proyecto_id', 'INTEGER REFERENCES proyectos(id)'),
+              ('compras_envios', 'proveedor_id', 'INTEGER REFERENCES compras_proveedores(id)'),
+              ('compras_envios', 'proveedor', "TEXT NOT NULL DEFAULT ''"))
+    for tabla, columna, definicion in nuevas:
+        if columna not in [f['name'] for f in conexion.execute(f'PRAGMA table_info({tabla})')]:
+            try:
+                conexion.execute(f'ALTER TABLE {tabla} ADD COLUMN {columna} {definicion}')
+            except sqlite3.OperationalError:
+                pass  # l'altre procés de gunicorn l'ha afegida alhora
+    conexion.execute('INSERT OR IGNORE INTO compras_proveedores (nombre, minimo, portes, email) VALUES (?, ?, ?, ?)',
+                     (PROVEEDOR_INICIAL['nombre'], PROVEEDOR_INICIAL['minimo'], PROVEEDOR_INICIAL['portes'], PROVEEDOR_INICIAL['email']))
+    # Articles antics sense proveedor_id: es lliguen pel nom (si el proveïdor no existeix, es crea)
+    for (nombre,) in conexion.execute('SELECT DISTINCT proveedor FROM compras WHERE proveedor_id IS NULL').fetchall():
+        nombre_ok = (nombre or '').strip() or PROVEEDOR_INICIAL['nombre']
+        conexion.execute('INSERT OR IGNORE INTO compras_proveedores (nombre) VALUES (?)', (nombre_ok,))
+        pid = conexion.execute('SELECT id FROM compras_proveedores WHERE nombre = ?', (nombre_ok,)).fetchone()['id']
+        conexion.execute('UPDATE compras SET proveedor_id = ? WHERE proveedor_id IS NULL AND proveedor IS ?', (pid, nombre))
+    rs = conexion.execute('SELECT id FROM compras_proveedores WHERE nombre = ?', (PROVEEDOR_INICIAL['nombre'],)).fetchone()['id']
+    conexion.execute('UPDATE compras_envios SET proveedor_id = ?, proveedor = ? WHERE proveedor_id IS NULL',
+                     (rs, PROVEEDOR_INICIAL['nombre']))
     conexion.commit()
     conexion.close()
 
@@ -2223,42 +2259,58 @@ def crear_tablas_compras():
 crear_tablas_compras()
 
 
-def es_rs(proveedor):
-    # «RS Components», «RS», «RS-Online»... (la paraula «rs» dins del nom)
-    return 'rs' in re.split(r'[^a-z0-9]+', (proveedor or '').lower())
+def importe(f):
+    return round((f['precio'] or 0) * f['cantidad'], 2)
 
 
 def resumen_compras(conexion):
-    pendientes = [dict(f) for f in conexion.execute(
-        'SELECT * FROM compras WHERE envio_id IS NULL ORDER BY fecha, id')]
-    for f in pendientes:
-        f['editable'] = bool(session.get('es_admin')) or f['usuario_id'] == session.get('usuario_id')
-        f['es_rs'] = es_rs(f['proveedor'])
-    rs = [f for f in pendientes if f['es_rs']]
-    total = round(sum((f['precio'] or 0) * f['cantidad'] for f in rs), 2)
-    envios = [dict(e) for e in conexion.execute('SELECT * FROM compras_envios ORDER BY id DESC LIMIT 20')]
+    yo, admin = session.get('usuario_id'), bool(session.get('es_admin'))
+    proyectos = {p['id']: p['titulo'] for p in conexion.execute('SELECT id, titulo FROM proyectos')}
+    proveedores = [dict(p) for p in conexion.execute('SELECT * FROM compras_proveedores ORDER BY nombre')]
+    filas = [dict(f) for f in conexion.execute('SELECT * FROM compras ORDER BY fecha, id')]
+    nombres = {p['id']: p['nombre'] for p in proveedores}
+    for f in filas:
+        f['proveedor'] = nombres.get(f['proveedor_id'], f['proveedor'])
+        f['proyecto'] = proyectos.get(f['proyecto_id'], '')
+        f['importe'] = importe(f)
+        f['editable'] = admin or f['usuario_id'] == yo
+    pendientes = [f for f in filas if f['envio_id'] is None]
+    for pv in proveedores:
+        suyos = [f for f in pendientes if f['proveedor_id'] == pv['id']]
+        pv['pendientes'] = len(suyos)
+        pv['total'] = round(sum(f['importe'] for f in suyos), 2)
+        pv['en_uso'] = any(f['proveedor_id'] == pv['id'] for f in filas)
+        pv['borrable'] = not pv['en_uso'] and (admin or (pv['creado_por_id'] is not None and pv['creado_por_id'] == yo))
+    envios = [dict(e) for e in conexion.execute('SELECT * FROM compras_envios ORDER BY id DESC LIMIT 50')]
     for e in envios:
-        e['items'] = [dict(f) for f in conexion.execute(
-            'SELECT descripcion, cantidad, referencia, precio, pedido_por FROM compras WHERE envio_id = ? ORDER BY id', (e['id'],))]
+        e['items'] = [f for f in filas if f['envio_id'] == e['id']]
+    # Despeses: pendent i demanat per projecte (proyecto_id None = departament)
+    gastos = {}
+    for f in filas:
+        g = gastos.setdefault(f['proyecto_id'], {'proyecto_id': f['proyecto_id'], 'proyecto': f['proyecto'],
+                                                 'pendiente': 0.0, 'pedido': 0.0})
+        g['pedido' if f['envio_id'] else 'pendiente'] += f['importe']
+    gastos = sorted(({**g, 'pendiente': round(g['pendiente'], 2), 'pedido': round(g['pedido'], 2),
+                      'total': round(g['pendiente'] + g['pedido'], 2)} for g in gastos.values()),
+                    key=lambda g: (g['proyecto_id'] is not None, g['proyecto'].lower()))
     return {
+        'proveedores': proveedores,
         'pendientes': pendientes,
-        'total_rs': total,
-        'sin_precio_rs': sum(1 for f in rs if f['precio'] is None),
-        'minimo': COMPRAS_MINIMO,
-        'portes': COMPRAS_PORTES,
-        'destino': COMPRAS_DESTINO,
         'envios': envios,
+        'gastos': gastos,
+        'total_pendiente': round(sum(f['importe'] for f in pendientes), 2),
+        'total_pedido': round(sum(f['importe'] for f in filas if f['envio_id']), 2),
+        'proyectos': [{'id': i, 'titulo': t} for i, t in sorted(proyectos.items(), key=lambda x: x[1].lower())],
         'correo_configurado': bool(os.environ.get('SIO_SMTP_HOST')),
     }
 
 
-def validar_compra(datos):
+def validar_compra(conexion, datos):
     descripcion = str(datos.get('descripcion', '') or '').strip()
-    proveedor = str(datos.get('proveedor', '') or '').strip() or COMPRAS_PROVEEDOR
     referencia = str(datos.get('referencia', '') or '').strip()
     if not descripcion:
         return None, "Escribe qué se necesita"
-    if len(descripcion) > 300 or len(proveedor) > 100 or len(referencia) > 60:
+    if len(descripcion) > 300 or len(referencia) > 60:
         return None, "Algún campo es demasiado largo"
     try:
         cantidad = int(datos.get('cantidad', 1))
@@ -2276,7 +2328,23 @@ def validar_compra(datos):
         return None, "Precio no válido"
     if not 0 < precio <= 100000:
         return None, "Precio no válido"
-    return (descripcion, cantidad, proveedor, referencia, precio), None
+    try:
+        proveedor = conexion.execute('SELECT * FROM compras_proveedores WHERE id = ?', (int(datos.get('proveedor_id')),)).fetchone()
+    except (TypeError, ValueError):
+        proveedor = None
+    if not proveedor:
+        return None, "Elige el proveedor"
+    proyecto_id = datos.get('proyecto_id')
+    if proyecto_id in ('', None):
+        proyecto_id = None
+    else:
+        try:
+            proyecto_id = int(proyecto_id)
+        except (TypeError, ValueError):
+            return None, "Proyecto no válido"
+        if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
+            return None, "El proyecto no existe"
+    return (descripcion, cantidad, proveedor['nombre'], referencia, precio, proveedor['id'], proyecto_id), None
 
 
 @app.route('/api/compras', methods=['GET', 'POST'])
@@ -2284,18 +2352,28 @@ def validar_compra(datos):
 def gestionar_compras():
     conexion = conectar_bd()
     if request.method == 'POST':
-        valores, error = validar_compra(request.get_json(silent=True) or {})
+        valores, error = validar_compra(conexion, request.get_json(silent=True) or {})
         if error:
             conexion.close()
             return jsonify({"error": error}), 400
         conexion.execute(
-            'INSERT INTO compras (usuario_id, pedido_por, descripcion, cantidad, proveedor, referencia, precio)'
-            ' VALUES (?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO compras (usuario_id, pedido_por, descripcion, cantidad, proveedor, referencia, precio, proveedor_id, proyecto_id)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             (session.get('usuario_id'), session.get('nombre') or ADMIN_USER) + valores)
         conexion.commit()
     respuesta = resumen_compras(conexion)
     conexion.close()
     return jsonify(respuesta), (201 if request.method == 'POST' else 200)
+
+
+def recalcular_envio(conexion, envio_id):
+    """Després de treure un article de l'historial: actualitza el total o esborra l'enviament buit."""
+    items = conexion.execute('SELECT precio, cantidad FROM compras WHERE envio_id = ?', (envio_id,)).fetchall()
+    if not items:
+        conexion.execute('DELETE FROM compras_envios WHERE id = ?', (envio_id,))
+    else:
+        conexion.execute('UPDATE compras_envios SET total = ?, articulos = ? WHERE id = ?',
+                         (round(sum(importe(f) for f in items), 2), len(items), envio_id))
 
 
 @app.route('/api/compras/<int:id>', methods=['PUT', 'DELETE'])
@@ -2306,37 +2384,110 @@ def modificar_compra(id):
     if not fila:
         conexion.close()
         return jsonify({"error": "No existe"}), 404
-    if fila['envio_id'] is not None:
-        conexion.close()
-        return jsonify({"error": "Ya se ha enviado y no se puede cambiar"}), 409
     if not session.get('es_admin') and fila['usuario_id'] != session.get('usuario_id'):
         conexion.close()
         return jsonify({"error": "Solo puedes cambiar lo que has apuntado tú"}), 403
     if request.method == 'DELETE':
+        # També des de l'historial, si al final no es va comprar
         conexion.execute('DELETE FROM compras WHERE id = ?', (id,))
+        if fila['envio_id'] is not None:
+            recalcular_envio(conexion, fila['envio_id'])
     else:
-        valores, error = validar_compra(request.get_json(silent=True) or {})
+        if fila['envio_id'] is not None:
+            conexion.close()
+            return jsonify({"error": "Ya se ha enviado y no se puede cambiar"}), 409
+        valores, error = validar_compra(conexion, request.get_json(silent=True) or {})
         if error:
             conexion.close()
             return jsonify({"error": error}), 400
-        conexion.execute('UPDATE compras SET descripcion = ?, cantidad = ?, proveedor = ?, referencia = ?, precio = ? WHERE id = ?',
-                         valores + (id,))
+        conexion.execute('UPDATE compras SET descripcion = ?, cantidad = ?, proveedor = ?, referencia = ?, precio = ?, '
+                         'proveedor_id = ?, proyecto_id = ? WHERE id = ?', valores + (id,))
     conexion.commit()
     respuesta = resumen_compras(conexion)
     conexion.close()
     return jsonify(respuesta)
 
 
-def texto_peticion_rs(articulos, nombre, correo):
+# ---------- Proveïdors (qualsevol del personal en pot afegir i ajustar les condicions) ----------
+def validar_proveedor(datos):
+    nombre = str(datos.get('nombre', '') or '').strip()
+    email = str(datos.get('email', '') or '').strip()
+    if not nombre:
+        return None, "Escribe el nombre del proveedor"
+    if len(nombre) > 100:
+        return None, "Algún campo es demasiado largo"
+    if email and not PATRON_EMAIL.match(email):
+        return None, "Correo no válido"
+    try:
+        minimo = round(float(str(datos.get('minimo') or 0).replace(',', '.')), 2)
+        portes = round(float(str(datos.get('portes') or 0).replace(',', '.')), 2)
+    except ValueError:
+        return None, "Importe no válido"
+    if not (0 <= minimo <= 100000 and 0 <= portes <= 10000):
+        return None, "Importe no válido"
+    return (nombre, minimo, portes, email), None
+
+
+@app.route('/api/compras/proveedores', methods=['POST'])
+@requiere_login
+def crear_proveedor():
+    valores, error = validar_proveedor(request.get_json(silent=True) or {})
+    if error:
+        return jsonify({"error": error}), 400
+    conexion = conectar_bd()
+    if conexion.execute('SELECT 1 FROM compras_proveedores WHERE nombre = ?', (valores[0],)).fetchone():
+        conexion.close()
+        return jsonify({"error": "Ya existe un proveedor con este nombre"}), 409
+    conexion.execute('INSERT INTO compras_proveedores (nombre, minimo, portes, email, creado_por, creado_por_id) VALUES (?, ?, ?, ?, ?, ?)',
+                     valores + (session.get('nombre') or ADMIN_USER or '', session.get('usuario_id')))
+    conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta), 201
+
+
+@app.route('/api/compras/proveedores/<int:id>', methods=['PUT', 'DELETE'])
+@requiere_login
+def modificar_proveedor(id):
+    conexion = conectar_bd()
+    pv = conexion.execute('SELECT * FROM compras_proveedores WHERE id = ?', (id,)).fetchone()
+    if not pv:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'DELETE':
+        if not session.get('es_admin') and pv['creado_por_id'] != session.get('usuario_id'):
+            conexion.close()
+            return jsonify({"error": "Solo puede borrarlo quien lo creó o un administrador"}), 403
+        if conexion.execute('SELECT 1 FROM compras WHERE proveedor_id = ?', (id,)).fetchone():
+            conexion.close()
+            return jsonify({"error": "Este proveedor tiene compras: no se puede borrar"}), 409
+        conexion.execute('DELETE FROM compras_proveedores WHERE id = ?', (id,))
+    else:
+        valores, error = validar_proveedor(request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        if conexion.execute('SELECT 1 FROM compras_proveedores WHERE nombre = ? AND id != ?', (valores[0], id)).fetchone():
+            conexion.close()
+            return jsonify({"error": "Ya existe un proveedor con este nombre"}), 409
+        conexion.execute('UPDATE compras_proveedores SET nombre = ?, minimo = ?, portes = ?, email = ? WHERE id = ?', valores + (id,))
+        conexion.execute('UPDATE compras SET proveedor = ? WHERE proveedor_id = ?', (valores[0], id))
+    conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta)
+
+
+def texto_peticion(articulos, proveedor, nombre, correo):
     lineas = []
     for n, a in enumerate(articulos, 1):
-        ref = f"Ref. RS {a['referencia']}" if a['referencia'] else 'Ref. RS (sin referencia)'
+        ref = f"Ref. {a['referencia']}" if a['referencia'] else 'Sin referencia'
         lineas.append(f"{n}. {ref} | Cantidad: {a['cantidad']} | {a['descripcion']}")
     contacto = f"{nombre}" + (f" <{correo}>" if correo else '')
     return (
         "Buenos días:\n\n"
         "Desde el Servicio de Ingeniería Oceanográfica del Institut de Ciències del Mar (ICM-CSIC) "
-        "les solicitamos una cotización de los siguientes artículos:\n\n"
+        f"les solicitamos una cotización de los siguientes artículos ({proveedor}):\n\n"
         + "\n".join(lineas) +
         "\n\nLes agradeceríamos que en la oferta indicaran el precio unitario, el plazo de entrega "
         "y los gastos de envío, si los hay.\n\n"
@@ -2349,41 +2500,53 @@ def texto_peticion_rs(articulos, nombre, correo):
     )
 
 
-@app.route('/api/compras/enviar', methods=['POST'])
+@app.route('/api/compras/enviar/<int:proveedor_id>', methods=['POST'])
 @requiere_login
-def enviar_compras():
-    """Envia a RS la petició de pressupost dels articles de RS pendents (si arriben al mínim)."""
-    if not os.environ.get('SIO_SMTP_HOST'):
-        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+def enviar_compras(proveedor_id):
+    """Comanda d'un proveïdor: si té correu, s'hi envia la petició de pressupost; si no, només es
+    marca com a demanada. Per sota del mínim només amb «forzar» (es pagaran ports)."""
+    datos = request.get_json(silent=True) or {}
     conexion = conectar_bd()
-    pendientes = [dict(f) for f in conexion.execute('SELECT * FROM compras WHERE envio_id IS NULL ORDER BY fecha, id')]
-    articulos = [f for f in pendientes if es_rs(f['proveedor'])]
-    total = round(sum((f['precio'] or 0) * f['cantidad'] for f in articulos), 2)
-    if not articulos or total < COMPRAS_MINIMO:
+    pv = conexion.execute('SELECT * FROM compras_proveedores WHERE id = ?', (proveedor_id,)).fetchone()
+    if not pv:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    articulos = [dict(f) for f in conexion.execute(
+        'SELECT * FROM compras WHERE envio_id IS NULL AND proveedor_id = ? ORDER BY fecha, id', (proveedor_id,))]
+    total = round(sum(importe(f) for f in articulos), 2)
+    if not articulos:
+        conexion.close()
+        return jsonify({"error": "No hay nada pendiente de este proveedor"}), 400
+    if total < pv['minimo'] and not datos.get('forzar'):
         conexion.close()
         return jsonify({"error": "Todavía no se llega al importe mínimo"}), 400
     usuario = conexion.execute('SELECT nombre, email FROM usuarios WHERE id = ?', (session.get('usuario_id'),)).fetchone()
     nombre = (usuario['nombre'] if usuario else None) or session.get('nombre') or ADMIN_USER
     correo = (usuario['email'] if usuario else '') or ''
-
-    mensaje = EmailMessage()
-    mensaje['Subject'] = 'Solicitud de cotización - ICM-CSIC (Servicio de Ingeniería Oceanográfica)'
-    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
-    mensaje['To'] = COMPRAS_DESTINO
-    copia = [c for c in {correo, CONTACTO_DESTINO} if c]
-    if copia:
-        mensaje['Cc'] = ', '.join(sorted(copia))
-    mensaje['Reply-To'] = correo or CONTACTO_DESTINO
-    mensaje.set_content(texto_peticion_rs(articulos, nombre, correo))
-    try:
-        enviar_correo(mensaje)
-    except Exception as e:
-        print(f"Error enviando la petición de compras: {e}", flush=True)
-        conexion.close()
-        return jsonify({"error": "No se ha podido enviar el correo"}), 502
-
-    cursor = conexion.execute('INSERT INTO compras_envios (enviado_por, destinatario, total, articulos) VALUES (?, ?, ?, ?)',
-                              (nombre, COMPRAS_DESTINO, total, len(articulos)))
+    destinatario = ''
+    if pv['email']:
+        if not os.environ.get('SIO_SMTP_HOST'):
+            conexion.close()
+            return jsonify({"error": "Envío no configurado en el servidor"}), 503
+        mensaje = EmailMessage()
+        mensaje['Subject'] = 'Solicitud de cotización - ICM-CSIC (Servicio de Ingeniería Oceanográfica)'
+        mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+        mensaje['To'] = pv['email']
+        copia = [c for c in {correo, CONTACTO_DESTINO} if c]
+        if copia:
+            mensaje['Cc'] = ', '.join(sorted(copia))
+        mensaje['Reply-To'] = correo or CONTACTO_DESTINO
+        mensaje.set_content(texto_peticion(articulos, pv['nombre'], nombre, correo))
+        try:
+            enviar_correo(mensaje)
+        except Exception as e:
+            print(f"Error enviando la petición de compras: {e}", flush=True)
+            conexion.close()
+            return jsonify({"error": "No se ha podido enviar el correo"}), 502
+        destinatario = pv['email']
+    cursor = conexion.execute(
+        'INSERT INTO compras_envios (enviado_por, destinatario, total, articulos, proveedor_id, proveedor) VALUES (?, ?, ?, ?, ?, ?)',
+        (nombre, destinatario, total, len(articulos), pv['id'], pv['nombre']))
     conexion.executemany('UPDATE compras SET envio_id = ? WHERE id = ?', [(cursor.lastrowid, a['id']) for a in articulos])
     conexion.commit()
     respuesta = resumen_compras(conexion)

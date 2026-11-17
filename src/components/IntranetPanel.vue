@@ -6,7 +6,7 @@ import { traducirError, traducirValor } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
 import PaginasDocs from './PaginasDocs.vue'
-import ComprasSinProyecto from './ComprasSinProyecto.vue'
+import Compras from './Compras.vue'
 import GestionEquipo from './GestionEquipo.vue'
 import DiarioActividad from './DiarioActividad.vue'
 import InformeSemestral from './InformeSemestral.vue'
@@ -445,7 +445,7 @@ const eliminarProyecto = async (id) => {
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
         <!-- Documentació: tot són pàgines (amb els fitxers adjunts) -->
         <PaginasDocs v-else-if="seccionActiva === 'documentacion'" :key="docsKey" @sesion-caducada="sesionCaducada" />
-        <ComprasSinProyecto v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <Compras v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
           <button type="button" class="btn-tornar" @click="volverDashboard('instrumentos')">← {{ $t('intranet.panel.volverInstrumentos') }}</button>

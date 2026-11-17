@@ -88,6 +88,13 @@ export default {
 
   // Errores que devuelve el servidor (en castellano); traducirError() los busca aquí
   errores: {
+    'Elige el proveedor': { ca: 'Tria el proveïdor', es: 'Elige el proveedor', en: 'Choose the supplier' },
+    'Escribe el nombre del proveedor': { ca: 'Escriu el nom del proveïdor', es: 'Escribe el nombre del proveedor', en: 'Enter the supplier name' },
+    'Importe no válido': { ca: 'Import no vàlid', es: 'Importe no válido', en: 'Invalid amount' },
+    'Ya existe un proveedor con este nombre': { ca: 'Ja hi ha un proveïdor amb aquest nom', es: 'Ya existe un proveedor con este nombre', en: 'A supplier with this name already exists' },
+    'Solo puede borrarlo quien lo creó o un administrador': { ca: "Només ho pot esborrar qui ho va crear o un administrador", es: 'Solo puede borrarlo quien lo creó o un administrador', en: 'Only its creator or an administrator can delete it' },
+    'Este proveedor tiene compras: no se puede borrar': { ca: 'Aquest proveïdor té compres: no es pot esborrar', es: 'Este proveedor tiene compras: no se puede borrar', en: 'This supplier has purchases: it cannot be deleted' },
+    'No hay nada pendiente de este proveedor': { ca: "No hi ha res pendent d'aquest proveïdor", es: 'No hay nada pendiente de este proveedor', en: 'Nothing pending for this supplier' },
     'Algún campo es demasiado largo': { ca: 'Algun camp és massa llarg', es: 'Algún campo es demasiado largo', en: 'A field is too long' },
     'Correo no válido': { ca: 'Correu no vàlid', es: 'Correo no válido', en: 'Invalid e-mail' },
     'Demasiados intentos. Espera unos minutos': { ca: 'Massa intents. Espera uns minuts', es: 'Demasiados intentos. Espera unos minutos', en: 'Too many attempts. Wait a few minutes' },
@@ -220,7 +227,7 @@ export default {
       proyectos: { ca: '📁 Projectes i campanyes', es: '📁 Proyectos y campañas', en: '📁 Projects and campaigns' },
       instrumentos: { ca: '🔧 Instruments', es: '🔧 Instrumentos', en: '🔧 Instruments' },
       documentacion: { ca: '📚 Documentació i manuals', es: '📚 Documentación y manuales', en: '📚 Documents and manuals' },
-      compras: { ca: '🛒 Compres sense projecte', es: '🛒 Compras sin proyecto', en: '🛒 Purchases without project' },
+      compras: { ca: '🛒 Compres', es: '🛒 Compras', en: '🛒 Purchases' },
       altaInstrumento: { ca: '🛠️ Alta instrument', es: '🛠️ Alta de instrumento', en: '🛠️ New instrument' },
       editandoInstrumento: { ca: '✏️ Editant instrument', es: '✏️ Editando instrumento', en: '✏️ Editing instrument' },
       altaProyecto: { ca: '🚀 Alta projecte', es: '🚀 Alta de proyecto', en: '🚀 New project' },
@@ -563,24 +570,57 @@ export default {
 
   // Calendari d'equip
   compras: {
-    titulo: { ca: '🛒 Compres sense projecte', es: '🛒 Compras sin proyecto', en: '🛒 Purchases without project' },
+    titulo: { ca: '🛒 Compres', es: '🛒 Compras', en: '🛒 Purchases' },
     ayuda: {
-      ca: "Apunta aquí el que cal comprar sense projecte. Quan els articles de RS arribin a {minimo} (sense IVA), RS no cobra els ports (uns {portes}) i es pot enviar la llista per demanar-ne pressupost.",
-      es: 'Apunta aquí lo que hay que comprar sin proyecto. Cuando los artículos de RS lleguen a {minimo} (sin IVA), RS no cobra los portes (unos {portes}) y se puede enviar la lista para pedir presupuesto.',
-      en: 'Add here what needs to be bought without a project. When the RS items reach {minimo} (excl. VAT), RS does not charge shipping (about {portes}) and the list can be sent to ask for a quote.'
+      ca: "Apunta aquí el que cal comprar, per al departament o per a un projecte. Cada proveïdor té la seva comanda mínima per no pagar ports: quan s'hi arriba, es demana el pressupost. A baix hi ha les despeses de cada projecte.",
+      es: 'Apunta aquí lo que hay que comprar, para el departamento o para un proyecto. Cada proveedor tiene su pedido mínimo para no pagar portes: cuando se llega, se pide el presupuesto. Abajo están los gastos de cada proyecto.',
+      en: 'Add here what needs to be bought, for the department or for a project. Each supplier has its own minimum order to avoid shipping costs: when it is reached, the quote is requested. Below are the expenses of each project.'
     },
+    // Proveïdors
+    proveedores: { ca: 'Proveïdors', es: 'Proveedores', en: 'Suppliers' },
+    nuevoProveedor: { ca: '+ Afegir proveïdor', es: '+ Añadir proveedor', en: '+ Add supplier' },
+    nuevoProveedorTitulo: { ca: 'Nou proveïdor', es: 'Nuevo proveedor', en: 'New supplier' },
+    editarProveedor: { ca: 'Editar el proveïdor', es: 'Editar el proveedor', en: 'Edit supplier' },
+    ayudaProveedor: {
+      ca: "Mireu a la web del proveïdor a partir de quin import (sense IVA) no cobren els ports i quant costen. Si poseu el correu de pressupostos, la llista s'hi enviarà; si no, només es marcarà com a demanada.",
+      es: 'Mirad en la web del proveedor a partir de qué importe (sin IVA) no cobran los portes y cuánto cuestan. Si ponéis el correo de presupuestos, la lista se enviará allí; si no, solo se marcará como pedida.',
+      en: "Check on the supplier's website from what amount (excl. VAT) shipping is free and how much it costs. If you enter the quotes e-mail, the list will be sent there; otherwise it will only be marked as ordered."
+    },
+    nombreProveedor: { ca: 'Nom', es: 'Nombre', en: 'Name' },
+    nombreProveedorPh: { ca: 'ex.: Farnell, Mouser, Amazon...', es: 'ej.: Farnell, Mouser, Amazon...', en: 'e.g. Farnell, Mouser, Amazon...' },
+    minimo: { ca: 'Mínim sense ports (€)', es: 'Mínimo sin portes (€)', en: 'Free shipping from (€)' },
+    portes: { ca: 'Ports (€)', es: 'Portes (€)', en: 'Shipping (€)' },
+    emailProveedor: { ca: 'Correu per demanar pressupost (opcional)', es: 'Correo para pedir presupuesto (opcional)', en: 'E-mail to request quotes (optional)' },
+    emailProveedorPh: { ca: 'ofertes{\'@\'}proveidor.com', es: 'ofertas{\'@\'}proveedor.com', en: 'quotes{\'@\'}supplier.com' },
+    proveedorGuardado: { ca: 'Proveïdor «{nombre}» desat.', es: 'Proveedor «{nombre}» guardado.', en: 'Supplier “{nombre}” saved.' },
+    confirmarBorrarProveedor: { ca: 'Vols esborrar el proveïdor «{nombre}»?', es: '¿Quieres borrar el proveedor «{nombre}»?', en: 'Delete supplier “{nombre}”?' },
+    condiciones: { ca: 'Sense ports a partir de {minimo} (si no, uns {portes})', es: 'Sin portes a partir de {minimo} (si no, unos {portes})', en: 'Free shipping from {minimo} (otherwise about {portes})' },
+    siemprePortes: { ca: 'Sempre cobra ports (uns {portes})', es: 'Siempre cobra portes (unos {portes})', en: 'Always charges shipping (about {portes})' },
+    sinMinimo: { ca: 'Sense comanda mínima', es: 'Sin pedido mínimo', en: 'No minimum order' },
+    sinEmail: { ca: 'Sense correu: es marca com a demanat', es: 'Sin correo: se marca como pedido', en: 'No e-mail: it is marked as ordered' },
     sinIva: { ca: '(sense IVA)', es: '(sin IVA)', en: '(excl. VAT)' },
-    alcanzado: { ca: 'Ja arribem al mínim: ja es pot enviar a RS.', es: 'Ya llegamos al mínimo: ya se puede enviar a RS.', en: 'Minimum reached: the list can now be sent to RS.' },
-    falta: { ca: 'Falten {falta} per arribar al mínim i estalviar-nos els ports.', es: 'Faltan {falta} para llegar al mínimo y ahorrarnos los portes.', en: '{falta} still needed to reach the minimum and save on shipping.' },
-    sinPrecio: { ca: '{n} article(s) de RS sense preu: no compten per al total.', es: '{n} artículo(s) de RS sin precio: no cuentan para el total.', en: '{n} RS item(s) without a price: they do not count towards the total.' },
-    enviar: { ca: 'Enviar a RS per demanar pressupost ({destino})', es: 'Enviar a RS para pedir presupuesto ({destino})', en: 'Send to RS to ask for a quote ({destino})' },
+    alcanzado: { ca: 'Ja arribem al mínim.', es: 'Ya llegamos al mínimo.', en: 'Minimum reached.' },
+    listo: { ca: 'Es pot demanar.', es: 'Se puede pedir.', en: 'Ready to order.' },
+    falta: { ca: 'Falten {falta} per no pagar ports.', es: 'Faltan {falta} para no pagar portes.', en: '{falta} still needed for free shipping.' },
+    nadaPendiente: { ca: 'Res pendent.', es: 'Nada pendiente.', en: 'Nothing pending.' },
+    enviar: { ca: '📧 Demanar pressupost', es: '📧 Pedir presupuesto', en: '📧 Request a quote' },
+    marcar: { ca: '✔️ Marcar com a demanat', es: '✔️ Marcar como pedido', en: '✔️ Mark as ordered' },
+    forzar: { ca: 'Demanar igualment (pagarem uns {portes} de ports)', es: 'Pedir igualmente (pagaremos unos {portes} de portes)', en: 'Order anyway (we will pay about {portes} shipping)' },
+    avisoPortes: { ca: "Encara no s'arriba al mínim de {proveedor}: pagarem uns {portes} de ports.", es: 'Todavía no se llega al mínimo de {proveedor}: pagaremos unos {portes} de portes.', en: 'The {proveedor} minimum has not been reached: we will pay about {portes} shipping.' },
     sinCorreo: { ca: "El servidor no té el correu configurat: no es pot enviar.", es: 'El servidor no tiene el correo configurado: no se puede enviar.', en: 'E-mail is not configured on the server: it cannot be sent.' },
     confirmarEnviar: {
-      ca: "S'enviarà un correu a {destino} demanant pressupost de {n} article(s) de RS ({total} sense IVA), amb còpia per a tu i el servei. Vols enviar-lo?",
-      es: 'Se enviará un correo a {destino} pidiendo presupuesto de {n} artículo(s) de RS ({total} sin IVA), con copia para ti y el servicio. ¿Quieres enviarlo?',
-      en: 'An e-mail will be sent to {destino} asking for a quote for {n} RS item(s) ({total} excl. VAT), with a copy to you and the service. Send it?'
+      ca: "S'enviarà un correu a {destino} demanant pressupost de {n} article(s) de {proveedor} ({total} sense IVA), amb còpia per a tu i el servei. Vols enviar-lo?",
+      es: 'Se enviará un correo a {destino} pidiendo presupuesto de {n} artículo(s) de {proveedor} ({total} sin IVA), con copia para ti y el servicio. ¿Quieres enviarlo?',
+      en: 'An e-mail will be sent to {destino} asking for a quote for {n} {proveedor} item(s) ({total} excl. VAT), with a copy to you and the service. Send it?'
     },
-    enviado: { ca: "Petició enviada a {destino}. La llista torna a començar.", es: 'Petición enviada a {destino}. La lista vuelve a empezar.', en: 'Request sent to {destino}. The list starts again.' },
+    confirmarMarcar: {
+      ca: "Es marcaran com a demanats {n} article(s) de {proveedor} ({total} sense IVA) i passaran a l'historial. (No s'envia cap correu: la comanda la feu vosaltres.) D'acord?",
+      es: 'Se marcarán como pedidos {n} artículo(s) de {proveedor} ({total} sin IVA) y pasarán al historial. (No se envía ningún correo: el pedido lo hacéis vosotros.) ¿De acuerdo?',
+      en: '{n} {proveedor} item(s) ({total} excl. VAT) will be marked as ordered and moved to the history. (No e-mail is sent: you place the order yourselves.) OK?'
+    },
+    enviado: { ca: 'Petició enviada a {destino}.', es: 'Petición enviada a {destino}.', en: 'Request sent to {destino}.' },
+    marcado: { ca: 'Comanda de {proveedor} marcada com a demanada.', es: 'Pedido de {proveedor} marcado como pedido.', en: '{proveedor} order marked as ordered.' },
+    // Articles
     nuevo: { ca: 'Afegir un article', es: 'Añadir un artículo', en: 'Add an item' },
     descripcion: { ca: 'Què es necessita', es: 'Qué se necesita', en: 'What is needed' },
     descripcionPh: { ca: 'ex.: Pila AAA RS PRO alcalina 1,5 V', es: 'ej.: Pila AAA RS PRO alcalina 1,5 V', en: 'e.g. RS PRO alkaline AAA battery 1.5 V' },
@@ -591,8 +631,15 @@ export default {
     precioCorto: { ca: 'Preu u.', es: 'Precio u.', en: 'Unit price' },
     importe: { ca: 'Import', es: 'Importe', en: 'Amount' },
     proveedor: { ca: 'Proveïdor', es: 'Proveedor', en: 'Supplier' },
+    eligeProveedor: { ca: '— Tria el proveïdor —', es: '— Elige el proveedor —', en: '— Choose the supplier —' },
+    notaProveedor: { ca: "Si el proveïdor no hi és, afegiu-lo a dalt («+ Afegir proveïdor»).", es: 'Si el proveedor no está, añadidlo arriba («+ Añadir proveedor»).', en: 'If the supplier is not listed, add it above (“+ Add supplier”).' },
     referencia: { ca: 'Ref. proveïdor', es: 'Ref. proveedor', en: 'Supplier ref.' },
+    refCorta: { ca: 'Ref.', es: 'Ref.', en: 'Ref.' },
     referenciaPh: { ca: 'ex.: 744-2209', es: 'ej.: 744-2209', en: 'e.g. 744-2209' },
+    paraQuien: { ca: 'Per a', es: 'Para', en: 'For' },
+    proyecto: { ca: 'Projecte', es: 'Proyecto', en: 'Project' },
+    departamento: { ca: 'Departament (sense projecte)', es: 'Departamento (sin proyecto)', en: 'Department (no project)' },
+    departamentoCorto: { ca: 'Departament', es: 'Departamento', en: 'Department' },
     anadir: { ca: '+ Afegir', es: '+ Añadir', en: '+ Add' },
     anadido: { ca: 'Article afegit.', es: 'Artículo añadido.', en: 'Item added.' },
     guardado: { ca: 'Canvis desats.', es: 'Cambios guardados.', en: 'Changes saved.' },
@@ -601,14 +648,21 @@ export default {
     ninguno: { ca: "No hi ha res apuntat.", es: 'No hay nada apuntado.', en: 'Nothing on the list.' },
     fecha: { ca: 'Data', es: 'Fecha', en: 'Date' },
     pedidoPor: { ca: 'Demanat per', es: 'Pedido por', en: 'Requested by' },
-    totalRs: { ca: 'Total RS', es: 'Total RS', en: 'RS total' },
-    noRs: { ca: 'no és de RS', es: 'no es de RS', en: 'not RS' },
-    notaOtros: {
-      ca: "Els articles d'altres proveïdors queden apuntats, però no compten per al mínim ni s'envien a RS.",
-      es: 'Los artículos de otros proveedores quedan apuntados, pero no cuentan para el mínimo ni se envían a RS.',
-      en: 'Items from other suppliers stay on the list, but do not count towards the minimum and are not sent to RS.'
-    },
-    historial: { ca: 'Peticions enviades', es: 'Peticiones enviadas', en: 'Requests sent' },
+    totalPendiente: { ca: 'Total pendent', es: 'Total pendiente', en: 'Total pending' },
+    // Despeses
+    gastos: { ca: 'Despeses per projecte', es: 'Gastos por proyecto', en: 'Expenses by project' },
+    ayudaGastos: { ca: 'Sense IVA ni ports. «Demanat» és el que ja ha passat a l\'historial.', es: 'Sin IVA ni portes. «Pedido» es lo que ya ha pasado al historial.', en: 'Excl. VAT and shipping. “Ordered” is what is already in the history.' },
+    pendiente: { ca: 'Pendent', es: 'Pendiente', en: 'Pending' },
+    pedido: { ca: 'Demanat', es: 'Pedido', en: 'Ordered' },
+    total: { ca: 'Total', es: 'Total', en: 'Total' },
+    totalTodo: { ca: 'Totes les compres', es: 'Todas las compras', en: 'All purchases' },
+    // Historial
+    historial: { ca: 'Comandes fetes', es: 'Pedidos hechos', en: 'Orders placed' },
+    ayudaHistorial: { ca: 'Si al final algun article no es va comprar, esborreu-lo amb 🗑️ i deixarà de comptar a les despeses.', es: 'Si al final algún artículo no se compró, borradlo con 🗑️ y dejará de contar en los gastos.', en: 'If an item was not bought in the end, delete it with 🗑️ and it will no longer count in the expenses.' },
+    sinCorreoEnviado: { ca: '(sense correu)', es: '(sin correo)', en: '(no e-mail)' },
+    noComprado: { ca: 'No es va comprar: treure-ho', es: 'No se compró: quitarlo', en: 'Not bought: remove it' },
+    confirmarBorrarHistorial: { ca: "«{descripcion}» no es va comprar? Es traurà de l'historial i de les despeses.", es: '¿«{descripcion}» no se compró? Se quitará del historial y de los gastos.', en: '“{descripcion}” was not bought? It will be removed from the history and the expenses.' },
+    borradoHistorial: { ca: "Tret de l'historial.", es: 'Quitado del historial.', en: 'Removed from the history.' },
     articulos: { ca: '{n} article(s)', es: '{n} artículo(s)', en: '{n} item(s)' },
     errorCarga: { ca: "No s'ha pogut carregar la llista.", es: 'No se ha podido cargar la lista.', en: 'The list could not be loaded.' }
   },
