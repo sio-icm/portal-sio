@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { traducirError } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
 import { TIPOS_NOTA, tipoNota, fechaCorta, hoyIso, peticionIntranet, INTERVALOS_HORAS, intervaloHoras } from '../utils/diario'
 import { limpiarHtml } from '../utils/limpiarHtml'
 

@@ -365,6 +365,19 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   `backend.env`: `SIO_COMPRAS_MINIMO` (95) y `SIO_COMPRAS_DESTINO`.
 - Tablas: `compras` y `compras_envios` (se crean solas).
 
+## Páginas de documentación (wiki interna)
+
+- Intranet → «📚 Documentació i manuals» → pestaña «📝 Pàgines»: documentos escritos
+  directamente en la web (títulos, listas, enlaces, bloques de código, imágenes pegadas),
+  agrupados por categoría (p. ej. «Boia Somorrostro»). Solo con sesión: nunca son públicos.
+- Cualquiera del personal puede crear y editar (como una wiki). Cada guardado queda en el
+  historial (quién y cuándo) y se puede ver y recuperar una versión anterior. Borrar: quien
+  la creó o un administrador.
+- **No se guardan contraseñas**: si el texto tiene algo como «contrasenya: xxx» o
+  «password = xxx», no se guarda (lo comprueban el navegador y el servidor). Hay que indicar
+  dónde está, p. ej. «Contrasenya: (la té la Clara)».
+- Tablas: `paginas` y `paginas_versiones` (se crean solas). Máximo 8 MB por página.
+
 ## Equipo y Biblioteca de documentos
 
 - **Gestión del equipo** (intranet): son las fichas de la página pública `/equipo`.

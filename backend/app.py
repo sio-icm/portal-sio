@@ -2382,6 +2382,169 @@ def enviar_compras():
     return jsonify(respuesta)
 
 
+# ---------------------------------------------------------------------------
+# PÀGINES DE DOCUMENTACIÓ (wiki interna)
+# Documents escrits directament a la intranet (HTML de l'editor). Només per al
+# personal amb sessió. Cada desament queda a paginas_versiones (qui i quan) i es
+# pot recuperar. No s'hi poden escriure contrasenyes (es rebutja el desament).
+# ---------------------------------------------------------------------------
+MAX_PAGINA_BYTES = 8 * 1024 * 1024  # inclou les imatges enganxades (base64)
+# «contrasenya: xxx», «password = xxx», «pwd: xxx»... (no «contrasenya: (la té la Clara)»)
+PATRON_CONTRASENA = re.compile(
+    r'\b(password|passwd|pwd|pass|passphrase|contrase(?:ñ|n)a|contrasenya|clau|clave|secret|token)\b\s*[:=]\s*(\S+)',
+    re.IGNORECASE)
+PATRON_MARCADOR = re.compile(r'^([(\[<*…\-–—]|x+$|\*+$|\.+$|n/?a$)', re.IGNORECASE)
+
+
+def texto_plano(html):
+    texto = re.sub(r'<(br|/p|/li|/h[1-6]|/pre|/div|/tr)[^>]*>', '\n', html or '', flags=re.IGNORECASE)
+    texto = re.sub(r'<[^>]+>', ' ', texto)
+    return texto.replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
+
+
+def contrasena_escrita(html):
+    """Retorna el fragment sospitós si sembla que hi ha una contrasenya escrita, o None."""
+    for m in PATRON_CONTRASENA.finditer(texto_plano(html)):
+        if not PATRON_MARCADOR.match(m.group(2)):
+            return m.group(0)[:60]
+    return None
+
+
+def crear_tablas_paginas():
+    conexion = conectar_bd()
+    conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS paginas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            categoria TEXT NOT NULL DEFAULT '',
+            contenido TEXT NOT NULL DEFAULT '',
+            creado TEXT NOT NULL DEFAULT (datetime('now')),
+            creado_por TEXT NOT NULL,
+            creado_por_id INTEGER,
+            actualizado TEXT NOT NULL DEFAULT (datetime('now')),
+            actualizado_por TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS paginas_versiones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pagina_id INTEGER NOT NULL REFERENCES paginas(id) ON DELETE CASCADE,
+            titulo TEXT NOT NULL,
+            categoria TEXT NOT NULL DEFAULT '',
+            contenido TEXT NOT NULL DEFAULT '',
+            fecha TEXT NOT NULL DEFAULT (datetime('now')),
+            editado_por TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS paginas_versiones_pagina ON paginas_versiones(pagina_id);
+    """)
+    conexion.commit()
+    conexion.close()
+
+
+crear_tablas_paginas()
+
+
+def validar_pagina(datos):
+    titulo = str(datos.get('titulo', '') or '').strip()
+    categoria = str(datos.get('categoria', '') or '').strip()
+    contenido = str(datos.get('contenido', '') or '')
+    if not titulo:
+        return None, "Pon un título a la página"
+    if len(titulo) > 200 or len(categoria) > 100:
+        return None, "Algún campo es demasiado largo"
+    if len(contenido.encode('utf-8')) > MAX_PAGINA_BYTES:
+        return None, "La página es demasiado grande (máximo 8 MB, imágenes incluidas)"
+    if contrasena_escrita(titulo + '\n' + contenido):
+        return None, "Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda"
+    return (titulo, categoria, contenido), None
+
+
+def nombre_sesion():
+    return session.get('nombre') or ADMIN_USER or ''
+
+
+def puede_borrar_pagina(fila):
+    return bool(session.get('es_admin')) or fila['creado_por_id'] == session.get('usuario_id')
+
+
+@app.route('/api/paginas', methods=['GET', 'POST'])
+@requiere_login
+def gestionar_paginas():
+    conexion = conectar_bd()
+    if request.method == 'POST':
+        valores, error = validar_pagina(request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        nombre = nombre_sesion()
+        cursor = conexion.execute(
+            'INSERT INTO paginas (titulo, categoria, contenido, creado_por, creado_por_id, actualizado_por) VALUES (?, ?, ?, ?, ?, ?)',
+            valores + (nombre, session.get('usuario_id'), nombre))
+        conexion.execute('INSERT INTO paginas_versiones (pagina_id, titulo, categoria, contenido, editado_por) VALUES (?, ?, ?, ?, ?)',
+                         (cursor.lastrowid,) + valores + (nombre,))
+        conexion.commit()
+        conexion.close()
+        return jsonify({"id": cursor.lastrowid}), 201
+    # Llista (amb el text pla per poder cercar dins de les pàgines, sense les imatges)
+    filas = conexion.execute('SELECT * FROM paginas ORDER BY categoria, titulo').fetchall()
+    conexion.close()
+    return jsonify([{
+        'id': f['id'], 'titulo': f['titulo'], 'categoria': f['categoria'],
+        'creado': f['creado'], 'creado_por': f['creado_por'],
+        'actualizado': f['actualizado'], 'actualizado_por': f['actualizado_por'],
+        'texto': re.sub(r'\s+', ' ', texto_plano(f['contenido']))[:5000],
+    } for f in filas])
+
+
+@app.route('/api/paginas/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@requiere_login
+def pagina(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM paginas WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'GET':
+        versiones = [dict(v) for v in conexion.execute(
+            'SELECT id, fecha, editado_por FROM paginas_versiones WHERE pagina_id = ? ORDER BY id DESC', (id,))]
+        conexion.close()
+        return jsonify({**dict(fila), 'versiones': versiones, 'puede_borrar': puede_borrar_pagina(fila)})
+    if request.method == 'DELETE':
+        if not puede_borrar_pagina(fila):
+            conexion.close()
+            return jsonify({"error": "Solo puede borrarla quien la creó o un administrador"}), 403
+        conexion.execute('DELETE FROM paginas_versiones WHERE pagina_id = ?', (id,))
+        conexion.execute('DELETE FROM paginas WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        return '', 204
+    # Editar: tothom del personal pot editar (com una wiki); queda registrat qui i quan
+    valores, error = validar_pagina(request.get_json(silent=True) or {})
+    if error:
+        conexion.close()
+        return jsonify({"error": error}), 400
+    if valores == (fila['titulo'], fila['categoria'], fila['contenido']):
+        conexion.close()
+        return jsonify({"id": id, "sin_cambios": True})
+    nombre = nombre_sesion()
+    conexion.execute("UPDATE paginas SET titulo = ?, categoria = ?, contenido = ?, actualizado = datetime('now'), actualizado_por = ? WHERE id = ?",
+                     valores + (nombre, id))
+    conexion.execute('INSERT INTO paginas_versiones (pagina_id, titulo, categoria, contenido, editado_por) VALUES (?, ?, ?, ?, ?)',
+                     (id,) + valores + (nombre,))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"id": id})
+
+
+@app.route('/api/paginas/<int:id>/versiones/<int:vid>', methods=['GET'])
+@requiere_login
+def version_pagina(id, vid):
+    conexion = conectar_bd()
+    v = conexion.execute('SELECT * FROM paginas_versiones WHERE id = ? AND pagina_id = ?', (vid, id)).fetchone()
+    conexion.close()
+    if not v:
+        return jsonify({"error": "No existe"}), 404
+    return jsonify(dict(v))
+
+
 if __name__ == '__main__':
     if not login_configurado():
         print("⚠️  Faltan SIO_SECRET_KEY, SIO_ADMIN_USER o SIO_ADMIN_PASSWORD_HASH: la intranet no podrá iniciar sesión")

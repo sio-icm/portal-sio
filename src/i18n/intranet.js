@@ -118,6 +118,10 @@ export default {
     'Solo puedes cambiar lo que has apuntado tú': { ca: 'Només pots canviar el que has apuntat tu', es: 'Solo puedes cambiar lo que has apuntado tú', en: 'You can only change what you added' },
     'Todavía no se llega al importe mínimo': { ca: "Encara no s'arriba a l'import mínim", es: 'Todavía no se llega al importe mínimo', en: 'The minimum amount has not been reached yet' },
     'No se ha podido enviar el correo': { ca: "No s'ha pogut enviar el correu", es: 'No se ha podido enviar el correo', en: 'The e-mail could not be sent' },
+    'Pon un título a la página': { ca: 'Posa un títol a la pàgina', es: 'Pon un título a la página', en: 'Give the page a title' },
+    'La página es demasiado grande (máximo 8 MB, imágenes incluidas)': { ca: 'La pàgina és massa gran (màxim 8 MB, imatges incloses)', es: 'La página es demasiado grande (máximo 8 MB, imágenes incluidas)', en: 'The page is too big (max. 8 MB, images included)' },
+    'Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda': { ca: 'Sembla que hi ha una contrasenya escrita. A la web no es desen contrasenyes: indica on es guarda', es: 'Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda', en: 'It looks like a password is written. Passwords are not stored on the website: say where it is kept' },
+    'Solo puede borrarla quien la creó o un administrador': { ca: "Només la pot esborrar qui la va crear o un administrador", es: 'Solo puede borrarla quien la creó o un administrador', en: 'Only its creator or an administrator can delete it' },
     'La fecha final es anterior a la inicial': { ca: 'La data final és anterior a la inicial', es: 'La fecha final es anterior a la inicial', en: 'The end date is before the start date' },
     'Hora no válida (HH:MM)': { ca: 'Hora no vàlida (HH:MM)', es: 'Hora no válida (HH:MM)', en: 'Invalid time (HH:MM)' },
     'Pon también la hora de inicio': { ca: "Posa també l'hora d'inici", es: 'Pon también la hora de inicio', en: 'Add the start time too' },
@@ -598,6 +602,52 @@ export default {
     historial: { ca: 'Peticions enviades', es: 'Peticiones enviadas', en: 'Requests sent' },
     articulos: { ca: '{n} article(s)', es: '{n} artículo(s)', en: '{n} item(s)' },
     errorCarga: { ca: "No s'ha pogut carregar la llista.", es: 'No se ha podido cargar la lista.', en: 'The list could not be loaded.' }
+  },
+  paginas: {
+    pestanaArchivos: { ca: '📁 Fitxers i manuals', es: '📁 Archivos y manuales', en: '📁 Files and manuals' },
+    pestanaPaginas: { ca: '📝 Pàgines', es: '📝 Páginas', en: '📝 Pages' },
+    titulo: { ca: '📝 Pàgines de documentació', es: '📝 Páginas de documentación', en: '📝 Documentation pages' },
+    subtitulo: {
+      ca: "Documentació escrita aquí mateix, com una wiki: configuracions, procediments, el que arriba per correu... Només la veu el personal del SIO.",
+      es: 'Documentación escrita aquí mismo, como una wiki: configuraciones, procedimientos, lo que llega por correo... Solo la ve el personal del SIO.',
+      en: 'Documentation written right here, like a wiki: configurations, procedures, things that arrive by e-mail... Only SIO staff can see it.'
+    },
+    buscar: { ca: '🔍 Cerca a les pàgines...', es: '🔍 Busca en las páginas...', en: '🔍 Search the pages...' },
+    nueva: { ca: '+ Nova pàgina', es: '+ Nueva página', en: '+ New page' },
+    ninguna: { ca: "Encara no hi ha cap pàgina. Crea'n una amb «+ Nova pàgina».", es: 'Todavía no hay ninguna página. Crea una con «+ Nueva página».', en: 'There are no pages yet. Create one with “+ New page”.' },
+    sinResultados: { ca: 'Cap pàgina coincideix amb la cerca.', es: 'Ninguna página coincide con la búsqueda.', en: 'No page matches the search.' },
+    sinCategoria: { ca: 'Sense categoria', es: 'Sin categoría', en: 'No category' },
+    actualizadaPor: { ca: 'Modificada per {quien} · {fecha}', es: 'Modificada por {quien} · {fecha}', en: 'Edited by {quien} · {fecha}' },
+    creadaPor: { ca: 'Creada per {quien} · {fecha}', es: 'Creada por {quien} · {fecha}', en: 'Created by {quien} · {fecha}' },
+    volver: { ca: 'Totes les pàgines', es: 'Todas las páginas', en: 'All pages' },
+    volverActual: { ca: 'Tornar a la versió actual', es: 'Volver a la versión actual', en: 'Back to the current version' },
+    editar: { ca: 'Editar', es: 'Editar', en: 'Edit' },
+    historial: { ca: 'Historial de canvis ({n})', es: 'Historial de cambios ({n})', en: 'Change history ({n})' },
+    actual: { ca: 'actual', es: 'actual', en: 'current' },
+    verVersion: { ca: 'Veure', es: 'Ver', en: 'View' },
+    mirandoVersion: { ca: 'Estàs mirant la versió del {fecha}, desada per {quien}.', es: 'Estás viendo la versión del {fecha}, guardada por {quien}.', en: 'You are viewing the version from {fecha}, saved by {quien}.' },
+    restaurar: { ca: 'Recuperar aquesta versió', es: 'Recuperar esta versión', en: 'Restore this version' },
+    confirmarRestaurar: { ca: 'La pàgina tornarà a quedar com el {fecha} (es desa com un canvi nou). Continuar?', es: 'La página volverá a quedar como el {fecha} (se guarda como un cambio nuevo). ¿Continuar?', en: 'The page will go back to how it was on {fecha} (saved as a new change). Continue?' },
+    restaurada: { ca: 'Versió recuperada.', es: 'Versión recuperada.', en: 'Version restored.' },
+    confirmarBorrar: { ca: 'Vols esborrar la pàgina «{titulo}» i tot el seu historial?', es: '¿Quieres borrar la página «{titulo}» y todo su historial?', en: 'Delete the page “{titulo}” and all its history?' },
+    nuevaTitulo: { ca: 'Nova pàgina de documentació', es: 'Nueva página de documentación', en: 'New documentation page' },
+    editando: { ca: 'Editant la pàgina', es: 'Editando la página', en: 'Editing the page' },
+    avisoContrasenas: {
+      ca: "No escriguis mai contrasenyes. Indica on es guarden (p. ex. «Contrasenya: (la té la Clara)»). Pots enganxar imatges, fer títols, llistes i blocs de codi.",
+      es: 'No escribas nunca contraseñas. Indica dónde se guardan (p. ej. «Contraseña: (la tiene Clara)»). Puedes pegar imágenes, hacer títulos, listas y bloques de código.',
+      en: 'Never write passwords. Say where they are kept (e.g. “Password: (Clara has it)”). You can paste images and add headings, lists and code blocks.'
+    },
+    hayContrasena: {
+      ca: "Sembla que hi ha una contrasenya escrita («{fragmento}»). No es desa: treu-la i indica on es guarda, p. ex. «Contrasenya: (la té la Clara)».",
+      es: 'Parece que hay una contraseña escrita («{fragmento}»). No se guarda: quítala e indica dónde se guarda, p. ej. «Contraseña: (la tiene Clara)».',
+      en: 'It looks like a password is written (“{fragmento}”). Not saved: remove it and say where it is kept, e.g. “Password: (Clara has it)”.'
+    },
+    tituloCampo: { ca: 'Títol', es: 'Título', en: 'Title' },
+    tituloPh: { ca: "ex.: Enviament de dades de la boia Somorrostro (SFTP)", es: 'ej.: Envío de datos de la boya Somorrostro (SFTP)', en: 'e.g. Somorrostro buoy data transfer (SFTP)' },
+    categoria: { ca: 'Categoria', es: 'Categoría', en: 'Category' },
+    categoriaPh: { ca: 'ex.: Boia Somorrostro', es: 'ej.: Boia Somorrostro', en: 'e.g. Somorrostro buoy' },
+    guardada: { ca: 'Pàgina desada.', es: 'Página guardada.', en: 'Page saved.' },
+    errorCarga: { ca: "No s'han pogut carregar les pàgines.", es: 'No se han podido cargar las páginas.', en: 'The pages could not be loaded.' }
   },
   calendario: {
     titulo: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },

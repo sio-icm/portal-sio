@@ -339,6 +339,13 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; window.removeEventLis
 .contenido-html :deep(p) { margin: 0 0 12px; }
 .contenido-html :deep(ul), .contenido-html :deep(ol) { margin: 0 0 12px 20px; }
 .contenido-html :deep(a) { color: #0086c0; }
+/* Format de l'editor (Quill 2): llistes de punts dins d'<ol>, marcadors interns i blocs de codi */
+.contenido-html :deep(li[data-list="bullet"]) { list-style-type: disc; }
+.contenido-html :deep(li[data-list="ordered"]) { list-style-type: decimal; }
+.contenido-html :deep(.ql-ui) { display: none; }
+.contenido-html :deep(.ql-code-block-container) { background: #0f1b2d; color: #e6edf3; padding: 12px 14px; border-radius: 6px; overflow-x: auto; margin: 0 0 12px;
+  font-family: 'Courier New', monospace; font-size: 0.88rem; line-height: 1.5; white-space: pre; }
+
 .btn-web-proyecto { display: inline-block; margin-top: 12px; background: #012169; color: white; text-decoration: none; font-weight: bold; padding: 11px 20px; border-radius: 8px; }
 .btn-web-proyecto:hover { background: #0086c0; }
 

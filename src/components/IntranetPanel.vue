@@ -4,8 +4,9 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { traducirError, traducirValor } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
 import BibliotecaDocs from './BibliotecaDocs.vue'
+import PaginasDocs from './PaginasDocs.vue'
 import ComprasSinProyecto from './ComprasSinProyecto.vue'
 import GestionEquipo from './GestionEquipo.vue'
 import DiarioActividad from './DiarioActividad.vue'
@@ -34,6 +35,7 @@ const peticionApi = async (url, opciones = {}) => {
   }
   return respuesta
 }
+const pestanaDocs = ref('archivos') // Documentació: 'archivos' (fitxers i manuals) o 'paginas' (pàgines escrites aquí)
 const seccionActiva = ref('dashboard') // 'dashboard', 'calendari', 'diario', 'informe', 'cuenta', 'usuarios', 'equipo', 'documentacion', 'compras', 'instrumentacion', 'proyecto'
 
 // Las secciones nuevas avisan si la sesión ha caducado
@@ -448,7 +450,14 @@ const eliminarProyecto = async (id) => {
         <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
-        <BibliotecaDocs v-else-if="seccionActiva === 'documentacion'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <div v-else-if="seccionActiva === 'documentacion'">
+          <div class="pestanas-docs" role="tablist">
+            <button type="button" role="tab" :aria-selected="pestanaDocs === 'archivos'" :class="{ activa: pestanaDocs === 'archivos' }" @click="pestanaDocs = 'archivos'">{{ $t('intranet.paginas.pestanaArchivos') }}</button>
+            <button type="button" role="tab" :aria-selected="pestanaDocs === 'paginas'" :class="{ activa: pestanaDocs === 'paginas' }" @click="pestanaDocs = 'paginas'">{{ $t('intranet.paginas.pestanaPaginas') }}</button>
+          </div>
+          <BibliotecaDocs v-if="pestanaDocs === 'archivos'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+          <PaginasDocs v-else @sesion-caducada="sesionCaducada" />
+        </div>
         <ComprasSinProyecto v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
@@ -696,6 +705,9 @@ const eliminarProyecto = async (id) => {
 .campo-imagen { display: flex; gap: 10px; align-items: center; }
 .campo-imagen .input-texto { flex: 1; }
 .vista-imagen { width: 96px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
+.pestanas-docs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -4px; }
+.pestanas-docs button { padding: 9px 18px; border: 1px solid #ccd5df; border-bottom: none; background: #e9eef3; color: #012169; border-radius: 8px 8px 0 0; font: inherit; font-weight: bold; cursor: pointer; }
+.pestanas-docs button.activa { background: white; border-color: #17a2b8; box-shadow: 0 -2px 0 #17a2b8 inset; }
 .btn-nou { background: #8cc63f; color: #012169; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
 /* Móvil: el menú pasa arriba y el contenido ocupa todo el ancho */
