@@ -121,26 +121,16 @@ const desdeVentana = (accion, ...args) => {
   accion(...args)
 }
 
-// Chips d'una cel·la: qui és fora i les reserves. El que dura més d'una setmana (préstecs,
-// vacances llargues) surt en una sola línia i al final, perquè no ompli tots els dies.
-const LARGO = 7
-const dias = (x) => Math.round((deIso(x.fin) - deIso(x.inicio)) / 86400000) + 1
-const chips = (r) => chipsDia(r)
-  .map(ch => ch.largo ? { ...ch, detalle: '' } : ch)
-  .sort((a, b) => a.largo - b.largo)
-const chipsDia = (r) => [
+// Chips d'una cel·la: primer els avisos, després qui és fora i les reserves
+const chips = (r) => [
   ...r.entradas.map(e => ({
     clave: `e${e.id}`, color: tipoCalendario(e.tipo).color,
-    largo: dias(e) > LARGO,
     texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : t('intranet.comun.equipoCorto')}`,
-    detalle: [horario(e), e.nota || e.proyecto].filter(Boolean).join(' · '),
     titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || t('intranet.comun.todoEquipoMin')}${horario(e) ? ' · 🕘 ' + horario(e) : ''}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
   })),
   ...r.reservas.map(x => ({
     clave: `r${x.id}`, color: '#012169',
-    largo: dias(x) > LARGO,
     texto: `${recurso(x.recurso).icono} ${nombreReserva(x)}`,
-    detalle: [x.persona ? nombreCorto(x.persona, datos.value.equipo) : x.para, x.persona && x.para ? '→ ' + x.para : ''].filter(Boolean).join(' '),
     titulo: `${nombreReserva(x)}: ${x.persona || x.para}${x.proposito ? ' · ' + x.proposito : ''}`
   }))
 ]
@@ -381,9 +371,7 @@ const treureFestiu = async (f) => {
           :aria-label="fechaLarga(c.iso)" :aria-pressed="c.iso === diaSeleccionado" @click="seleccionarDia(c)">
           <span class="cal-numero">{{ c.dia }}<span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
           <span v-if="resumenes[c.iso].festiu" class="cal-festiu" :title="resumenes[c.iso].festiu">{{ resumenes[c.iso].festiu }}</span>
-          <span v-for="ch in chips(resumenes[c.iso])" :key="ch.clave" class="cal-chip" :style="{ background: ch.color }" :title="ch.titulo">
-            <span class="chip-texto">{{ ch.texto }}</span><span v-if="ch.detalle" class="chip-detalle">{{ ch.detalle }}</span>
-          </span>
+          <span v-for="ch in chips(resumenes[c.iso])" :key="ch.clave" class="cal-chip" :style="{ background: ch.color }" :title="ch.titulo">{{ ch.texto }}</span>
         </button>
       </div>
       <p class="leyenda">
@@ -460,9 +448,9 @@ input.corto { width: 70px; }
 .cal-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .cal-mes { font-weight: bold; color: #012169; font-size: 1.1rem; min-width: 170px; text-align: center; }
 .cargando { color: #666; font-size: 0.85rem; }
-.cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1.25fr)) repeat(2, minmax(0, 0.75fr)); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cal-dia-semana { text-align: center; font-size: 0.75rem; font-weight: bold; color: #666; padding: 4px 0; }
-.cal-celda { min-height: 96px; border: 1px solid #e3e8ee; border-radius: 6px; background: white; padding: 4px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; cursor: pointer; font: inherit; overflow: hidden; }
+.cal-celda { min-height: 92px; border: 1px solid #e3e8ee; border-radius: 6px; background: white; padding: 4px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; cursor: pointer; font: inherit; overflow: hidden; }
 .cal-celda:hover { border-color: #0086c0; }
 .cal-celda.festivo { background: #f6f6f6; }
 .cal-celda.fuera { opacity: 0.45; }
@@ -472,9 +460,7 @@ input.corto { width: 70px; }
 .cal-numero { font-size: 0.8rem; font-weight: bold; align-self: flex-start; }
 .marca-aviso { font-size: 0.7rem; margin-left: 3px; }
 .cal-festiu { font-size: 0.68rem; color: #b02a37; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cal-chip { color: white; font-size: 0.76rem; line-height: 1.25; border-radius: 4px; padding: 2px 6px; display: flex; flex-direction: column; overflow: hidden; }
-.chip-texto { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-detalle { font-size: 0.7rem; opacity: 0.92; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.cal-chip { color: white; font-size: 0.7rem; border-radius: 3px; padding: 1px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.78rem; color: #555; margin: 10px 0 0; }
 .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 
@@ -487,9 +473,7 @@ input.corto { width: 70px; }
   .cal-mes { min-width: 0; font-size: 1rem; }
   .cal-celda { min-height: 52px; padding: 3px; }
   .cal-festiu { font-size: 0; height: 3px; background: #b02a37; border-radius: 2px; }
-  .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .cal-chip { font-size: 0; height: 6px; padding: 0; }
-  .chip-detalle { display: none; }
   .festius { columns: 1; }
 }
 </style>
