@@ -521,7 +521,7 @@ def gestionar_proyectos():
                  descripcion_corta_es, descripcion_ampliada_es, descripcion_corta_en, descripcion_ampliada_en, nextcloud)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                datos.get('titulo', ''),
+                titulo_proyecto(datos.get('titulo')),
                 datos.get('categoria', ''),
                 datos.get('estado', ''),
                 datos.get('descripcion_corta', ''),
@@ -568,7 +568,7 @@ def modificar_proyecto(id):
                     nextcloud = ?
                 WHERE id = ?
             ''', (
-                datos.get('titulo'), 
+                titulo_proyecto(datos.get('titulo')),
                 datos.get('categoria'), 
                 datos.get('estado'), 
                 datos.get('descripcion_corta'), 
@@ -599,6 +599,11 @@ PATRON_USUARIO = re.compile(r'^[a-z0-9._-]{3,30}$')
 FOTOS_DIR = os.environ.get('SIO_FOTOS_DIR', os.path.join(os.path.dirname(DB_PATH), 'fotos'))
 MAX_FOTOS_POR_NOTA = 12
 LADO_FOTO, LADO_MINIATURA = 1600, 480
+
+
+def titulo_proyecto(titulo):
+    """Nom d'un projecte: sempre en majúscules (amb accents: «Càmeres» → «CÀMERES»)."""
+    return str(titulo or '').strip().upper()
 
 
 def crear_tablas():
@@ -653,6 +658,11 @@ def crear_tablas():
     columnas = [fila['name'] for fila in conexion.execute('PRAGMA table_info(usuarios)')]
     if 'debe_cambiar' not in columnas:
         conexion.execute('ALTER TABLE usuarios ADD COLUMN debe_cambiar INTEGER NOT NULL DEFAULT 0')
+    # Els noms dels projectes, sempre en majúscules (també els que ja hi havia)
+    if conexion.execute("SELECT 1 FROM sqlite_master WHERE name = 'proyectos'").fetchone():
+        for pid, titulo in conexion.execute('SELECT id, titulo FROM proyectos').fetchall():
+            if titulo and titulo != titulo_proyecto(titulo):
+                conexion.execute('UPDATE proyectos SET titulo = ? WHERE id = ?', (titulo_proyecto(titulo), pid))
     conexion.commit()
     conexion.close()
     os.makedirs(FOTOS_DIR, exist_ok=True)

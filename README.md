@@ -353,6 +353,11 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   azul (o rojo) los días reservados, sin nombres ni motivos.
 - Tablas: `calendario`, `reservas`, `festius`, `ajustes` (se crean solas).
 
+## Nombres de los proyectos
+
+- Siempre en **mayúsculas** (también con acentos: «CÀMERES PLATJA»). El backend los
+  convierte al guardar y, al arrancar, pasa a mayúsculas los que ya había.
+
 ## Compres
 
 - Lista compartida de lo que hay que comprar (intranet → «🛒 Compres»), como el

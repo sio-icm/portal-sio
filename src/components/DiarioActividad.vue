@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { traducirError } from '../i18n'
 import { QuillEditor } from '@vueup/vue-quill'
@@ -104,9 +104,23 @@ const celdas = computed(() => {
   })
 })
 
+// En clicar un dia s'obre una finestra amb les seves notes (també surten a sota)
+const ventanaDia = ref(false)
 const seleccionarDia = (celda) => {
   diaSeleccionado.value = celda.iso
   if (!celda.delMes) mesVisible.value = primerDiaMes(celda.iso)
+  ventanaDia.value = true
+}
+const notasVentana = computed(() => notasPorDia.value[diaSeleccionado.value] || [])
+const teclaVentana = (ev) => { if (ev.key === 'Escape') ventanaDia.value = false }
+watch(ventanaDia, (abierta) => {
+  if (abierta) window.addEventListener('keydown', teclaVentana)
+  else window.removeEventListener('keydown', teclaVentana)
+})
+onBeforeUnmount(() => window.removeEventListener('keydown', teclaVentana))
+const desdeVentana = (accion, ...args) => {
+  ventanaDia.value = false
+  accion(...args)
 }
 
 // Notas que se muestran debajo: en lista, las filtradas; en calendario, las del día elegido
@@ -363,6 +377,38 @@ const limpiarFiltros = () => { filtros.value = { desde: '', hasta: '', proyecto:
       <p v-else class="contador">{{ $t('intranet.diario.contador', { n: notasFiltradas.length }, notasFiltradas.length) }}</p>
     </template>
 
+    <!-- Finestra amb les notes del dia clicat -->
+    <div v-if="ventanaDia && vista === 'calendario'" class="velo" @click.self="ventanaDia = false">
+      <div class="ventana" role="dialog" aria-modal="true" :aria-label="fechaLarga(diaSeleccionado)">
+        <header>
+          <h3>{{ fechaLarga(diaSeleccionado) }}</h3>
+          <button type="button" class="cerrar" :aria-label="$t('intranet.comun.cerrar')" @click="ventanaDia = false">✕</button>
+        </header>
+        <p v-if="!notasVentana.length" class="aviso">{{ $t('intranet.diario.ningunaDia') }}</p>
+        <div v-for="nota in notasVentana" :key="nota.id" class="nota-ventana" :style="{ borderLeftColor: tipoNota(nota.tipo).color }">
+          <div class="nota-cabecera">
+            <span class="etiqueta" :style="{ background: tipoNota(nota.tipo).color }">{{ tipoNota(nota.tipo).etiqueta }}</span>
+            <span class="autor">{{ nota.autor }}</span>
+          </div>
+          <h4>{{ nota.titulo }}</h4>
+          <p class="proyecto">{{ nota.proyecto_titulo || $t('intranet.diario.sinProyecto') }}
+            <span v-if="nota.horas" class="horas"> · ⏱ {{ intervaloHoras(nota.horas)?.etiqueta }}</span>
+            <span v-if="nota.para" class="horas"> · {{ $t('intranet.diario.paraQuien', { para: nota.para }) }}</span></p>
+          <div v-if="nota.texto" class="texto" v-html="limpiarHtml(nota.texto)"></div>
+          <div v-if="nota.fotos.length" class="fotos">
+            <a v-for="f in nota.fotos" :key="f" class="foto" :href="`/api/fotos/${f}`" target="_blank" rel="noopener"><img :src="`/api/fotos/${f}?mini=1`" alt="" loading="lazy"></a>
+          </div>
+          <div v-if="puedeEditar(nota)" class="acciones">
+            <button class="btn-mini" @click="desdeVentana(editarNota, nota)">{{ $t('intranet.comun.editar') }}</button>
+            <button class="btn-mini peligro" @click="desdeVentana(borrar, nota)">{{ $t('intranet.comun.borrar') }}</button>
+          </div>
+        </div>
+        <footer>
+          <button class="btn-principal" @click="desdeVentana(nuevaNota, diaSeleccionado)">{{ $t('intranet.diario.nuevaDia') }}</button>
+        </footer>
+      </div>
+    </div>
+
     <article v-for="nota in (cargando || error ? [] : notasMostradas)" :key="nota.id" class="nota">
       <div class="nota-cabecera">
         <span class="fecha">{{ fechaCorta(nota.fecha) }}</span>
@@ -472,4 +518,16 @@ label.btn-mini.ocupado { opacity: 0.6; cursor: wait; }
 .acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .btn-mini { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; }
 .btn-mini.peligro { color: #b02a37; }
+
+/* Finestra del dia */
+.velo { position: fixed; inset: 0; background: rgba(1, 20, 60, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10000; }
+.ventana { background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); width: min(680px, 100%); max-height: 85vh; overflow-y: auto; padding: 18px 20px; border-top: 4px solid #0086c0; }
+.ventana header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.ventana header h3 { margin: 0; color: #012169; }
+.ventana header h3::first-letter { text-transform: uppercase; }
+.ventana .cerrar { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #555; padding: 0 4px; line-height: 1; }
+.ventana footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3e8ee; }
+.nota-ventana { border: 1px solid #e3e8ee; border-left: 4px solid #0086c0; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
+.nota-ventana h4 { margin: 6px 0 2px; color: #222; }
+.nota-ventana .foto img { width: 90px; height: 68px; }
 </style>
