@@ -45,9 +45,16 @@ const celdas = computed(() => {
   if (esMesActual.value) {
     const h = deIso(hoy)
     const lunes = new Date(h.getFullYear(), h.getMonth(), h.getDate() - (h.getDay() + 6) % 7)
+    // Separació de mesos: fons alternat i línia gruixuda on canvia el mes (a l'esquerra o a dalt)
+    const mes = (i) => { const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i); return d.getFullYear() * 12 + d.getMonth() }
     return Array.from({ length: SEMANAS_ADELANTE * 7 }, (_, i) => {
       const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i)
-      return { iso: aIso(d), dia: d.getDate(), delMes: true, nuevoMes: d.getDate() === 1 || i === 0, d }
+      return {
+        iso: aIso(d), dia: d.getDate(), delMes: true, nuevoMes: d.getDate() === 1 || i === 0, d,
+        mesAlt: (mes(i) - mes(0)) % 2 === 1,
+        corteIzq: i % 7 !== 0 && mes(i - 1) !== mes(i),
+        corteSup: i >= 7 && mes(i - 7) !== mes(i)
+      }
     })
   }
   const primero = mesVisible.value
@@ -59,6 +66,7 @@ const celdas = computed(() => {
     return { iso: aIso(d), dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), d }
   })
 })
+const mesLargo = (d) => new Intl.DateTimeFormat(locale.value, { month: 'long' }).format(d)
 const mesCorto = (d) => new Intl.DateTimeFormat(locale.value, { month: 'short' }).format(d).replace('.', '')
 // Títol: «Properes setmanes · 16 nov. – 20 des.» o el nom del mes
 const tituloVista = computed(() => {
@@ -389,10 +397,11 @@ const treureFestiu = async (f) => {
         <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
         <button v-for="c in celdas" :key="c.iso" type="button" class="cal-celda"
           :class="{ fuera: !c.delMes, hoy: c.iso === hoy, elegido: c.iso === diaSeleccionado,
-                    festivo: !resumenes[c.iso].laborable, pasado: esMesActual && c.iso < hoy, alerta: resumenes[c.iso].avisos.some(avisoVisible) }"
+                    festivo: !resumenes[c.iso].laborable, pasado: esMesActual && c.iso < hoy,
+                    'mes-alt': c.mesAlt, 'corte-izq': c.corteIzq, 'corte-sup': c.corteSup, alerta: resumenes[c.iso].avisos.some(avisoVisible) }"
           :aria-label="fechaLarga(c.iso)" :aria-pressed="c.iso === diaSeleccionado" @click="seleccionarDia(c)">
           <span v-if="c.iso === hoy" class="cal-avui">{{ $t('intranet.comun.hoy') }}</span>
-          <span class="cal-numero">{{ c.dia }}<span v-if="c.nuevoMes" class="cal-nom-mes"> {{ mesCorto(c.d) }}</span><span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
+          <span class="cal-numero">{{ c.dia }}<span v-if="c.nuevoMes" class="cal-nom-mes" :class="{ primero: c.dia === 1 }">{{ c.dia === 1 ? mesLargo(c.d) : mesCorto(c.d) }}</span><span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
           <span v-if="resumenes[c.iso].festiu" class="cal-festiu" :title="resumenes[c.iso].festiu">{{ resumenes[c.iso].festiu }}</span>
           <span v-for="ch in chips(resumenes[c.iso])" :key="ch.clave" class="cal-chip" :style="{ background: ch.color }" :title="ch.titulo">{{ ch.texto }}</span>
         </button>
@@ -483,6 +492,13 @@ input.corto { width: 70px; }
 .cal-avui { position: absolute; top: 4px; right: 5px; background: #0086c0; color: white; font-size: 0.66rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 3px; padding: 1px 5px; }
 .cal-nom-mes { font-weight: normal; color: #0086c0; text-transform: lowercase; margin-left: 3px; }
 .cal-celda.pasado { opacity: 0.55; }
+.cal-celda.mes-alt { background: #eef3fa; }
+.cal-celda.mes-alt.festivo { background: #e4e9f1; }
+.cal-celda { position: relative; }
+.cal-celda.corte-izq::before, .cal-celda.corte-sup::after { content: ''; position: absolute; background: #012169; }
+.cal-celda.corte-izq::before { left: 0; top: 0; bottom: 0; width: 4px; }
+.cal-celda.corte-sup::after { left: 0; right: 0; top: 0; height: 4px; }
+.cal-nom-mes.primero { background: #012169; color: white; border-radius: 3px; padding: 0 6px; font-weight: bold; text-transform: uppercase; font-size: 0.72rem; }
 .cal-celda.hoy.elegido { border: 3px solid #0086c0; box-shadow: 0 0 0 3px rgba(0,134,192,0.3); }
 .cal-celda.elegido { border: 2px solid #012169; box-shadow: 0 0 0 2px rgba(1,33,105,0.12); }
 .cal-numero { font-size: 0.8rem; font-weight: bold; align-self: flex-start; }
