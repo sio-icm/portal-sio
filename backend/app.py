@@ -2381,19 +2381,60 @@ def validar_compra(conexion, datos):
 @requiere_login
 def gestionar_compras():
     conexion = conectar_bd()
+    igual = None
     if request.method == 'POST':
         valores, error = validar_compra(conexion, request.get_json(silent=True) or {})
         if error:
             conexion.close()
             return jsonify({"error": error}), 400
-        conexion.execute(
-            'INSERT INTO compras (usuario_id, descripcion, cantidad, proveedor, referencia, precio, proveedor_id, proyecto_id,'
-            ' solicitante_id, pedido_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            (session.get('usuario_id'),) + valores)
+        descripcion, cantidad, _, referencia, _, proveedor_id, proyecto_id, _, _ = valores
+        # Si ja hi ha el mateix pendent (mateix proveïdor i compte, i mateixa referència o, sense
+        # referència, la mateixa descripció), se suma a aquella línia: al proveïdor no li arriben repetides
+        igual = conexion.execute(
+            'SELECT id, cantidad FROM compras WHERE envio_id IS NULL AND proveedor_id = ? AND proyecto_id IS ? AND '
+            "(CASE WHEN ? != '' THEN lower(referencia) = lower(?) ELSE referencia = '' AND lower(descripcion) = lower(?) END) "
+            'ORDER BY id LIMIT 1', (proveedor_id, proyecto_id, referencia, referencia, descripcion)).fetchone()
+        if igual:
+            conexion.execute('UPDATE compras SET cantidad = ? WHERE id = ?', (min(9999, igual['cantidad'] + cantidad), igual['id']))
+        else:
+            conexion.execute(
+                'INSERT INTO compras (usuario_id, descripcion, cantidad, proveedor, referencia, precio, proveedor_id, proyecto_id,'
+                ' solicitante_id, pedido_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (session.get('usuario_id'),) + valores)
         conexion.commit()
     respuesta = resumen_compras(conexion)
+    if request.method == 'POST' and igual:
+        respuesta['sumado'] = igual['id']
     conexion.close()
     return jsonify(respuesta), (201 if request.method == 'POST' else 200)
+
+
+@app.route('/api/compras/<int:id>/cantidad', methods=['PUT'])
+@requiere_login
+def cambiar_cantidad_compra(id):
+    """Canviar només la quantitat d'un article pendent (sense tornar a enviar totes les dades)."""
+    try:
+        cantidad = int((request.get_json(silent=True) or {}).get('cantidad'))
+    except (TypeError, ValueError):
+        cantidad = 0
+    if not 1 <= cantidad <= 9999:
+        return jsonify({"error": "Cantidad no válida"}), 400
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM compras WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if not session.get('es_admin') and fila['usuario_id'] != session.get('usuario_id'):
+        conexion.close()
+        return jsonify({"error": "Solo puedes cambiar lo que has apuntado tú"}), 403
+    if fila['envio_id'] is not None:
+        conexion.close()
+        return jsonify({"error": "Ya se ha enviado y no se puede cambiar"}), 409
+    conexion.execute('UPDATE compras SET cantidad = ? WHERE id = ?', (cantidad, id))
+    conexion.commit()
+    respuesta = resumen_compras(conexion)
+    conexion.close()
+    return jsonify(respuesta)
 
 
 def recalcular_envio(conexion, envio_id):

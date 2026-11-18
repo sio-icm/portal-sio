@@ -96,7 +96,10 @@ const anadir = async () => {
   guardando.value = true
   try {
     const cuerpo = { ...nuevo.value, proyecto_id: ctx.value.id }
-    if (await respuesta(await api('/api/compras', json('POST', cuerpo)), t('intranet.compras.anadido'))) {
+    const r = await api('/api/compras', json('POST', cuerpo))
+    const copia = r.clone()
+    const sumado = r.ok ? (await copia.json().catch(() => ({}))).sumado : null
+    if (await respuesta(r, sumado ? t('intranet.compras.sumado', { n: nuevo.value.cantidad }) : t('intranet.compras.anadido'))) {
       guardar('sio_compras_proveedor', String(nuevo.value.proveedor_id))
       // Es manté el proveïdor i qui ho demana: sovint s'apunten diverses coses seguides
       nuevo.value = { ...vacio(), proveedor_id: nuevo.value.proveedor_id, solicitante_id: nuevo.value.solicitante_id }
@@ -104,6 +107,12 @@ const anadir = async () => {
   } finally {
     guardando.value = false
   }
+}
+// Canviar la quantitat directament a la llista (− / + o escrivint el número)
+const cambiarCantidad = async (f, valor) => {
+  const cantidad = Math.round(Number(valor))
+  if (!cantidad || cantidad < 1 || cantidad > 9999 || cantidad === f.cantidad) return
+  await respuesta(await api(`/api/compras/${f.id}/cantidad`, json('PUT', { cantidad })), '')
 }
 const empezarEdicion = (f) => { editando.value = { ...f, proyecto_id: f.proyecto_id ?? '', solicitante_id: f.solicitante_id ?? '' } }
 const guardarEdicion = async () => {
@@ -338,7 +347,15 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
                   <template v-else>
                     <td>{{ f.pedido_por }}<br><span class="gris">{{ fecha(f.fecha) }}<template v-if="f.usuario_id && f.usuario_id !== f.solicitante_id"> · {{ $t('intranet.compras.apuntadoPor', { nombre: nombreUsuario(f.usuario_id) }) }}</template></span></td>
                     <td class="desc">{{ f.descripcion }}<br v-if="f.referencia"><span v-if="f.referencia" class="gris">{{ $t('intranet.compras.refCorta') }} {{ f.referencia }}</span></td>
-                    <td class="num">{{ f.cantidad }}</td>
+                    <td class="num">
+                      <span v-if="f.editable" class="cantidad">
+                        <button type="button" :disabled="f.cantidad <= 1" :aria-label="$t('intranet.compras.menos')" @click="cambiarCantidad(f, f.cantidad - 1)">−</button>
+                        <input type="number" min="1" max="9999" :value="f.cantidad" :aria-label="$t('intranet.compras.cantidad')"
+                          @change="cambiarCantidad(f, $event.target.value)" @keydown.enter="$event.target.blur()">
+                        <button type="button" :aria-label="$t('intranet.compras.mas')" @click="cambiarCantidad(f, f.cantidad + 1)">+</button>
+                      </span>
+                      <template v-else>{{ f.cantidad }}</template>
+                    </td>
                     <td class="num">{{ euros(f.precio) }}</td>
                     <td class="num">{{ euros(f.importe) }}</td>
                     <td><div class="acciones">
@@ -491,6 +508,11 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
 .input-fila.mas { margin-top: 4px; }
 .mas-fila { display: flex; gap: 4px; margin-top: 4px; }
 .acciones { display: flex; gap: 6px; }
+.cantidad { display: inline-flex; align-items: center; border: 1px solid #ccd5df; border-radius: 4px; overflow: hidden; background: white; }
+.cantidad button { background: #f4f7f9; border: none; width: 26px; height: 28px; cursor: pointer; font-size: 1rem; color: #012169; }
+.cantidad button:disabled { color: #bbb; cursor: default; }
+.cantidad input { width: 46px; border: none; text-align: center; font: inherit; padding: 4px 0; -moz-appearance: textfield; }
+.cantidad input::-webkit-inner-spin-button, .cantidad input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .btn-mini { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; }
 .btn-mini.guardar { background: #e6f4ea; color: #1e6b34; border-color: #a8d5b5; }
 .btn-mini.peligro { color: #b02a37; }
