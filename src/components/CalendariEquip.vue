@@ -218,6 +218,11 @@ const resultado = async (r, ok) => {
   error.value = traducirError(d.error) || t('intranet.comun.errorDesconocido')
   return false
 }
+// La configuració s'obre des de la finestra del dia (només administradors)
+const abrirConfigVentana = async () => {
+  if (!verConfig.value) await abrirConfig()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 const guardarAjustes = async () => resultado(await api('/api/calendario/ajustes', json('PUT', ajustesForm.value)), t('intranet.calendario.configGuardada'))
 const afegirFestiu = async () => {
   if (await resultado(await api('/api/calendario/festius', json('POST', nuevoFestiu.value)), t('intranet.calendario.festivoAnadido'))) {
@@ -240,11 +245,6 @@ const treureFestiu = async (f) => {
       <div>
         <h2>{{ $t('intranet.calendario.titulo') }}</h2>
         <p class="ayuda">{{ $t('intranet.calendario.ayuda') }}</p>
-      </div>
-      <div class="botones">
-        <button class="btn-principal" @click="nuevaEntrada">{{ $t('intranet.calendario.apuntarme') }}</button>
-        <button class="btn-secundario" @click="nuevaReserva">{{ $t('intranet.calendario.reservar') }}</button>
-        <button v-if="sesion.es_admin" class="btn-secundario" :aria-expanded="verConfig" @click="abrirConfig">{{ $t('intranet.calendario.configuracion') }}</button>
       </div>
     </div>
 
@@ -398,6 +398,7 @@ const treureFestiu = async (f) => {
         <footer>
           <button class="btn-principal" @click="desdeVentana(nuevaEntrada)">{{ $t('intranet.calendario.apuntarme') }}</button>
           <button class="btn-secundario" @click="desdeVentana(nuevaReserva)">{{ $t('intranet.calendario.reservar') }}</button>
+          <button v-if="sesion.es_admin" class="btn-secundario config-btn" @click="desdeVentana(abrirConfigVentana)">{{ $t('intranet.calendario.configuracion') }}</button>
         </footer>
       </div>
     </div>
@@ -441,6 +442,7 @@ input.corto { width: 70px; }
 .ventana header h3 { margin: 0; }
 .ventana header h3::first-letter { text-transform: uppercase; }
 .ventana .cerrar { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #555; padding: 0 4px; line-height: 1; }
+.ventana footer .config-btn { margin-left: auto; }
 .ventana footer { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3e8ee; }
 
 .calendario { border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px; margin: 12px 0; }

@@ -799,9 +799,9 @@ export default {
     cerrarAviso: { ca: 'Tancar aquest avís', es: 'Cerrar este aviso', en: 'Dismiss this warning' },
     titulo: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },
     ayuda: {
-      ca: 'Apunta quan fas teletreball, campanya, vacances... i reserva la Pelagia, el tanc o els instruments. La pantalla principal avisa si falta gent o hi ha reserves que xoquen.',
-      es: 'Apunta cuándo teletrabajas, estás de campaña, de vacaciones... y reserva la Pelagia, el tanque o los instrumentos. La pantalla principal avisa si falta gente o hay reservas que chocan.',
-      en: 'Note when you work remotely, are on a campaign, on holiday... and book the Pelagia, the tank or the instruments. The home screen warns if people are missing or bookings clash.'
+      ca: 'Clica un dia per veure qui hi ha, apuntar-te (teletreball, campanya, vacances...) o reservar la Pelagia, el tanc o els instruments. Avisa si falta gent o hi ha reserves que xoquen.',
+      es: 'Pulsa un día para ver quién hay, apuntarte (teletrabajo, campaña, vacaciones...) o reservar la Pelagia, el tanque o los instrumentos. Avisa si falta gente o hay reservas que chocan.',
+      en: 'Click a day to see who is in, add yourself (remote work, campaign, holidays...) or book the Pelagia, the tank or the instruments. It warns if people are missing or bookings clash.'
     },
     apuntarme: { ca: '+ Apuntar-me', es: '+ Apuntarme', en: '+ Add me' },
     reservar: { ca: '+ Reservar recurs', es: '+ Reservar recurso', en: '+ Book a resource' },

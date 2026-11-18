@@ -264,6 +264,34 @@ sudo systemctl start sio-copia.service && ls -lh ~/sio-copias   # primera copia,
   se estropee el servidor. De vez en cuando, bájate la última a tu ordenador:
   `scp docker03.icm.csic.es:sio-copias/sio-$(date +%F).tgz ~/`
 
+### Copia también en el Nextcloud (SACO)
+
+Si existe `/etc/sio-nextcloud.conf`, cada copia se sube además a la carpeta
+`SIO/Còpies portal SIO` del Nextcloud del CSIC (por WebDAV) y allí se guardan las
+30 más recientes. Si la subida falla, la copia local queda hecha y el servicio sale
+como fallido (`journalctl -u sio-copia.service -n 20`). Configuración, una sola vez:
+
+1. En el Nextcloud: «Configuració personal» → «Seguretat» → «Crea una contrasenya
+   d'aplicació» (nombre: `portal SIO`). El usuario WebDAV es el que sale en
+   «Arxius» → «Paràmetres de fitxers» (abajo a la izquierda) → WebDAV:
+   `https://saco.csic.es/remote.php/dav/files/USUARIO/`.
+2. En el servidor (la contraseña nunca va al repositorio):
+
+```sh
+sudo install -m 600 /dev/null /etc/sio-nextcloud.conf
+sudo nano /etc/sio-nextcloud.conf
+#   NC_USUARIO="USUARIO"
+#   NC_CLAVE="contraseña-de-aplicación"
+#   (opcional) NC_CARPETA="SIO/Còpies portal SIO"   NC_GUARDAR=30
+cd ~/sio-portal && sudo install -m 755 deploy/copia-seguridad.sh /usr/local/bin/sio-copia-seguridad
+sudo systemctl start sio-copia.service && journalctl -u sio-copia.service -n 5
+```
+
+La copia lleva la base de datos entera (usuarios con las contraseñas cifradas,
+notas, compras...): la carpeta del Nextcloud solo debe estar compartida con el
+personal del SIO. Si se cambia o se revoca la contraseña de aplicación, hay que
+ponerla de nuevo en `/etc/sio-nextcloud.conf`.
+
 ## Solicitudes de servicios
 
 Los formularios de la Pelagia, el tanque de pruebas, el préstamo de
