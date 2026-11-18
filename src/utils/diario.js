@@ -11,6 +11,7 @@ export const TIPOS_NOTA = [
   { valor: 'calibratge', get etiqueta() { return t('intranet.tipos.nota.calibratge') }, color: '#20a39e' },
   { valor: 'divulgacio', get etiqueta() { return t('intranet.tipos.nota.divulgacio') }, color: '#d63384' },
   { valor: 'formacio', get etiqueta() { return t('intranet.tipos.nota.formacio') }, color: '#198754' },
+  { valor: 'reunio', get etiqueta() { return t('intranet.tipos.nota.reunio') }, color: '#e0a800' },
   { valor: 'gestio', get etiqueta() { return t('intranet.tipos.nota.gestio') }, color: '#6c757d' },
   { valor: 'altres', get etiqueta() { return t('intranet.tipos.nota.altres') }, color: '#495057' }
 ]

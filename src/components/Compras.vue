@@ -7,8 +7,8 @@ import { peticionIntranet } from '../utils/diario'
 // Compres: a dalt es tria de qui són les compres (el departament o un projecte) i tot el que
 // hi ha a sota és només d'aquell compte: la comanda en curs de cada proveïdor (amb el seu mínim
 // per no pagar ports), el formulari per afegir-hi (només si s'hi pot comprar), la llista
-// pendent i les comandes fetes. Per al departament tothom pot apuntar; per a un projecte, només
-// els seus autoritzats i els administradors. Al final hi ha el resum de totes les despeses.
+// pendent i les comandes fetes. Cada compte fa la seva comanda (el mínim compta per separat).
+// Al final hi ha el resum de totes les despeses.
 const props = defineProps({ sesion: { type: Object, required: true } })
 const emit = defineEmits(['sesion-caducada'])
 const { t, locale } = useI18n()
@@ -36,14 +36,10 @@ const suma = (filas) => filas.reduce((s, f) => s + f.importe, 0)
 const contexto = ref(leer('sio_compras_contexto') || '')
 watch(contexto, (v) => { guardar('sio_compras_contexto', String(v)); editando.value = null; mensaje.value = ''; error.value = '' })
 const ctx = computed(() => {
-  if (!contexto.value) return { id: null, titulo: '', puedo: true, autorizados: [] }
-  const pr = (datos.value?.proyectos || []).find(p => String(p.id) === String(contexto.value))
-  return pr ? { ...pr } : { id: null, titulo: '', puedo: true, autorizados: [] }
+  const pr = contexto.value && (datos.value?.proyectos || []).find(p => String(p.id) === String(contexto.value))
+  return pr ? { id: pr.id, titulo: pr.titulo } : { id: null, titulo: '' }
 })
 const esDelCtx = (f) => (f.proyecto_id ?? null) === ctx.value.id
-const proyectosPuedo = computed(() => (datos.value?.proyectos || []).filter(p => p.puedo))
-const proyectosConsulta = computed(() => (datos.value?.proyectos || []).filter(p => !p.puedo))
-const nombresAutorizados = computed(() => ctx.value.autorizados.map(nombreUsuario).filter(Boolean).join(', '))
 
 // Pendent del compte, agrupat per proveïdor (cada proveïdor = una comanda amb el seu mínim)
 const pendientesCtx = computed(() => (datos.value?.pendientes || []).filter(esDelCtx))
@@ -139,12 +135,6 @@ const enviar = async (p, forzar = false) => {
   }
 }
 
-// ---------- Qui pot comprar per a cada projecte (ho canvien els administradors) ----------
-const cambiarAutorizado = async (pr, uid, marcado) => {
-  const usuarios = marcado ? [...pr.autorizados, uid] : pr.autorizados.filter(x => x !== uid)
-  await respuesta(await api(`/api/compras/autorizados/${pr.id}`, json('PUT', { usuarios })), t('intranet.compras.autorizadosGuardados', { proyecto: pr.titulo }))
-}
-
 // ---------- Proveïdors ----------
 const nuevoProveedor = () => { formProveedor.value = { nombre: '', minimo: '', portes: '', email: '' } }
 const editarProveedor = (p) => { formProveedor.value = { id: p.id, nombre: p.nombre, minimo: p.minimo, portes: p.portes, email: p.email } }
@@ -180,12 +170,7 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
         <label>{{ $t('intranet.compras.verComprasDe') }}
           <select v-model="contexto">
             <option value="">🏢 {{ $t('intranet.compras.departamento') }}</option>
-            <optgroup v-if="proyectosPuedo.length" :label="$t('intranet.compras.grupoPuedo')">
-              <option v-for="pr in proyectosPuedo" :key="pr.id" :value="String(pr.id)">📁 {{ pr.titulo }}</option>
-            </optgroup>
-            <optgroup v-if="proyectosConsulta.length" :label="$t('intranet.compras.grupoConsulta')">
-              <option v-for="pr in proyectosConsulta" :key="pr.id" :value="String(pr.id)">📁 {{ pr.titulo }}</option>
-            </optgroup>
+            <option v-for="pr in datos.proyectos" :key="pr.id" :value="String(pr.id)">📁 {{ pr.titulo }}</option>
           </select>
         </label>
       </div>
@@ -193,9 +178,7 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
       <section class="cuenta" :class="{ proyecto: ctx.id }">
         <h3 class="titulo-cuenta">{{ ctx.id ? $t('intranet.compras.tituloProyecto', { proyecto: ctx.titulo }) : $t('intranet.compras.tituloDepartamento') }}</h3>
         <p class="ayuda">
-          <template v-if="!ctx.id">{{ $t('intranet.compras.ayudaCtxDepartamento') }}</template>
-          <template v-else-if="nombresAutorizados">{{ $t('intranet.compras.ayudaCtxProyecto', { nombres: nombresAutorizados }) }}</template>
-          <template v-else>{{ $t('intranet.compras.ayudaCtxProyectoNadie') }}</template>
+          {{ ctx.id ? $t('intranet.compras.ayudaCtxProyecto') : $t('intranet.compras.ayudaCtxDepartamento') }}
         </p>
         <p class="totales">
           <span>{{ $t('intranet.compras.pendiente') }}: <b>{{ euros(totalesCtx.pendiente) }}</b></span>
@@ -253,7 +236,7 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
               <div v-if="p.minimo > 0" class="barra" role="progressbar" :aria-valuenow="porcentaje(p)" aria-valuemin="0" aria-valuemax="100"><i :style="{ width: porcentaje(p) + '%' }"></i></div>
               <p v-if="llega(p)" class="estado-ok">✅ {{ p.minimo > 0 ? $t('intranet.compras.alcanzado') : $t('intranet.compras.listo') }}</p>
               <p v-else class="estado">{{ $t('intranet.compras.falta', { falta: euros(p.minimo - p.total) }) }}</p>
-              <div v-if="ctx.puedo" class="botones">
+              <div class="botones">
                 <button v-if="llega(p)" type="button" class="btn-enviar" :disabled="enviando === p.id || (!!p.email && !datos.correo_configurado)" @click="enviar(p)">
                   {{ p.email ? $t('intranet.compras.enviar') : $t('intranet.compras.marcar') }}
                 </button>
@@ -261,7 +244,7 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
                   {{ $t('intranet.compras.forzar', { portes: euros(p.portes) }) }}
                 </button>
               </div>
-              <p v-if="ctx.puedo && p.email && !datos.correo_configurado" class="aviso">{{ $t('intranet.compras.sinCorreo') }}</p>
+              <p v-if="p.email && !datos.correo_configurado" class="aviso">{{ $t('intranet.compras.sinCorreo') }}</p>
             </article>
           </div>
           <p v-if="otrosProveedores.length" class="otros">
@@ -274,8 +257,8 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
           </p>
         </div>
 
-        <!-- Afegir (només si es pot comprar per a aquest compte) -->
-        <form v-if="ctx.puedo" class="bloque nuevo" @submit.prevent="anadir">
+        <!-- Afegir -->
+        <form class="bloque nuevo" @submit.prevent="anadir">
           <h4>{{ ctx.id ? $t('intranet.compras.anadirProyecto', { proyecto: ctx.titulo }) : $t('intranet.compras.anadirDepartamento') }}</h4>
           <div class="fila">
             <label class="ancho">{{ $t('intranet.compras.descripcion') }}
@@ -307,7 +290,6 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
           </div>
           <p class="nota">{{ $t('intranet.compras.notaProveedor') }}</p>
         </form>
-        <p v-else class="bloque sin-permiso">🔒 {{ $t('intranet.compras.sinPermiso') }}</p>
 
         <!-- Llista pendent d'aquest compte, per proveïdor -->
         <div class="bloque">
@@ -341,7 +323,7 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
                         </select>
                         <select v-model="editando.proyecto_id" class="input-fila" :aria-label="$t('intranet.compras.proyecto')">
                           <option value="">{{ $t('intranet.compras.departamento') }}</option>
-                          <option v-for="pr in proyectosPuedo" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
+                          <option v-for="pr in datos.proyectos" :key="pr.id" :value="pr.id">{{ pr.titulo }}</option>
                         </select>
                       </span>
                     </td>
@@ -429,26 +411,6 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
         </div>
       </details>
 
-      <!-- Qui pot comprar per a cada projecte -->
-      <details class="caja plegable">
-        <summary><h3>{{ $t('intranet.compras.autorizados') }}</h3></summary>
-        <p class="nota">{{ datos.es_admin ? $t('intranet.compras.ayudaAutorizadosAdmin') : $t('intranet.compras.ayudaAutorizados') }}</p>
-        <div class="tabla-scroll">
-          <table class="tabla autorizados">
-            <tbody>
-              <tr v-for="pr in datos.proyectos" :key="pr.id">
-                <th>{{ pr.titulo }}</th>
-                <td v-if="datos.es_admin" class="casillas">
-                  <label v-for="u in datos.usuarios" :key="u.id">
-                    <input type="checkbox" :checked="pr.autorizados.includes(u.id)" @change="cambiarAutorizado(pr, u.id, $event.target.checked)"> {{ u.nombre }}
-                  </label>
-                </td>
-                <td v-else>{{ pr.autorizados.map(nombreUsuario).filter(Boolean).join(', ') || '—' }}<span class="gris"> · {{ $t('intranet.compras.yAdmins') }}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
     </template>
     <p v-else-if="error" class="error" role="alert">{{ error }}</p>
   </div>
@@ -480,7 +442,6 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
 .bloque h4 { margin: 0 0 8px; color: #012169; font-size: 1rem; }
 .cabecera { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 .cabecera h4 { margin: 0; }
-.sin-permiso { color: #5a4a00; background: #fff6d6; border: 1px solid #ecd27a; }
 
 /* Proveïdors */
 .form-proveedor { background: white; border: 1px solid #d0d7de; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
@@ -525,7 +486,6 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
 .tabla.gastos tr.clicable { cursor: pointer; }
 .tabla.gastos tr.clicable:hover td { background: #f3f7fb; }
 .tabla.gastos tr.actual td { background: #e8f1fb; font-weight: bold; }
-.tabla.autorizados th { width: 220px; white-space: normal; color: #012169; }
 .input-fila { width: 100%; min-width: 80px; box-sizing: border-box; padding: 5px 8px; }
 .input-fila.corto { width: 80px; min-width: 0; }
 .input-fila.mas { margin-top: 4px; }
@@ -544,8 +504,6 @@ const verProyecto = (id) => { contexto.value = id == null ? '' : id; window.scro
 .caja { background: #f4f7f9; border-radius: 8px; padding: 12px 20px; margin-bottom: 12px; }
 .plegable summary { cursor: pointer; }
 .plegable summary h3 { display: inline; margin: 0; color: #012169; font-size: 1.05rem; }
-.casillas { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.casillas label { white-space: nowrap; cursor: pointer; }
 
 @media (max-width: 768px) {
   .panel-compras { padding: 14px; }

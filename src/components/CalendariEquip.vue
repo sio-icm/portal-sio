@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { traducirError } from '../i18n'
 import { peticionIntranet, hoyIso } from '../utils/diario'
@@ -7,6 +7,7 @@ import {
   TIPOS_CALENDARIO, tipoCalendario, RECURSOS, recurso, nombreReserva, ICONOS_AVISO,
   aIso, deIso, fechaLarga, rangoTexto, horario, resumenDia, nombreCorto, textoAviso
 } from '../utils/calendario'
+import DetalleDia from './DetalleDia.vue'
 
 // Calendari d'equip: qui és al centre (teletreball, campanyes, vacances...),
 // reserves de la Pelagia, el tanc i els instruments, i els avisos que en surten.
@@ -45,10 +46,21 @@ const celdas = computed(() => {
 })
 const resumenes = computed(() => Object.fromEntries(celdas.value.map(c => [c.iso, resumenDia(datos.value, c.iso)])))
 const detalle = computed(() => resumenDia(datos.value, diaSeleccionado.value))
+// Avisos: els passats ja no surten, i cadascú pot tancar els que ja ha vist (es recorda en
+// aquest navegador). Al detall del dia sí que hi surten tots.
+const leerCerrados = () => { try { return JSON.parse(localStorage.getItem('sio_avisos_cerrados') || '[]') } catch { return [] } }
+const avisosCerrados = ref(new Set(leerCerrados()))
+// «responsable:21:2026-11-12» → «responsable:21»: la data del final depèn del mes que es mira
+const claveAviso = (a) => a.id.split(':').length > 2 ? a.id.replace(/:\d{4}-\d{2}-\d{2}$/, '') : a.id
+const avisoVisible = (a) => (a.fin || a.fecha) >= hoy && !avisosCerrados.value.has(claveAviso(a))
+const cerrarAviso = (a) => {
+  avisosCerrados.value = new Set([...avisosCerrados.value, claveAviso(a)])
+  try { localStorage.setItem('sio_avisos_cerrados', JSON.stringify([...avisosCerrados.value].slice(-300))) } catch { /* sense emmagatzematge */ }
+}
 const avisosMes = computed(() => {
   const inicio = aIso(mesVisible.value)
   const fin = aIso(new Date(mesVisible.value.getFullYear(), mesVisible.value.getMonth() + 1, 0))
-  return datos.value.avisos.filter(a => (a.fin || a.fecha) >= inicio && a.fecha <= fin)
+  return datos.value.avisos.filter(a => (a.fin || a.fecha) >= inicio && a.fecha <= fin && avisoVisible(a))
 })
 
 const cargar = async () => {
@@ -87,9 +99,26 @@ const irAHoy = () => {
     mesVisible.value = new Date(d.getFullYear(), d.getMonth(), 1)
   }
 }
+// En clicar un dia s'obre una finestra amb el seu detall (i també surt a sota del calendari)
+const ventanaDia = ref(false)
 const seleccionarDia = (c) => {
   diaSeleccionado.value = c.iso
   if (!c.delMes) mesVisible.value = new Date(deIso(c.iso).getFullYear(), deIso(c.iso).getMonth(), 1)
+  ventanaDia.value = true
+}
+const verAviso = (a) => {
+  diaSeleccionado.value = a.fecha
+  ventanaDia.value = true
+}
+const teclaVentana = (ev) => { if (ev.key === 'Escape') ventanaDia.value = false }
+watch(ventanaDia, (abierta) => {
+  if (abierta) window.addEventListener('keydown', teclaVentana)
+  else window.removeEventListener('keydown', teclaVentana)
+})
+onBeforeUnmount(() => window.removeEventListener('keydown', teclaVentana))
+const desdeVentana = (accion, ...args) => {
+  ventanaDia.value = false
+  accion(...args)
 }
 
 // Chips d'una cel·la: primer els avisos, després qui és fora i les reserves
@@ -319,8 +348,10 @@ const treureFestiu = async (f) => {
     <!-- Avisos del mes -->
     <div v-if="avisosMes.length" class="avisos-mes" role="status">
       <strong>{{ $t('intranet.calendario.avisosDe', { mes: locale === 'en' ? nombreMes : nombreMes.toLowerCase() }) }}</strong>
-      <button v-for="a in avisosMes" :key="a.id" type="button" class="aviso-chip"
-        @click="diaSeleccionado = a.fecha">{{ ICONOS_AVISO[a.tipo] }} {{ rangoTexto(a.fecha, a.fin || a.fecha) }} · {{ textoAviso(a) }}</button>
+      <span v-for="a in avisosMes" :key="a.id" class="aviso-chip">
+        <button type="button" class="aviso-texto" @click="verAviso(a)">{{ ICONOS_AVISO[a.tipo] }} {{ rangoTexto(a.fecha, a.fin || a.fecha) }} · {{ textoAviso(a) }}</button>
+        <button type="button" class="aviso-cerrar" :title="$t('intranet.calendario.cerrarAviso')" :aria-label="$t('intranet.calendario.cerrarAviso')" @click="cerrarAviso(a)">✕</button>
+      </span>
     </div>
 
     <!-- Calendari -->
@@ -336,9 +367,9 @@ const treureFestiu = async (f) => {
         <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
         <button v-for="c in celdas" :key="c.iso" type="button" class="cal-celda"
           :class="{ fuera: !c.delMes, hoy: c.iso === hoy, elegido: c.iso === diaSeleccionado,
-                    festivo: !resumenes[c.iso].laborable, alerta: resumenes[c.iso].avisos.length }"
+                    festivo: !resumenes[c.iso].laborable, alerta: resumenes[c.iso].avisos.some(avisoVisible) }"
           :aria-label="fechaLarga(c.iso)" :aria-pressed="c.iso === diaSeleccionado" @click="seleccionarDia(c)">
-          <span class="cal-numero">{{ c.dia }}<span v-if="resumenes[c.iso].avisos.length" class="marca-aviso" aria-hidden="true">⚠️</span></span>
+          <span class="cal-numero">{{ c.dia }}<span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
           <span v-if="resumenes[c.iso].festiu" class="cal-festiu" :title="resumenes[c.iso].festiu">{{ resumenes[c.iso].festiu }}</span>
           <span v-for="ch in chips(resumenes[c.iso]).slice(0, 3)" :key="ch.clave" class="cal-chip" :style="{ background: ch.color }" :title="ch.titulo">{{ ch.texto }}</span>
           <span v-if="chips(resumenes[c.iso]).length > 3" class="cal-mas">+{{ chips(resumenes[c.iso]).length - 3 }}</span>
@@ -350,43 +381,26 @@ const treureFestiu = async (f) => {
       </p>
     </div>
 
-    <!-- Detall del dia -->
+    <!-- Detall del dia (a sota) -->
     <section class="caja detalle" aria-live="polite">
-      <h3>{{ fechaLarga(detalle.dia) }}</h3>
-      <p v-if="detalle.festiu" class="festiu-texto">🎉 {{ $t('intranet.comun.festivo') }}: {{ detalle.festiu }}</p>
-      <p v-else-if="!detalle.laborable" class="festiu-texto">{{ $t('intranet.comun.finDeSemana') }}</p>
-      <p v-if="detalle.laborable && detalle.plantilla.length" class="presentes">
-        👥 {{ $t('intranet.comun.alCentro') }}: <b>{{ $t('intranet.comun.deTotal', { n: detalle.presentes.length, total: detalle.plantilla.length }) }}</b>
-        <span v-if="detalle.presentes.length"> ({{ detalle.presentes.map(u => nombreCorto(u.nombre, datos.equipo)).join(', ') }})</span>
-      </p>
-      <p v-for="a in detalle.avisos" :key="a.id" class="aviso">{{ ICONOS_AVISO[a.tipo] }} {{ textoAviso(a) }}</p>
-
-      <p v-if="!detalle.entradas.length && !detalle.reservas.length" class="vacio">{{ $t('intranet.calendario.nadaApuntado') }}</p>
-      <ul class="lista">
-        <li v-for="e in detalle.entradas" :key="'e' + e.id">
-          <span class="tag" :style="{ background: tipoCalendario(e.tipo).color }">{{ tipoCalendario(e.tipo).icono }} {{ tipoCalendario(e.tipo).etiqueta }}</span>
-          <b>{{ e.persona || $t('intranet.comun.todoEquipo') }}</b>
-          <span class="rango">{{ rangoTexto(e.inicio, e.fin) }}</span>
-          <span v-if="horario(e)" class="rango">🕘 {{ horario(e) }}</span>
-          <span v-if="e.nota" class="nota">· {{ e.nota }}</span>
-          <span v-if="e.proyecto" class="nota">· 📁 {{ e.proyecto }}</span>
-          <span v-if="e.editable" class="acciones">
-            <button class="btn-mini" @click="editar('entrada', e)">✏️</button>
-            <button class="btn-mini peligro" @click="borrar('entrada', e)" :aria-label="$t('intranet.calendario.borrarAria')">🗑️</button>
-          </span>
-        </li>
-        <li v-for="x in detalle.reservas" :key="'r' + x.id">
-          <span class="tag reserva">{{ recurso(x.recurso).icono }} {{ nombreReserva(x) }}</span>
-          <b>{{ x.persona || x.para }}</b><span v-if="x.persona && x.para"> → {{ x.para }}</span>
-          <span class="rango">{{ rangoTexto(x.inicio, x.fin) }}</span>
-          <span v-if="x.proposito" class="nota">· {{ x.proposito }}</span>
-          <span v-if="x.editable" class="acciones">
-            <button class="btn-mini" @click="editar('reserva', x)">✏️</button>
-            <button class="btn-mini peligro" @click="borrar('reserva', x)" :aria-label="$t('intranet.calendario.borrarAria')">🗑️</button>
-          </span>
-        </li>
-      </ul>
+      <DetalleDia :detalle="detalle" :equipo="datos.equipo" @editar="editar" @borrar="borrar" />
     </section>
+
+    <!-- Finestra amb el detall del dia clicat -->
+    <div v-if="ventanaDia" class="velo" @click.self="ventanaDia = false">
+      <div class="ventana" role="dialog" aria-modal="true" :aria-label="fechaLarga(detalle.dia)">
+        <header>
+          <h3>{{ fechaLarga(detalle.dia) }}</h3>
+          <button type="button" class="cerrar" :aria-label="$t('intranet.comun.cerrar')" @click="ventanaDia = false">✕</button>
+        </header>
+        <DetalleDia :detalle="detalle" :equipo="datos.equipo" :titulo="false"
+          @editar="(c, x) => desdeVentana(editar, c, x)" @borrar="(c, x) => desdeVentana(borrar, c, x)" />
+        <footer>
+          <button class="btn-principal" @click="desdeVentana(nuevaEntrada)">{{ $t('intranet.calendario.apuntarme') }}</button>
+          <button class="btn-secundario" @click="desdeVentana(nuevaReserva)">{{ $t('intranet.calendario.reservar') }}</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -415,7 +429,19 @@ input.corto { width: 70px; }
 .festius li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; break-inside: avoid; }
 
 .avisos-mes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #fff4e5; border: 1px solid #ffd59e; border-radius: 8px; padding: 10px 12px; margin: 12px 0; font-size: 0.9rem; color: #7a4300; }
-.aviso-chip { background: white; border: 1px solid #ffd59e; border-radius: 12px; padding: 3px 10px; cursor: pointer; font: inherit; font-size: 0.82rem; color: #7a4300; }
+.aviso-chip { display: inline-flex; align-items: center; background: white; border: 1px solid #ffd59e; border-radius: 12px; font-size: 0.82rem; overflow: hidden; }
+.aviso-texto { background: none; border: none; padding: 3px 4px 3px 10px; cursor: pointer; font: inherit; color: #7a4300; text-align: left; }
+.aviso-cerrar { background: none; border: none; border-left: 1px solid #ffe3bd; padding: 3px 8px; cursor: pointer; color: #b0731c; font-size: 0.8rem; }
+.aviso-cerrar:hover { background: #ffe9cc; color: #7a4300; }
+
+/* Finestra del dia */
+.velo { position: fixed; inset: 0; background: rgba(1, 20, 60, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10000; }
+.ventana { background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); width: min(620px, 100%); max-height: 85vh; overflow-y: auto; padding: 18px 20px; border-top: 4px solid #0086c0; }
+.ventana header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.ventana header h3 { margin: 0; }
+.ventana header h3::first-letter { text-transform: uppercase; }
+.ventana .cerrar { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #555; padding: 0 4px; line-height: 1; }
+.ventana footer { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3e8ee; }
 
 .calendario { border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px; margin: 12px 0; }
 .cal-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -438,18 +464,7 @@ input.corto { width: 70px; }
 .leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.78rem; color: #555; margin: 10px 0 0; }
 .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 
-.detalle h3::first-letter { text-transform: uppercase; }
-.festiu-texto { color: #b02a37; margin: 0 0 6px; }
-.presentes { margin: 0 0 6px; color: #333; }
-.aviso { background: #fff4e5; border-left: 3px solid #f0a640; padding: 6px 10px; margin: 6px 0; color: #7a4300; }
 .vacio { color: #666; font-style: italic; }
-.lista { list-style: none; padding: 0; margin: 8px 0 0; }
-.lista li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid #e3e8ee; font-size: 0.92rem; }
-.tag { color: white; border-radius: 10px; padding: 2px 9px; font-size: 0.78rem; }
-.tag.reserva { background: #012169; }
-.rango { color: #555; font-size: 0.85rem; }
-.nota { color: #555; }
-.acciones { margin-left: auto; display: flex; gap: 4px; }
 
 @media (max-width: 768px) {
   .panel-calendari { padding: 14px; }

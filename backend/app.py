@@ -5,7 +5,6 @@ import re
 import smtplib
 import sqlite3
 import time
-import unicodedata
 import uuid
 from collections import defaultdict, deque
 from datetime import date, timedelta
@@ -591,7 +590,7 @@ def modificar_proyecto(id):
 # =======================================================
 
 TIPOS_NOTA = ['campanya', 'desenvolupament', 'manteniment', 'calibratge',
-              'divulgacio', 'formacio', 'gestio', 'altres']
+              'divulgacio', 'formacio', 'reunio', 'gestio', 'altres']
 VISIBILIDADES = ['interna', 'publica']
 # Temps dedicat a una nota: intervals d'hores (el mateix a src/utils/diario.js)
 INTERVALOS_HORAS = {'0-1': (0, 1), '1-3': (1, 3), '3-5': (3, 5), '5-8': (5, 8), '8+': (8, 16)}
@@ -2186,8 +2185,8 @@ crear_tablas_equipo_docs()
 # comanda mínima per no pagar ports, ports i correu per demanar pressupost) i d'un projecte
 # o del departament (proyecto_id NULL). Quan un proveïdor arriba al mínim es pot enviar la
 # petició de pressupost; el que s'envia passa a l'historial (i en surten les despeses).
-# Per al departament tothom pot apuntar coses; per a un projecte (va al seu compte) només
-# els autoritzats d'aquell projecte (compras_autorizados) i els administradors.
+# Tothom pot apuntar coses per al departament i per a qualsevol projecte; cada compte
+# (el departament o un projecte) fa la seva pròpia comanda.
 # ---------------------------------------------------------------------------
 PROVEEDOR_INICIAL = {
     'nombre': 'RS Components',
@@ -2196,17 +2195,6 @@ PROVEEDOR_INICIAL = {
     'email': os.environ.get('SIO_COMPRAS_DESTINO', 'Ofertas@rs.rsgroup.com'),
 }
 PATRON_EMAIL = re.compile(r'^[^@\s,;<>"]+@[^@\s,;<>"]+\.[A-Za-z]{2,}$')
-
-
-def _sin_acentos(texto):
-    return ''.join(c for c in unicodedata.normalize('NFD', texto or '') if unicodedata.category(c) != 'Mn').lower()
-
-
-def nombre_en_lista(nombre, lista):
-    """«Raül Bardaji» és a «Òscar Chic, Raul Bardají»? (sense accents; nom i primer cognom)"""
-    partes = _sin_acentos(nombre).split()
-    texto = _sin_acentos(lista)
-    return len(partes) >= 2 and all(re.search(r'\b' + re.escape(x) + r'\b', texto) for x in partes[:2])
 
 
 def crear_tablas_compras():
@@ -2244,10 +2232,6 @@ def crear_tablas_compras():
             articulos INTEGER NOT NULL
         );
     """)
-    conexion.execute('''CREATE TABLE IF NOT EXISTS compras_autorizados (
-        proyecto_id INTEGER NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
-        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-        PRIMARY KEY (proyecto_id, usuario_id))''')
     # Columnes noves (dades anteriors: tot era de RS i sense projecte)
     nuevas = (('compras', 'proveedor_id', 'INTEGER REFERENCES compras_proveedores(id)'),
               ('compras', 'proyecto_id', 'INTEGER REFERENCES proyectos(id)'),
@@ -2273,14 +2257,6 @@ def crear_tablas_compras():
     conexion.execute('UPDATE compras_envios SET proveedor_id = ?, proveedor = ? WHERE proveedor_id IS NULL',
                      (rs, PROVEEDOR_INICIAL['nombre']))
     conexion.execute('UPDATE compras SET solicitante_id = usuario_id WHERE solicitante_id IS NULL')
-    # Primer cop: els autoritzats de cada projecte surten del camp PIT (personal tècnic del SIO)
-    if not conexion.execute("SELECT 1 FROM ajustes WHERE clave = 'compras_autorizados_iniciales'").fetchone():
-        usuarios = conexion.execute('SELECT id, nombre FROM usuarios WHERE activo = 1').fetchall()
-        for pr in conexion.execute('SELECT id, pit FROM proyectos').fetchall():
-            for u in usuarios:
-                if nombre_en_lista(u['nombre'], pr['pit']):
-                    conexion.execute('INSERT OR IGNORE INTO compras_autorizados VALUES (?, ?)', (pr['id'], u['id']))
-        conexion.execute("INSERT OR IGNORE INTO ajustes (clave, valor) VALUES ('compras_autorizados_iniciales', '1')")
     conexion.commit()
     conexion.close()
 
@@ -2292,25 +2268,9 @@ def importe(f):
     return round((f['precio'] or 0) * f['cantidad'], 2)
 
 
-def proyectos_autorizados(conexion, usuario_id):
-    return {r['proyecto_id'] for r in conexion.execute(
-        'SELECT proyecto_id FROM compras_autorizados WHERE usuario_id = ?', (usuario_id,))}
-
-
-def puede_comprar_para(conexion, proyecto_id):
-    """Departament: tothom. Projecte: administradors i autoritzats del projecte."""
-    if proyecto_id is None or session.get('es_admin'):
-        return True
-    return proyecto_id in proyectos_autorizados(conexion, session.get('usuario_id'))
-
-
 def resumen_compras(conexion):
     yo, admin = session.get('usuario_id'), bool(session.get('es_admin'))
     proyectos = {p['id']: p['titulo'] for p in conexion.execute('SELECT id, titulo FROM proyectos')}
-    autorizados = {}
-    for r in conexion.execute('SELECT proyecto_id, usuario_id FROM compras_autorizados'):
-        autorizados.setdefault(r['proyecto_id'], []).append(r['usuario_id'])
-    mios = {pid for pid, us in autorizados.items() if yo in us}
     usuarios = [dict(u) for u in conexion.execute('SELECT id, nombre FROM usuarios WHERE activo = 1 ORDER BY nombre')]
     proveedores = [dict(p) for p in conexion.execute('SELECT * FROM compras_proveedores ORDER BY nombre')]
     filas = [dict(f) for f in conexion.execute('SELECT * FROM compras ORDER BY fecha, id')]
@@ -2319,8 +2279,7 @@ def resumen_compras(conexion):
         f['proveedor'] = nombres.get(f['proveedor_id'], f['proveedor'])
         f['proyecto'] = proyectos.get(f['proyecto_id'], '')
         f['importe'] = importe(f)
-        # Del departament: qui ho va apuntar. D'un projecte: també els seus autoritzats.
-        f['editable'] = admin or (f['proyecto_id'] in mios) or (f['usuario_id'] == yo and f['proyecto_id'] is None)
+        f['editable'] = admin or f['usuario_id'] == yo
     pendientes = [f for f in filas if f['envio_id'] is None]
     for pv in proveedores:
         suyos = [f for f in pendientes if f['proveedor_id'] == pv['id']]
@@ -2347,8 +2306,7 @@ def resumen_compras(conexion):
         'gastos': gastos,
         'total_pendiente': round(sum(f['importe'] for f in pendientes), 2),
         'total_pedido': round(sum(f['importe'] for f in filas if f['envio_id']), 2),
-        'proyectos': [{'id': i, 'titulo': t, 'autorizados': sorted(autorizados.get(i, [])), 'puedo': admin or i in mios}
-                      for i, t in sorted(proyectos.items(), key=lambda x: x[1].lower())],
+        'proyectos': [{'id': i, 'titulo': t} for i, t in sorted(proyectos.items(), key=lambda x: x[1].lower())],
         'usuarios': usuarios,
         'es_admin': admin,
         'correo_configurado': bool(os.environ.get('SIO_SMTP_HOST')),
@@ -2394,8 +2352,6 @@ def validar_compra(conexion, datos):
             return None, "Proyecto no válido"
         if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
             return None, "El proyecto no existe"
-        if not puede_comprar_para(conexion, proyecto_id):
-            return None, "No estás autorizado a comprar para este proyecto"
     solicitante = None
     if datos.get('solicitante_id') not in ('', None):
         try:
@@ -2448,14 +2404,9 @@ def modificar_compra(id):
     if not fila:
         conexion.close()
         return jsonify({"error": "No existe"}), 404
-    if fila['proyecto_id'] is not None:
-        permitido = puede_comprar_para(conexion, fila['proyecto_id'])
-    else:
-        permitido = session.get('es_admin') or fila['usuario_id'] == session.get('usuario_id')
-    if not permitido:
+    if not session.get('es_admin') and fila['usuario_id'] != session.get('usuario_id'):
         conexion.close()
-        return jsonify({"error": "Solo puedes cambiar lo que has apuntado tú" if fila['proyecto_id'] is None
-                        else "No estás autorizado a comprar para este proyecto"}), 403
+        return jsonify({"error": "Solo puedes cambiar lo que has apuntado tú"}), 403
     if request.method == 'DELETE':
         # També des de l'historial, si al final no es va comprar
         conexion.execute('DELETE FROM compras WHERE id = ?', (id,))
@@ -2471,33 +2422,6 @@ def modificar_compra(id):
             return jsonify({"error": error}), 400
         conexion.execute('UPDATE compras SET descripcion = ?, cantidad = ?, proveedor = ?, referencia = ?, precio = ?, '
                          'proveedor_id = ?, proyecto_id = ?, solicitante_id = ?, pedido_por = ? WHERE id = ?', valores + (id,))
-    conexion.commit()
-    respuesta = resumen_compras(conexion)
-    conexion.close()
-    return jsonify(respuesta)
-
-
-@app.route('/api/compras/autorizados/<int:proyecto_id>', methods=['PUT'])
-@requiere_login
-def autorizados_compras(proyecto_id):
-    """Qui pot comprar per a un projecte (només administradors). Cos: {usuarios: [ids]}"""
-    if not session.get('es_admin'):
-        return jsonify({"error": "Solo para administradores"}), 403
-    ids = (request.get_json(silent=True) or {}).get('usuarios')
-    if not isinstance(ids, list):
-        return jsonify({"error": "Datos incorrectos"}), 400
-    conexion = conectar_bd()
-    if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
-        conexion.close()
-        return jsonify({"error": "El proyecto no existe"}), 404
-    try:
-        ids = {int(i) for i in ids}
-    except (TypeError, ValueError):
-        conexion.close()
-        return jsonify({"error": "Datos incorrectos"}), 400
-    validos = {r['id'] for r in conexion.execute('SELECT id FROM usuarios WHERE activo = 1')}
-    conexion.execute('DELETE FROM compras_autorizados WHERE proyecto_id = ?', (proyecto_id,))
-    conexion.executemany('INSERT INTO compras_autorizados VALUES (?, ?)', [(proyecto_id, u) for u in ids & validos])
     conexion.commit()
     respuesta = resumen_compras(conexion)
     conexion.close()
@@ -2603,7 +2527,7 @@ def enviar_compras(proveedor_id):
     """Comanda d'un proveïdor per al departament (proyecto_id null) o per a un projecte: cadascú
     paga la seva, així que el mínim compta per separat. Si el proveïdor té correu, s'hi envia la
     petició de pressupost; si no, només es marca com a demanada. Per sota del mínim només amb
-    «forzar» (es pagaran ports). La d'un projecte només la fan els seus autoritzats."""
+    «forzar» (es pagaran ports)."""
     datos = request.get_json(silent=True) or {}
     conexion = conectar_bd()
     pv = conexion.execute('SELECT * FROM compras_proveedores WHERE id = ?', (proveedor_id,)).fetchone()
@@ -2619,9 +2543,6 @@ def enviar_compras(proveedor_id):
         if not proyecto:
             conexion.close()
             return jsonify({"error": "El proyecto no existe"}), 404
-        if not puede_comprar_para(conexion, proyecto['id']):
-            conexion.close()
-            return jsonify({"error": "No estás autorizado a comprar para este proyecto"}), 403
     articulos = [dict(f) for f in conexion.execute(
         'SELECT * FROM compras WHERE envio_id IS NULL AND proveedor_id = ? AND proyecto_id IS ? ORDER BY fecha, id',
         (proveedor_id, proyecto['id'] if proyecto else None))]

@@ -330,8 +330,9 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   los administradores, todo.
 - Cada entrada puede llevar **hora de inicio y de fin** (opcionales; sin hora =
   todo el día). Solo se muestran: no cambian los avisos ni quién está en el centro.
-- Cada entrada puede llevar **hora de inicio y de fin** (opcionales; sin hora =
-  todo el día). Solo se muestran: no cambian los avisos ni quién está en el centro.
+- Al hacer clic en un día se abre una **ventana con su detalle** (quién está, avisos,
+  entradas y reservas, con botones para apuntarse o reservar); el detalle también
+  sale debajo del calendario.
 - La pantalla principal de la intranet muestra un resumen (Hoy / Semana / Mes).
   «✓ Vist» lo pliega hasta el día siguiente o hasta que salga un aviso nuevo
   (se recuerda en cada navegador).
@@ -343,6 +344,8 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   instrumento reservado que está en mantenimiento. Fines de semana y festivos no
   cuentan. La pantalla principal mira las **próximas 12 semanas** y agrupa los
   avisos por semana («Aquesta setmana», «Setmana del … · d'aquí a N setmanes»).
+  En el calendario, los avisos ya pasados no salen y cada uno puede cerrar los que
+  ya ha visto con la ✕ (se recuerda en cada navegador); en el detalle del día salen todos.
 - Los **festivos de Barcelona** de 2026 y 2027 se cargan la primera vez; los
   administradores los cambian en «Configuració» (los locales de 2027 están
   pendientes de confirmar cuando el Ayuntamiento los publique).
@@ -356,11 +359,9 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   antiguo «Full Comanda»: qué se necesita, cantidad, proveedor, referencia, precio
   unitario sin IVA (obligatorio), **para quién** (el departamento o un proyecto) y
   **quién lo pide** (una persona del servicio; por defecto, quien lo apunta).
-- Para el departamento puede apuntar todo el mundo (y cambiar lo suyo). Para un
-  proyecto, como va a su cuenta, solo los **autorizados** de ese proyecto y los
-  administradores (tabla `compras_autorizados`; la marcan los administradores en
-  «Qui pot comprar per a cada projecte»). La primera vez se rellena con los nombres
-  del campo PIT de cada proyecto.
+- Todo el personal puede apuntar compras para el departamento o para cualquier
+  proyecto; cada uno cambia lo suyo y los administradores, todo. (La tabla
+  `compras_autorizados` de una versión anterior ya no se usa.)
 - Arriba se elige **de quién son las compras** («Compres de:» el departamento o un
   proyecto) y todo lo de debajo es solo de esa cuenta: el pedido en curso de cada
   proveedor, el formulario para añadir (solo si se puede comprar), la lista pendiente
@@ -381,7 +382,7 @@ Se rellena sola con el diario de actividad y el calendari d'equip
   historial y deja de contar.
 - **Gastos por proyecto**: pendiente, pedido y total de cada proyecto y del
   departamento, y el total de todas las compras (sin IVA ni portes).
-- Tablas: `compras`, `compras_envios`, `compras_proveedores` y `compras_autorizados` (se crean y migran solas).
+- Tablas: `compras`, `compras_envios` y `compras_proveedores` (se crean y migran solas).
 
 ## Páginas de documentación (wiki interna)
 
