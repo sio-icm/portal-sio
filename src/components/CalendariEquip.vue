@@ -34,15 +34,37 @@ const nombreMes = computed(() => {
 })
 
 // Cel·les del mes, començant en dilluns
+// Al mes actual el calendari comença per la setmana d'avui (el que tenim per davant), i
+// continua unes setmanes encara que canviï de mes. Els altres mesos es veuen sencers.
+const SEMANAS_ADELANTE = 5
+const esMesActual = computed(() => {
+  const h = deIso(hoy)
+  return mesVisible.value.getFullYear() === h.getFullYear() && mesVisible.value.getMonth() === h.getMonth()
+})
 const celdas = computed(() => {
+  if (esMesActual.value) {
+    const h = deIso(hoy)
+    const lunes = new Date(h.getFullYear(), h.getMonth(), h.getDate() - (h.getDay() + 6) % 7)
+    return Array.from({ length: SEMANAS_ADELANTE * 7 }, (_, i) => {
+      const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i)
+      return { iso: aIso(d), dia: d.getDate(), delMes: true, nuevoMes: d.getDate() === 1 || i === 0, d }
+    })
+  }
   const primero = mesVisible.value
   const desfase = (primero.getDay() + 6) % 7
   const diasMes = new Date(primero.getFullYear(), primero.getMonth() + 1, 0).getDate()
   const total = Math.ceil((desfase + diasMes) / 7) * 7
   return Array.from({ length: total }, (_, i) => {
     const d = new Date(primero.getFullYear(), primero.getMonth(), 1 - desfase + i)
-    return { iso: aIso(d), dia: d.getDate(), delMes: d.getMonth() === primero.getMonth() }
+    return { iso: aIso(d), dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), d }
   })
+})
+const mesCorto = (d) => new Intl.DateTimeFormat(locale.value, { month: 'short' }).format(d).replace('.', '')
+// Títol: «Properes setmanes · 16 nov. – 20 des.» o el nom del mes
+const tituloVista = computed(() => {
+  if (!esMesActual.value) return nombreMes.value
+  const a = celdas.value[0].d, b = celdas.value[celdas.value.length - 1].d
+  return `${t('intranet.calendario.properesSetmanes')} · ${a.getDate()} ${mesCorto(a)} – ${b.getDate()} ${mesCorto(b)}`
 })
 const resumenes = computed(() => Object.fromEntries(celdas.value.map(c => [c.iso, resumenDia(datos.value, c.iso)])))
 const detalle = computed(() => resumenDia(datos.value, diaSeleccionado.value))
@@ -58,8 +80,8 @@ const cerrarAviso = (a) => {
   try { localStorage.setItem('sio_avisos_cerrados', JSON.stringify([...avisosCerrados.value].slice(-300))) } catch { /* sense emmagatzematge */ }
 }
 const avisosMes = computed(() => {
-  const inicio = aIso(mesVisible.value)
-  const fin = aIso(new Date(mesVisible.value.getFullYear(), mesVisible.value.getMonth() + 1, 0))
+  const inicio = esMesActual.value ? celdas.value[0].iso : aIso(mesVisible.value)
+  const fin = esMesActual.value ? celdas.value[celdas.value.length - 1].iso : aIso(new Date(mesVisible.value.getFullYear(), mesVisible.value.getMonth() + 1, 0))
   return datos.value.avisos.filter(a => (a.fin || a.fecha) >= inicio && a.fecha <= fin && avisoVisible(a))
 })
 
@@ -347,7 +369,7 @@ const treureFestiu = async (f) => {
 
     <!-- Avisos del mes -->
     <div v-if="avisosMes.length" class="avisos-mes" role="status">
-      <strong>{{ $t('intranet.calendario.avisosDe', { mes: locale === 'en' ? nombreMes : nombreMes.toLowerCase() }) }}</strong>
+      <strong>{{ esMesActual ? $t('intranet.calendario.avisosProximos') : $t('intranet.calendario.avisosDe', { mes: locale === 'en' ? nombreMes : nombreMes.toLowerCase() }) }}</strong>
       <span v-for="a in avisosMes" :key="a.id" class="aviso-chip">
         <button type="button" class="aviso-texto" @click="verAviso(a)">{{ ICONOS_AVISO[a.tipo] }} {{ rangoTexto(a.fecha, a.fin || a.fecha) }} · {{ textoAviso(a) }}</button>
         <button type="button" class="aviso-cerrar" :title="$t('intranet.calendario.cerrarAviso')" :aria-label="$t('intranet.calendario.cerrarAviso')" @click="cerrarAviso(a)">✕</button>
@@ -358,7 +380,7 @@ const treureFestiu = async (f) => {
     <div class="calendario">
       <div class="cal-cabecera">
         <button type="button" class="btn-mini" @click="moverMes(-1)" :aria-label="$t('intranet.comun.mesAnterior')">◀</button>
-        <span class="cal-mes">{{ nombreMes }}</span>
+        <span class="cal-mes">{{ tituloVista }}</span>
         <button type="button" class="btn-mini" @click="moverMes(1)" :aria-label="$t('intranet.comun.mesSiguiente')">▶</button>
         <button type="button" class="btn-mini" @click="irAHoy">{{ $t('intranet.comun.hoy') }}</button>
         <span v-if="cargando" class="cargando">{{ $t('intranet.comun.cargando') }}</span>
@@ -367,9 +389,10 @@ const treureFestiu = async (f) => {
         <div v-for="d in DIAS_SEMANA" :key="d" class="cal-dia-semana">{{ d }}</div>
         <button v-for="c in celdas" :key="c.iso" type="button" class="cal-celda"
           :class="{ fuera: !c.delMes, hoy: c.iso === hoy, elegido: c.iso === diaSeleccionado,
-                    festivo: !resumenes[c.iso].laborable, alerta: resumenes[c.iso].avisos.some(avisoVisible) }"
+                    festivo: !resumenes[c.iso].laborable, pasado: esMesActual && c.iso < hoy, alerta: resumenes[c.iso].avisos.some(avisoVisible) }"
           :aria-label="fechaLarga(c.iso)" :aria-pressed="c.iso === diaSeleccionado" @click="seleccionarDia(c)">
-          <span class="cal-numero">{{ c.dia }}<span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
+          <span v-if="c.iso === hoy" class="cal-avui">{{ $t('intranet.comun.hoy') }}</span>
+          <span class="cal-numero">{{ c.dia }}<span v-if="c.nuevoMes" class="cal-nom-mes"> {{ mesCorto(c.d) }}</span><span v-if="resumenes[c.iso].avisos.some(avisoVisible)" class="marca-aviso" aria-hidden="true">⚠️</span></span>
           <span v-if="resumenes[c.iso].festiu" class="cal-festiu" :title="resumenes[c.iso].festiu">{{ resumenes[c.iso].festiu }}</span>
           <span v-for="ch in chips(resumenes[c.iso])" :key="ch.clave" class="cal-chip" :style="{ background: ch.color }" :title="ch.titulo">{{ ch.texto }}</span>
         </button>
@@ -455,7 +478,12 @@ input.corto { width: 70px; }
 .cal-celda.festivo { background: #f6f6f6; }
 .cal-celda.fuera { opacity: 0.45; }
 .cal-celda.alerta { border-color: #f0a640; background: #fffaf2; }
-.cal-celda.hoy .cal-numero { background: #0086c0; color: white; border-radius: 10px; padding: 0 6px; }
+.cal-celda.hoy { border: 3px solid #0086c0; background: #eaf6fc; box-shadow: 0 0 0 3px rgba(0,134,192,0.18); position: relative; }
+.cal-celda.hoy .cal-numero { background: #0086c0; color: white; border-radius: 10px; padding: 0 7px; font-size: 0.95rem; }
+.cal-avui { position: absolute; top: 4px; right: 5px; background: #0086c0; color: white; font-size: 0.66rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 3px; padding: 1px 5px; }
+.cal-nom-mes { font-weight: normal; color: #0086c0; text-transform: lowercase; margin-left: 3px; }
+.cal-celda.pasado { opacity: 0.55; }
+.cal-celda.hoy.elegido { border: 3px solid #0086c0; box-shadow: 0 0 0 3px rgba(0,134,192,0.3); }
 .cal-celda.elegido { border: 2px solid #012169; box-shadow: 0 0 0 2px rgba(1,33,105,0.12); }
 .cal-numero { font-size: 0.8rem; font-weight: bold; align-self: flex-start; }
 .marca-aviso { font-size: 0.7rem; margin-left: 3px; }

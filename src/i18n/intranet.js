@@ -854,6 +854,8 @@ export default {
     notaPh: { ca: 'ex.: Campanya MOOSE, Congrés a Brest...', es: 'ej.: Campaña MOOSE, Congreso en Brest...', en: 'e.g. MOOSE campaign, conference in Brest...' },
     motivoPh: { ca: 'ex.: Proves del CTD', es: 'ej.: Pruebas del CTD', en: 'e.g. CTD tests' },
     avisosDe: { ca: 'Avisos de {mes}:', es: 'Avisos de {mes}:', en: 'Warnings for {mes}:' },
+    avisosProximos: { ca: 'Avisos de les properes setmanes:', es: 'Avisos de las próximas semanas:', en: 'Warnings for the coming weeks:' },
+    properesSetmanes: { ca: 'Properes setmanes', es: 'Próximas semanas', en: 'Coming weeks' },
     reserva: { ca: 'Reserva', es: 'Reserva', en: 'Booking' },
     nadaApuntado: { ca: 'No hi ha res apuntat aquest dia.', es: 'No hay nada apuntado este día.', en: 'Nothing on this day.' },
     borrarAria: { ca: 'Esborrar', es: 'Borrar', en: 'Delete' }
