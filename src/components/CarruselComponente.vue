@@ -328,10 +328,11 @@ const finalizarArrastre = (evento) => {
 @media (max-width: 768px) {
   .carrusel-wrapper {
     /* 240px (marge negatiu + capçalera) + la foto. Les fitxes de l'inici van a sota, a la part
-       blanca (QuienesSomos.vue). La foto fa com a mínim 66vw (apaïsada) i creix per omplir la
-       pantalla: la resta de la portada (capçalera, fitxes i peu) fa uns 460px. */
-    --alt-foto: clamp(66vw, calc(100vh - 460px), 125vw);
-    --alt-foto: clamp(66vw, calc(100svh - 460px), 125vw);
+       blanca (QuienesSomos.vue). La foto fa com a mínim 66vw (apaïsada) i creix fins que les
+       fitxes arriben a baix de la pantalla (el peu queda just a sota, baixant una mica).
+       La capçalera i les fitxes fan uns 390px. */
+    --alt-foto: clamp(66vw, calc(100vh - 390px), 130vw);
+    --alt-foto: clamp(66vw, calc(100svh - 390px), 130vw);
     height: calc(240px + var(--alt-foto)) !important;
     background: #012169;
   }

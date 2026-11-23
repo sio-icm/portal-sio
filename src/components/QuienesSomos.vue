@@ -196,7 +196,7 @@ import logoBlueLab from '../assets/logobluelab.png'
   .contenido h3.a-la-derecha { left: 6px; }
 
   .seccion-fichas-sio {
-    padding: 20px 0;
+    padding: 14px 0 18px;
   }
 }
 </style>
