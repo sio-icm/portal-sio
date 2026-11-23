@@ -323,8 +323,12 @@ const finalizarArrastre = (evento) => {
    de l'inici, apaïsada, i es veu quasi sencera. */
 @media (max-width: 768px) {
   .carrusel-wrapper {
-    /* 240px (marge negatiu + capçalera) + la foto + 30px que queden sota les fitxes de l'inici */
-    height: calc(270px + 62vw) !important;
+    /* 240px (marge negatiu + capçalera) + la foto + 30px que queden sota les fitxes de l'inici.
+       La foto fa com a mínim 62vw (apaïsada) i creix per omplir la pantalla fins al peu
+       (la resta de l'inici fa uns 490px), sense passar de 95vw perquè no es retalli massa. */
+    --alt-foto: clamp(62vw, calc(100vh - 490px), 95vw);
+    --alt-foto: clamp(62vw, calc(100svh - 490px), 95vw);
+    height: calc(270px + var(--alt-foto)) !important;
     background: #012169;
   }
   .carrusel-img {
