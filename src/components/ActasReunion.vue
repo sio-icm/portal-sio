@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { traducirError } from '../i18n'
 import { peticionIntranet } from '../utils/diario'
@@ -10,7 +10,8 @@ import GrabadoraReunion from './GrabadoraReunion.vue'
 // Actes de reunió: d'un projecte o del departament. Cada acta té els assistents, el text
 // (amb una plantilla: ordre del dia, desenvolupament, acords), les tasques que en surten i,
 // si es vol, la gravació de la reunió (l'àudio és temporal: s'esborra un temps després
-// d'aprovar l'acta). La transcripció automàtica encara no hi és: cal un ordinador potent.
+// d'aprovar l'acta). Les gravacions les transcriu l'ordinador de transcripció del SIO
+// (deploy/transcripcio/): en surt la transcripció, amb qui parla, i un esborrany de l'acta.
 const props = defineProps({ sesion: { type: Object, required: true } })
 const emit = defineEmits(['sesion-caducada'])
 const { t, locale } = useI18n()
@@ -42,7 +43,44 @@ const cargar = async () => {
   if (!r.ok) { error.value = t('intranet.comun.errorDesconocido'); return }
   datos.value = await r.json()
 }
-onMounted(cargar)
+// ---------- Ordinador de transcripció ----------
+const transcriptor = ref(null)
+const claveNueva = ref('')
+const cargarTranscriptor = async () => {
+  const r = await api('/api/transcripcion/estado')
+  if (r.ok) transcriptor.value = await r.json()
+}
+const minutosDesde = (iso) => iso ? Math.max(0, Math.round((Date.now() - new Date(iso.replace(' ', 'T') + 'Z')) / 60000)) : null
+const estadoOrdenador = computed(() => {
+  const tr = transcriptor.value
+  if (!tr) return null
+  if (!tr.configurado || !tr.visto) return { clase: 'apagado', texto: t('intranet.actas.trNunca') }
+  const m = minutosDesde(tr.visto)
+  if (m <= 25) return { clase: 'encendido', texto: t('intranet.actas.trConectado', { maquina: tr.maquina || '?', min: m }) }
+  return { clase: 'apagado', texto: t('intranet.actas.trApagado', { maquina: tr.maquina || '?', cuando: fechaHora(tr.visto) }) }
+})
+const generarClave = async () => {
+  if (transcriptor.value?.configurado && !confirm(t('intranet.actas.trConfirmarClave'))) return
+  const r = await api('/api/transcripcion/clave', { method: 'POST' })
+  if (!r.ok) { error.value = t('intranet.comun.errorDesconocido'); return }
+  claveNueva.value = (await r.json()).clave
+  cargarTranscriptor()
+}
+const copiarClave = () => { navigator.clipboard?.writeText(claveNueva.value).then(() => { mensaje.value = t('intranet.actas.trCopiada') }).catch(() => {}) }
+
+// Mentre hi ha gravacions per transcriure, es mira cada 30 s com van
+let temporizador = null
+onMounted(() => {
+  cargar()
+  cargarTranscriptor()
+  temporizador = setInterval(() => {
+    if (acta.value?.id && (acta.value.audios || []).some(a => ['pendent', 'processant'].includes(a.transcripcion_estado))) {
+      refrescarAudios()
+      cargarTranscriptor()
+    }
+  }, 30000)
+})
+onBeforeUnmount(() => clearInterval(temporizador))
 
 // ---------- Llista ----------
 // '' = totes, 'dep' = departament, o l'id d'un projecte
@@ -135,6 +173,72 @@ const refrescarAudios = async () => {
   acta.value.audios = d.audios
   acta.value.audio_se_borra = d.audio_se_borra
 }
+// ---------- Transcripció d'una gravació ----------
+const transcripciones = ref({}) // id de l'àudio → { segmentos, hablantes, borrador }
+const abiertas = ref({})
+const cargarTranscripcion = async (au) => {
+  const r = await api(`/api/actas/audios/${au.id}/transcripcion`)
+  if (!r.ok) return null
+  transcripciones.value[au.id] = await r.json()
+  return transcripciones.value[au.id]
+}
+const verTranscripcion = async (au) => {
+  if (abiertas.value[au.id]) { abiertas.value[au.id] = false; return }
+  if (!transcripciones.value[au.id]) await cargarTranscripcion(au)
+  abiertas.value[au.id] = true
+}
+const vocesDe = (tr) => [...new Set((tr?.segmentos || []).map(s => s.hablante).filter(Boolean))]
+const nombreVoz = (tr, h) => (tr.hablantes || {})[h] || h
+const guardarNombres = async (au) => {
+  const r = await api(`/api/actas/audios/${au.id}/transcripcion`, json('PUT', { hablantes: transcripciones.value[au.id].hablantes }))
+  if (r.ok) { transcripciones.value[au.id] = await r.json(); mensaje.value = t('intranet.actas.trNombresGuardados') }
+}
+const minuto = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+// Clicar un fragment el fa sonar
+const escuchar = (au, seg) => {
+  const el = document.getElementById(`audio-${au.id}`)
+  if (!el) return
+  el.currentTime = seg.inicio
+  el.play().catch(() => {})
+}
+// Blocs seguits de la mateixa veu (més fàcil de llegir)
+const bloques = (tr) => {
+  const res = []
+  for (const s of tr?.segmentos || []) {
+    const ultimo = res[res.length - 1]
+    if (ultimo && ultimo.hablante === s.hablante && s.inicio - ultimo.fin < 30) { ultimo.segs.push(s); ultimo.fin = s.fin }
+    else res.push({ hablante: s.hablante, inicio: s.inicio, fin: s.fin, segs: [s] })
+  }
+  return res
+}
+const descargarTexto = (au) => {
+  const tr = transcripciones.value[au.id]
+  const texto = bloques(tr).map(b => `[${minuto(b.inicio)}]${b.hablante ? ' ' + nombreVoz(tr, b.hablante) + ':' : ''} ${b.segs.map(s => s.texto).join(' ')}`).join('\n\n')
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([texto], { type: 'text/plain;charset=utf-8' }))
+  a.download = `${(acta.value.titulo || 'transcripcio').replace(/[^\w\d-]+/g, '_')}.txt`
+  a.click()
+}
+const retranscribir = async (au) => {
+  const r = await api(`/api/actas/audios/${au.id}/transcribir`, { method: 'POST' })
+  if (r.ok) refrescarAudios()
+}
+// Posar l'esborrany que ha fet l'ordinador al text de l'acta (i les tasques a la taula)
+const textoVacio = (html) => !(html || '').replace(/<h2>[^<]*<\/h2>/g, '').replace(/<[^>]+>/g, '').trim()
+const usarBorrador = async (au) => {
+  const tr = transcripciones.value[au.id] || await cargarTranscripcion(au)
+  if (!tr?.borrador) return
+  let b
+  try { b = JSON.parse(tr.borrador) } catch { b = { html: tr.borrador, tareas: [] } }
+  const html = limpiarHtml(b.html || '')
+  if (textoVacio(acta.value.contenido)) acta.value.contenido = html
+  else if (confirm(t('intranet.actas.trSustituir'))) acta.value.contenido = html
+  else acta.value.contenido += html
+  const ya = new Set(acta.value.tareas.map(x => x.texto.trim().toLowerCase()))
+  for (const x of b.tareas || []) if (!ya.has(x.texto.trim().toLowerCase())) acta.value.tareas.push({ ...x, hecha: false })
+  mensaje.value = t('intranet.actas.trBorradorPuesto')
+}
+
 const borrarAudio = async (au) => {
   if (!confirm(t('intranet.actas.confirmarBorrarAudio'))) return
   const r = await api(`/api/actas/audios/${au.id}`, { method: 'DELETE' })
@@ -176,6 +280,17 @@ const imprimir = () => {
     <details class="aviso-transcripcion" :open="avisoAbierto" @toggle="alPlegarAviso">
       <summary><strong>🤖 {{ $t('intranet.actas.avisoTitulo') }}</strong></summary>
       <p>{{ $t('intranet.actas.avisoTexto') }}</p>
+      <p v-if="estadoOrdenador" class="ordenador" :class="estadoOrdenador.clase">
+        🖥️ {{ estadoOrdenador.texto }}<template v-if="transcriptor?.pendientes"> · {{ $t('intranet.actas.trEnCola', { n: transcriptor.pendientes }) }}</template>
+      </p>
+      <div v-if="sesion.es_admin" class="admin-tr">
+        <button type="button" class="btn-mini" @click="generarClave">🔑 {{ $t(transcriptor?.configurado ? 'intranet.actas.trClaveNueva' : 'intranet.actas.trGenerarClave') }}</button>
+        <div v-if="claveNueva" class="clave">
+          <p>{{ $t('intranet.actas.trClaveSoloAhora') }}</p>
+          <input :value="claveNueva" readonly @focus="$event.target.select()">
+          <button type="button" class="btn-mini" @click="copiarClave">📋 {{ $t('intranet.actas.trCopiar') }}</button>
+        </div>
+      </div>
     </details>
 
     <p v-if="mensaje" class="ok" role="status">{{ mensaje }}</p>
@@ -264,10 +379,44 @@ const imprimir = () => {
                 <small>{{ fechaHora(au.creado) }} · {{ au.creado_por }}<template v-if="au.duracion"> · {{ duracion(au.duracion) }}</template> · {{ megas(au.bytes) }}
                   <template v-if="au.avisados"> · ✓ {{ $t('intranet.actas.avisadosOk') }}</template></small>
                 <small v-if="!au.completo" class="incompleto">⚠️ {{ $t('intranet.actas.incompleto') }}</small>
+                <small v-if="au.audio_borrado" class="gris">{{ $t('intranet.actas.trAudioBorrado') }}</small>
               </div>
-              <audio controls preload="none" :src="au.enlace"></audio>
-              <a class="btn-mini" :href="au.enlace" :download="au.nombre || 'audio'">⬇️</a>
+              <template v-if="!au.audio_borrado">
+                <audio :id="`audio-${au.id}`" controls preload="none" :src="au.enlace"></audio>
+                <a class="btn-mini" :href="au.enlace" :download="au.nombre || 'audio'">⬇️</a>
+              </template>
               <button v-if="au.puede_borrar" type="button" class="btn-mini peligro" :aria-label="$t('intranet.comun.borrar')" @click="borrarAudio(au)">🗑️</button>
+
+              <!-- Transcripció -->
+              <div v-if="au.transcripcion_estado" class="tr-estado" :class="au.transcripcion_estado">
+                <template v-if="au.transcripcion_estado === 'pendent'">⏳ {{ $t('intranet.actas.trPendiente') }}</template>
+                <template v-else-if="au.transcripcion_estado === 'processant'">⚙️ {{ $t('intranet.actas.trProcesando') }}<template v-if="au.transcripcion_progreso"> · {{ au.transcripcion_progreso }}</template></template>
+                <template v-else-if="au.transcripcion_estado === 'error'">⚠️ {{ $t('intranet.actas.trError') }} <small>{{ au.transcripcion_error }}</small>
+                  <button type="button" class="btn-mini" @click="retranscribir(au)">↻ {{ $t('intranet.actas.trReintentar') }}</button></template>
+                <template v-else>
+                  <button type="button" class="btn-mini" :aria-expanded="!!abiertas[au.id]" @click="verTranscripcion(au)">📝 {{ abiertas[au.id] ? $t('intranet.actas.trOcultar') : $t('intranet.actas.trVer') }}</button>
+                  <button v-if="au.tiene_borrador" type="button" class="btn-borrador" @click="usarBorrador(au)">✨ {{ $t('intranet.actas.trUsarBorrador') }}</button>
+                  <button v-if="!au.audio_borrado" type="button" class="btn-mini" :title="$t('intranet.actas.trReintentar')" @click="retranscribir(au)">↻</button>
+                </template>
+              </div>
+              <div v-if="abiertas[au.id] && transcripciones[au.id]" class="tr-panel">
+                <div v-if="vocesDe(transcripciones[au.id]).length" class="voces">
+                  <span class="nota">{{ $t('intranet.actas.trVoces') }}</span>
+                  <label v-for="h in vocesDe(transcripciones[au.id])" :key="h">{{ h }}
+                    <input v-model="transcripciones[au.id].hablantes[h]" list="actas-personas" :placeholder="$t('intranet.actas.trQuien')">
+                  </label>
+                  <button type="button" class="btn-mini" @click="guardarNombres(au)">{{ $t('intranet.comun.guardar') }}</button>
+                </div>
+                <div class="tr-texto">
+                  <p v-for="(b, i) in bloques(transcripciones[au.id])" :key="i">
+                    <button type="button" class="tiempo" :disabled="au.audio_borrado" @click="escuchar(au, b)">{{ minuto(b.inicio) }}</button>
+                    <strong v-if="b.hablante">{{ nombreVoz(transcripciones[au.id], b.hablante) }}:</strong>
+                    {{ b.segs.map(s => s.texto).join(' ') }}
+                  </p>
+                  <p v-if="!transcripciones[au.id].segmentos.length" class="vacio">{{ $t('intranet.actas.trVacia') }}</p>
+                </div>
+                <button type="button" class="btn-mini" @click="descargarTexto(au)">⬇️ {{ $t('intranet.actas.trDescargar') }}</button>
+              </div>
             </li>
           </ul>
           <p v-if="acta.audio_se_borra" class="nota">🕓 {{ $t('intranet.actas.audioSeBorra', { fecha: fecha(acta.audio_se_borra) }) }}</p>
@@ -319,6 +468,26 @@ const imprimir = () => {
 .aviso-transcripcion { background: #eef4fb; border-left: 4px solid #2a7ab0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.9rem; color: #234; }
 .aviso-transcripcion p { margin: 6px 0 0; }
 .aviso-transcripcion summary { cursor: pointer; }
+.ordenador { font-weight: bold; }
+.ordenador.encendido { color: #1e6b34; }
+.ordenador.apagado { color: #7a4300; }
+.admin-tr { margin-top: 8px; }
+.clave { background: white; border: 1px solid #f0c37a; border-radius: 6px; padding: 8px 10px; margin-top: 6px; }
+.clave p { margin: 0 0 6px; color: #7a4300; font-weight: bold; }
+.clave input { width: min(460px, 100%); font-family: monospace; padding: 6px; border: 1px solid #ccd5df; border-radius: 4px; margin-right: 6px; }
+.gris { color: #777; }
+.tr-estado { flex-basis: 100%; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.88rem; color: #444; border-top: 1px dashed #e1e7ee; padding-top: 6px; }
+.tr-estado.error { color: #b02a37; }
+.tr-estado.processant { color: #1d5f8c; }
+.btn-borrador { background: #6f42c1; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+.tr-panel { flex-basis: 100%; }
+.voces { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: #f0f4f8; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+.voces label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; color: #444; }
+.voces input { padding: 5px 7px; border: 1px solid #ccd5df; border-radius: 4px; font: inherit; font-size: 0.85rem; width: 170px; }
+.tr-texto { max-height: 420px; overflow-y: auto; border: 1px solid #e1e7ee; border-radius: 6px; padding: 6px 12px; background: white; margin-bottom: 8px; font-size: 0.92rem; line-height: 1.5; }
+.tr-texto p { margin: 6px 0; }
+.tiempo { background: #eef3f9; border: none; border-radius: 3px; color: #1d5f8c; font-family: monospace; font-size: 0.78rem; padding: 1px 5px; cursor: pointer; margin-right: 4px; }
+.tiempo:disabled { cursor: default; }
 
 .barra-lista { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .filtro { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: bold; color: #012169; }

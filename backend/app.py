@@ -1,7 +1,9 @@
+import hashlib
 import hmac
 import json as json_lib
 import os
 import re
+import secrets
 import smtplib
 import sqlite3
 import shutil
@@ -2991,6 +2993,8 @@ crear_tablas_actas()
 
 
 def borrar_archivo_audio(archivo):
+    if not archivo:
+        return
     try:
         os.remove(os.path.join(AUDIO_DIR, archivo))
     except FileNotFoundError:
@@ -3000,12 +3004,16 @@ def borrar_archivo_audio(archivo):
 def limpiar_audios_caducados(conexion):
     """Esborra l'àudio de les actes aprovades fa més de DIAS_AUDIO_TRAS_APROBAR dies."""
     filas = conexion.execute(
-        "SELECT au.id, au.archivo FROM actas_audios au JOIN actas a ON a.id = au.acta_id "
-        "WHERE a.estado = 'aprovada' AND a.aprobada_en IS NOT NULL AND a.aprobada_en <= datetime('now', ?)",
+        "SELECT au.id, au.archivo, au.transcripcion_estado FROM actas_audios au JOIN actas a ON a.id = au.acta_id "
+        "WHERE au.archivo != '' AND a.estado = 'aprovada' AND a.aprobada_en IS NOT NULL AND a.aprobada_en <= datetime('now', ?)",
         (f'-{DIAS_AUDIO_TRAS_APROBAR} days',)).fetchall()
     for f in filas:
         borrar_archivo_audio(f['archivo'])
-        conexion.execute('DELETE FROM actas_audios WHERE id = ?', (f['id'],))
+        if f['transcripcion_estado'] == 'feta':
+            # La transcripció es queda (és text); només s'esborra l'àudio
+            conexion.execute("UPDATE actas_audios SET archivo = '', bytes = 0 WHERE id = ?", (f['id'],))
+        else:
+            conexion.execute('DELETE FROM actas_audios WHERE id = ?', (f['id'],))
     if filas:
         conexion.commit()
 
@@ -3016,7 +3024,10 @@ def puede_borrar_acta(fila):
 
 def audio_json(fila):
     d = dict(fila)
-    d.pop('archivo', None)
+    d['audio_borrado'] = not d.pop('archivo', None)
+    # El text de la transcripció i l'esborrany van a part (poden ser llargs)
+    d['tiene_borrador'] = bool(d.pop('borrador', ''))
+    d.pop('transcripcion', None)
     d['enlace'] = f"/api/actas/audios/{d['id']}"
     d['puede_borrar'] = bool(session.get('es_admin')) or (d['creado_por_id'] is not None and d['creado_por_id'] == session.get('usuario_id'))
     return d
@@ -3033,7 +3044,7 @@ def acta_json(conexion, fila, completa=True):
     audios = conexion.execute('SELECT * FROM actas_audios WHERE acta_id = ? ORDER BY id', (fila['id'],)).fetchall()
     d['n_audios'] = len(audios)
     d['tareas_pendientes'] = sum(1 for t in d['tareas'] if not t.get('hecha'))
-    if d['estado'] == 'aprovada' and d['aprobada_en'] and audios:
+    if d['estado'] == 'aprovada' and d['aprobada_en'] and any(a['archivo'] for a in audios):
         d['audio_se_borra'] = conexion.execute('SELECT date(?, ?)', (d['aprobada_en'], f'+{DIAS_AUDIO_TRAS_APROBAR} days')).fetchone()[0]
     if completa:
         d['audios'] = [audio_json(a) for a in audios]
@@ -3265,7 +3276,7 @@ def audio_acta(aid):
     if request.method == 'GET':
         fila = conexion.execute('SELECT archivo, nombre, formato FROM actas_audios WHERE id = ?', (aid,)).fetchone()
         conexion.close()
-        if not fila:
+        if not fila or not fila['archivo']:
             return jsonify({"error": "No existe"}), 404
         respuesta = send_from_directory(AUDIO_DIR, fila['archivo'], mimetype=FORMATOS_AUDIO.get(fila['formato']),
                                         download_name=fila['nombre'] or fila['archivo'], max_age=0, conditional=True)
@@ -3294,11 +3305,233 @@ def audio_acta(aid):
         conexion.commit()
         conexion.close()
         return jsonify({"error": "La grabación está vacía"}), 400
-    conexion.execute('UPDATE actas_audios SET completo = 1, duracion = ? WHERE id = ?', (duracion or fila['duracion'], aid))
+    conexion.execute("UPDATE actas_audios SET completo = 1, duracion = ?, transcripcion_estado = 'pendent' WHERE id = ?",
+                     (duracion or fila['duracion'], aid))
     conexion.commit()
     fila = conexion.execute('SELECT * FROM actas_audios WHERE id = ?', (aid,)).fetchone()
     conexion.close()
     return jsonify(audio_json(fila))
+
+
+# ---------------------------------------------------------------------------
+# TRANSCRIPCIÓ DE LES GRAVACIONS (amb un ordinador del SIO, no amb serveis de fora)
+# Un ordinador amb prou potència (el portàtil del Raül Ferrando) té instal·lat el programa
+# deploy/transcripcio/: cada pocs minuts pregunta aquí si hi ha gravacions pendents, les
+# baixa, les transcriu (Whisper), separa qui parla i en fa un esborrany d'acta (model local),
+# i hi torna a pujar el resultat. S'identifica amb una clau que genera un administrador a la
+# intranet (aquí només se'n guarda el hash).
+# Estats d'un àudio: '' (no cal) → 'pendent' → 'processant' → 'feta' (o 'error').
+# ---------------------------------------------------------------------------
+MINUTOS_REINTENTO_TRANSCRIPCION = 15  # l'ordinador avisa cada 2 min; si calla (s'ha apagat), es torna a oferir
+
+
+def crear_tablas_transcripcion():
+    conexion = conectar_bd()
+    columnas = {c['name'] for c in conexion.execute('PRAGMA table_info(actas_audios)')}
+    for columna, tipo in (('transcripcion_estado', "TEXT NOT NULL DEFAULT ''"), ('transcripcion', "TEXT NOT NULL DEFAULT ''"),
+                          ('borrador', "TEXT NOT NULL DEFAULT ''"), ('transcripcion_error', "TEXT NOT NULL DEFAULT ''"),
+                          ('transcripcion_inicio', 'TEXT'), ('transcripcion_fin', 'TEXT'),
+                          ('transcripcion_progreso', "TEXT NOT NULL DEFAULT ''")):
+        if columna not in columnas:
+            conexion.execute(f'ALTER TABLE actas_audios ADD COLUMN {columna} {tipo}')
+    conexion.commit()
+    conexion.close()
+
+
+crear_tablas_transcripcion()
+
+
+def ajuste(conexion, clave, defecto=''):
+    fila = conexion.execute('SELECT valor FROM ajustes WHERE clave = ?', (clave,)).fetchone()
+    return fila['valor'] if fila else defecto
+
+
+def poner_ajuste(conexion, clave, valor):
+    conexion.execute('INSERT OR REPLACE INTO ajustes (clave, valor) VALUES (?, ?)', (clave, valor))
+
+
+def requiere_transcriptor(vista):
+    """L'ordinador de transcripció s'identifica amb la seva clau (capçalera Authorization: Bearer ...)."""
+    @wraps(vista)
+    def envoltorio(*args, **kwargs):
+        clave = request.headers.get('Authorization', '')
+        clave = clave[7:].strip() if clave.startswith('Bearer ') else ''
+        conexion = conectar_bd()
+        guardada = ajuste(conexion, 'transcripcion_clave_hash')
+        conexion.close()
+        if not clave or not guardada or not hmac.compare_digest(hashlib.sha256(clave.encode()).hexdigest(), guardada):
+            return jsonify({"error": "Clave no válida"}), 401
+        return vista(*args, **kwargs)
+    return envoltorio
+
+
+def estado_transcriptor(conexion):
+    return {'configurado': bool(ajuste(conexion, 'transcripcion_clave_hash')),
+            'visto': ajuste(conexion, 'transcripcion_visto') or None,
+            'maquina': ajuste(conexion, 'transcripcion_maquina'),
+            'clave_creada': ajuste(conexion, 'transcripcion_clave_creada') or None}
+
+
+@app.route('/api/transcripcion/clave', methods=['POST'])
+@requiere_admin
+def nueva_clave_transcripcion():
+    """Genera una clau nova per a l'ordinador de transcripció (es mostra només ara)."""
+    clave = 'sio-' + secrets.token_urlsafe(32)
+    conexion = conectar_bd()
+    poner_ajuste(conexion, 'transcripcion_clave_hash', hashlib.sha256(clave.encode()).hexdigest())
+    poner_ajuste(conexion, 'transcripcion_clave_creada', time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
+    conexion.commit()
+    conexion.close()
+    return jsonify({'clave': clave})
+
+
+@app.route('/api/transcripcion/estado', methods=['GET'])
+@requiere_login
+def ver_estado_transcriptor():
+    conexion = conectar_bd()
+    respuesta = estado_transcriptor(conexion)
+    respuesta['pendientes'] = conexion.execute(
+        "SELECT COUNT(*) FROM actas_audios WHERE transcripcion_estado IN ('pendent', 'processant')").fetchone()[0]
+    conexion.close()
+    return jsonify(respuesta)
+
+
+@app.route('/api/actas/audios/<int:aid>/transcribir', methods=['POST'])
+@requiere_login
+def pedir_transcripcion(aid):
+    """Tornar a demanar la transcripció d'un àudio (p. ex. si va fallar)."""
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT id, completo FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    conexion.execute("UPDATE actas_audios SET transcripcion_estado = 'pendent', transcripcion_error = '', "
+                     "transcripcion_progreso = '', transcripcion_inicio = NULL WHERE id = ?", (aid,))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"ok": True})
+
+
+@app.route('/api/actas/audios/<int:aid>/transcripcion', methods=['GET', 'PUT'])
+@requiere_login
+def transcripcion_audio(aid):
+    """La transcripció d'un àudio. PUT: posar nom a les veus (p. ex. «Veu 1» → «Nina Hoareau»)."""
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT transcripcion, borrador FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    try:
+        datos = json_lib.loads(fila['transcripcion'] or '{}')
+    except ValueError:
+        datos = {}
+    if request.method == 'PUT':
+        nombres = (request.get_json(silent=True) or {}).get('hablantes') or {}
+        if not isinstance(nombres, dict):
+            conexion.close()
+            return jsonify({"error": "Datos incorrectos"}), 400
+        datos['hablantes'] = {str(k)[:40]: str(v or '').strip()[:100] for k, v in list(nombres.items())[:30]}
+        conexion.execute('UPDATE actas_audios SET transcripcion = ? WHERE id = ?', (json_lib.dumps(datos, ensure_ascii=False), aid))
+        conexion.commit()
+    conexion.close()
+    return jsonify({'segmentos': datos.get('segmentos', []), 'hablantes': datos.get('hablantes', {}),
+                    'idioma': datos.get('idioma', ''), 'borrador': fila['borrador']})
+
+
+# ---------- Rutes de l'ordinador de transcripció ----------
+@app.route('/api/transcripcion/pendientes', methods=['GET'])
+@requiere_transcriptor
+def transcripciones_pendientes():
+    conexion = conectar_bd()
+    poner_ajuste(conexion, 'transcripcion_visto', time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
+    if request.headers.get('X-Maquina'):
+        poner_ajuste(conexion, 'transcripcion_maquina', str(request.headers['X-Maquina'])[:100])
+    conexion.commit()
+    filas = conexion.execute(
+        "SELECT au.id, au.formato, au.bytes, au.duracion, au.acta_id, a.titulo, a.fecha, a.asistentes, a.otros_asistentes, "
+        "a.proyecto_id FROM actas_audios au JOIN actas a ON a.id = au.acta_id "
+        "WHERE au.completo = 1 AND au.archivo != '' AND (au.transcripcion_estado = 'pendent' OR (au.transcripcion_estado = 'processant' "
+        "AND (au.transcripcion_inicio IS NULL OR au.transcripcion_inicio <= datetime('now', ?)))) ORDER BY au.id",
+        (f'-{MINUTOS_REINTENTO_TRANSCRIPCION} minutes',)).fetchall()
+    nombres = {u['id']: u['nombre'] for u in conexion.execute('SELECT id, nombre FROM usuarios')}
+    proyectos = {p['id']: p['titulo'] for p in conexion.execute('SELECT id, titulo FROM proyectos')}
+    pendientes = []
+    for f in filas:
+        try:
+            ids = json_lib.loads(f['asistentes'] or '[]')
+        except ValueError:
+            ids = []
+        pendientes.append({'id': f['id'], 'formato': f['formato'], 'bytes': f['bytes'], 'duracion': f['duracion'],
+                           'acta': {'id': f['acta_id'], 'titulo': f['titulo'], 'fecha': f['fecha'],
+                                    'proyecto': proyectos.get(f['proyecto_id'], ''),
+                                    'asistentes': [nombres[i] for i in ids if i in nombres],
+                                    'otros_asistentes': f['otros_asistentes']}})
+    conexion.close()
+    return jsonify(pendientes)
+
+
+@app.route('/api/transcripcion/<int:aid>/audio', methods=['GET'])
+@requiere_transcriptor
+def audio_para_transcribir(aid):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT archivo, formato FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+    conexion.close()
+    if not fila or not fila['archivo']:
+        return jsonify({"error": "No existe"}), 404
+    return send_from_directory(AUDIO_DIR, fila['archivo'], mimetype=FORMATOS_AUDIO.get(fila['formato']), max_age=0, conditional=True)
+
+
+@app.route('/api/transcripcion/<int:aid>/estado', methods=['POST'])
+@requiere_transcriptor
+def avance_transcripcion(aid):
+    """L'ordinador avisa que comença (o per on va: «transcrivint 40 %»...)."""
+    datos = request.get_json(silent=True) or {}
+    progreso = str(datos.get('progreso', '') or '')[:100]
+    conexion = conectar_bd()
+    if datos.get('empezar'):
+        conexion.execute("UPDATE actas_audios SET transcripcion_estado = 'processant', transcripcion_inicio = datetime('now'), "
+                         "transcripcion_error = '', transcripcion_progreso = ? WHERE id = ?", (progreso, aid))
+    else:
+        conexion.execute("UPDATE actas_audios SET transcripcion_progreso = ?, transcripcion_inicio = datetime('now') "
+                         "WHERE id = ? AND transcripcion_estado = 'processant'", (progreso, aid))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"ok": True})
+
+
+@app.route('/api/transcripcion/<int:aid>/resultado', methods=['POST'])
+@requiere_transcriptor
+def resultado_transcripcion(aid):
+    datos = request.get_json(silent=True) or {}
+    conexion = conectar_bd()
+    if not conexion.execute('SELECT 1 FROM actas_audios WHERE id = ?', (aid,)).fetchone():
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if datos.get('error'):
+        conexion.execute("UPDATE actas_audios SET transcripcion_estado = 'error', transcripcion_error = ?, "
+                         "transcripcion_fin = datetime('now') WHERE id = ?", (str(datos['error'])[:1000], aid))
+    else:
+        segmentos = []
+        for s in (datos.get('segmentos') or [])[:20000]:
+            try:
+                segmentos.append({'inicio': round(float(s.get('inicio', 0)), 2), 'fin': round(float(s.get('fin', 0)), 2),
+                                  'hablante': str(s.get('hablante', '') or '')[:40], 'texto': str(s.get('texto', '') or '')[:5000]})
+            except (TypeError, ValueError, AttributeError):
+                continue
+        hablantes = datos.get('hablantes') if isinstance(datos.get('hablantes'), dict) else {}
+        hablantes = {str(k)[:40]: str(v or '').strip()[:100] for k, v in list(hablantes.items())[:30]}
+        transcripcion = json_lib.dumps({'segmentos': segmentos, 'hablantes': hablantes, 'idioma': str(datos.get('idioma', ''))[:10]},
+                                       ensure_ascii=False)
+        borrador = str(datos.get('borrador', '') or '')
+        if len(transcripcion.encode()) + len(borrador.encode()) > 20 * 1024 * 1024:
+            conexion.close()
+            return jsonify({"error": "Demasiado grande"}), 413
+        conexion.execute("UPDATE actas_audios SET transcripcion_estado = 'feta', transcripcion = ?, borrador = ?, "
+                         "transcripcion_error = '', transcripcion_progreso = '', transcripcion_fin = datetime('now') WHERE id = ?",
+                         (transcripcion, borrador, aid))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"ok": True})
 
 
 if __name__ == '__main__':

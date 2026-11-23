@@ -192,7 +192,11 @@ const finalizarArrastre = (evento) => {
   margin-top: -140px !important; 
   top: 0;
   left: 0;
-  height: 750px; 
+  /* Com a màxim 750px; en pantalles baixes (portàtils) s'escurça perquè les fitxes de
+     l'inici, que van a sota a la part blanca, es vegin sense baixar */
+  height: 750px;
+  height: clamp(600px, calc(100vh - 80px), 750px);
+  height: clamp(600px, calc(100svh - 80px), 750px);
   z-index: 1 !important; 
   cursor: grab; 
   /* Fuerza al contenedor a comportarse como un bloque 3D rígido */
@@ -323,29 +327,29 @@ const finalizarArrastre = (evento) => {
    de l'inici, apaïsada, i es veu quasi sencera. */
 @media (max-width: 768px) {
   .carrusel-wrapper {
-    /* 240px (marge negatiu + capçalera) + la foto (apaïsada, 66vw) + 30px que queden sota les
-       fitxes de l'inici. L'espai que sobra fins al peu l'omplen les fitxes (QuienesSomos.vue). */
-    height: calc(270px + 66vw) !important;
+    /* 240px (marge negatiu + capçalera) + la foto (apaïsada, 66vw). Les fitxes de l'inici
+       van a sota, a la part blanca (QuienesSomos.vue). */
+    height: calc(240px + 66vw) !important;
     background: #012169;
   }
   .carrusel-img {
     position: absolute;
     top: 240px;
     left: 0;
-    height: calc(100% - 270px);
+    height: calc(100% - 240px);
   }
   .carrusel-overlay {
     top: 240px;
-    height: calc(100% - 270px);
+    height: calc(100% - 240px);
     background: linear-gradient(rgba(1, 33, 105, 0.1) 40%, rgba(1, 33, 105, 0.85));
   }
   .contenedor-puntos {
-    bottom: 44px;
+    bottom: 14px;
   }
   .texto-slide {
     font-size: 0.9rem;
     line-height: 1.35;
-    bottom: 60px;
+    bottom: 30px;
     width: 92%;
   }
 }

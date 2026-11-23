@@ -43,20 +43,19 @@ import logoBlueLab from '../assets/logobluelab.png'
 
 <style scoped>
 .seccion-fichas-sio {
-  margin-top: -50px;
+  /* A la part blanca, sota el carrusel (sense tapar-lo). La secció omple fins al peu de la
+     pàgina i les fitxes, de mida petita, queden centrades en aquest espai. */
   position: relative;
   z-index: 50;
   width: 100%;
-  padding-bottom: 40px;
-  /* Creix fins al peu de la pàgina, i les fitxes amb ella */
+  padding: 30px 0;
+  box-sizing: border-box;
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 .seccion-fichas-sio > .contenedor-ancho {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
   width: 100%;
   box-sizing: border-box;
 }
@@ -66,19 +65,13 @@ import logoBlueLab from '../assets/logobluelab.png'
   gap: 20px;
   justify-content: center;
   flex-wrap: wrap;
-  flex: 1 0 auto;
-  align-content: stretch;
-  align-items: stretch;
 }
 
 .ficha-sio {
   display: block;
   text-decoration: none;
-  /* Les quatre omplen l'amplada (fins a 285px cadascuna) i l'alçada que queda fins al peu */
-  flex: 1 1 250px;
-  max-width: 285px;
-  min-height: 120px;
-  max-height: 340px;
+  width: 250px;
+  height: 120px;
   box-sizing: border-box;
   border-radius: 8px;
   position: relative;
@@ -117,12 +110,9 @@ import logoBlueLab from '../assets/logobluelab.png'
   background-color: #02097c;
 }
 .ficha-bluelab img {
-  /* El logo no marca l'alçada de la fitxa: l'omple i es veu sencer al mig */
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  max-width: 100%;
+  max-height: 110%;
+  object-fit: cover;
   transform: scale(1.01);   /* casi el tamaño original, sin pasar al logo del SIO */
   transition: transform 0.3s ease;
 }
@@ -189,10 +179,8 @@ import logoBlueLab from '../assets/logobluelab.png'
     gap: 16px 4%;
   }
   .ficha-sio {
-    flex: 0 0 45%;
-    max-width: none;
-    min-height: 100px;
-    max-height: 200px;
+    width: 45%;
+    height: 100px;
   }
 
   .contenido h3 {
@@ -208,7 +196,7 @@ import logoBlueLab from '../assets/logobluelab.png'
   .contenido h3.a-la-derecha { left: 6px; }
 
   .seccion-fichas-sio {
-    margin-top: -30px;
+    padding: 20px 0;
   }
 }
 </style>
