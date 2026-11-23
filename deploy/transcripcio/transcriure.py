@@ -185,10 +185,35 @@ def esborrany_acta(segments, noms, acta):
 
 
 # ---------- Transcripció ----------
+def carregar_audio(fitxer):
+    """L'àudio com a mostres a 16 kHz, mono. Amb ffmpeg si hi és (el més robust); si no, amb
+    el lector de faster-whisper (PyAV), esquivant l'opció que les versions noves de PyAV ja no accepten."""
+    import shutil
+    import subprocess
+    import numpy as np
+    if shutil.which('ffmpeg'):
+        r = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', fitxer, '-ac', '1', '-ar', '16000', '-f', 'f32le', '-'],
+                           capture_output=True)
+        if r.returncode == 0 and r.stdout:
+            return np.frombuffer(r.stdout, dtype=np.float32).copy()
+        log('  ffmpeg no ha pogut llegir l\'àudio:', r.stderr.decode(errors='replace')[-300:])
+    import av
+    if not getattr(av.open, '_sio', False):
+        original = av.open
+
+        def obrir(*a, **k):
+            k.pop('metadata_errors', None)
+            return original(*a, **k)
+        obrir._sio = True
+        av.open = obrir
+    from faster_whisper import decode_audio
+    return decode_audio(fitxer, sampling_rate=16000)
+
+
 def transcriure(p, fitxer):
-    from faster_whisper import WhisperModel, decode_audio
+    from faster_whisper import WhisperModel
     aid = p['id']
-    audio = decode_audio(fitxer, sampling_rate=16000)
+    audio = carregar_audio(fitxer)
     durada = len(audio) / 16000 or 1
     avisar(aid, 'transcrivint 0 %')
     model = WhisperModel(CONF['MODEL_WHISPER'], device='cpu', compute_type='int8', cpu_threads=int(CONF['FILS']))

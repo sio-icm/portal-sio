@@ -25,6 +25,10 @@ if ! python3 -c 'import venv, ensurepip' 2>/dev/null; then
     echo "-> Cal python3-venv (demana la contrasenya de sudo)"
     sudo apt-get update -qq && sudo apt-get install -y python3-venv python3-pip
 fi
+if ! command -v ffmpeg >/dev/null; then
+    echo "-> Cal ffmpeg per llegir els àudios (demana la contrasenya de sudo)"
+    sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+fi
 if ! command -v ollama >/dev/null; then
     echo "-> Instal·lant Ollama (model d'IA local; demana la contrasenya de sudo)"
     curl -fsSL https://ollama.com/install.sh | sh
@@ -103,6 +107,8 @@ cat > "$UNITATS/sio-transcripcio.timer" <<EOF
 Description=Mira cada 10 minuts si hi ha reunions per transcriure
 
 [Timer]
+# OnActiveSec: la primera volta, un minut després d'activar-lo (si no, no arrenca fins a reiniciar)
+OnActiveSec=1min
 OnBootSec=3min
 OnUnitInactiveSec=10min
 Persistent=true
