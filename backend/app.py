@@ -1104,8 +1104,11 @@ def cambiar_mi_contrasena():
 # Tipus d'entrada del calendari. FUERA_DEL_CENTRO = la persona no és al centre
 # (compta per a l'avís de falta de personal). AUSENCIAS_PATRON = el patró no pot
 # sortir amb la Pelagia (una «campanya» pot ser la mateixa sortida, no avisa).
-TIPOS_CALENDARIO = ['teletreball', 'campanya', 'vacances', 'baixa', 'formacio', 'reunio', 'altres']
+TIPOS_CALENDARIO = ['teletreball', 'campanya', 'vacances', 'baixa', 'absencia', 'formacio', 'reunio', 'altres']
 FUERA_DEL_CENTRO = {'teletreball', 'campanya', 'vacances', 'baixa', 'formacio'}
+# Per a l'avís de falta de personal també compta l'absència d'unes hores (metge, gestions...);
+# per als altres avisos (reserves, compromisos que coincideixen) no.
+FUERA_PARA_PERSONAL = FUERA_DEL_CENTRO | {'absencia'}
 AUSENCIAS_PATRON = {'teletreball', 'vacances', 'baixa', 'formacio'}
 RECURSOS = ['pelagia', 'tanc', 'instrument']
 AJUSTES_INICIALES = {'minim_presents': '3', 'patro_pelagia': 'brian'}
@@ -1293,7 +1296,7 @@ def calcular_avisos(conexion, desde, hasta):
         for dia in dias_entre(desde, hasta):
             if not laborable(dia):
                 continue
-            presentes = [u for u in plantilla if not fuera(u, dia, FUERA_DEL_CENTRO)]
+            presentes = [u for u in plantilla if not fuera(u, dia, FUERA_PARA_PERSONAL)]
             if len(presentes) < ajustes['minim_presents']:
                 avisos.append({'id': f'personal:{dia}', 'tipo': 'personal', 'fecha': dia,
                                'datos': {'presentes': len(presentes), 'total': len(plantilla)},
@@ -1371,7 +1374,7 @@ def calcular_avisos(conexion, desde, hasta):
 
 
 ETIQUETAS_CALENDARIO = {'teletreball': 'teletreball', 'campanya': 'campanya', 'vacances': 'vacances',
-                        'baixa': 'baixa', 'formacio': 'formació', 'reunio': 'reunió', 'altres': 'altres'}
+                        'baixa': 'baixa', 'absencia': 'absència', 'formacio': 'formació', 'reunio': 'reunió', 'altres': 'altres'}
 NOMBRE_RECURSO = {'pelagia': 'Pelagia', 'tanc': 'Tanc de proves', 'instrument': 'Instrument'}
 
 

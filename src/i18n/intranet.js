@@ -42,6 +42,7 @@ export default {
       campanya: { ca: 'Campanya / fora', es: 'Campaña / fuera', en: 'Campaign / away' },
       vacances: { ca: 'Vacances', es: 'Vacaciones', en: 'Holidays' },
       baixa: { ca: 'Baixa / permís', es: 'Baja / permiso', en: 'Leave' },
+      absencia: { ca: 'Absència (metge, gestions...)', es: 'Ausencia (médico, gestiones...)', en: 'Absence (doctor, errands...)' },
       formacio: { ca: 'Formació / congrés', es: 'Formación / congreso', en: 'Training / conference' },
       reunio: { ca: 'Reunió', es: 'Reunión', en: 'Meeting' },
       altres: { ca: 'Altres', es: 'Otros', en: 'Other' }
@@ -799,7 +800,7 @@ export default {
     rehacer: { ca: 'Refer', es: 'Rehacer', en: 'Redo' }
   },
   calendario: {
-    cerrarAviso: { ca: 'Tancar aquest avís', es: 'Cerrar este aviso', en: 'Dismiss this warning' },
+    cerrarAviso: { ca: "Tancar aquest avís per avui (demà tornarà a sortir)", es: 'Cerrar este aviso por hoy (mañana volverá a salir)', en: 'Dismiss this warning for today (it will show again tomorrow)' },
     titulo: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },
     ayuda: {
       ca: 'Clica un dia per veure qui hi ha, apuntar-te (teletreball, campanya, vacances...) o reservar la Pelagia, el tanc o els instruments. Avisa si falta gent o hi ha reserves que xoquen.',

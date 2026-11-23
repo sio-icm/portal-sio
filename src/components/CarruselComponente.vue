@@ -318,17 +318,34 @@ const finalizarArrastre = (evento) => {
   background-color: rgba(255, 255, 255, 0.8);
 }
 
+/* Mòbil: la pantalla és vertical i les fotos horitzontals. En lloc d'omplir 650px d'alçada
+   (que retallava gairebé dos terços de la foto), la foto va entre la capçalera i les fitxes
+   de l'inici, apaïsada, i es veu quasi sencera. */
 @media (max-width: 768px) {
-.carrusel-wrapper {
-    height: 650px !important; 
+  .carrusel-wrapper {
+    /* 240px (marge negatiu + capçalera) + la foto + 30px que queden sota les fitxes de l'inici */
+    height: calc(270px + 62vw) !important;
+    background: #012169;
+  }
+  .carrusel-img {
+    position: absolute;
+    top: 240px;
+    left: 0;
+    height: calc(100% - 270px);
+  }
+  .carrusel-overlay {
+    top: 240px;
+    height: calc(100% - 270px);
+    background: linear-gradient(rgba(1, 33, 105, 0.1) 40%, rgba(1, 33, 105, 0.85));
   }
   .contenedor-puntos {
-    bottom: 70px; 
+    bottom: 44px;
   }
-.texto-slide {
-    font-size: 0.95rem; 
-    bottom: 110px; 
-    width: 95%; 
+  .texto-slide {
+    font-size: 0.9rem;
+    line-height: 1.35;
+    bottom: 60px;
+    width: 92%;
   }
 }
 </style>

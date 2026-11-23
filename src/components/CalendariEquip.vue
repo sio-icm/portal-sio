@@ -78,14 +78,23 @@ const resumenes = computed(() => Object.fromEntries(celdas.value.map(c => [c.iso
 const detalle = computed(() => resumenDia(datos.value, diaSeleccionado.value))
 // Avisos: els passats ja no surten, i cadascú pot tancar els que ja ha vist (es recorda en
 // aquest navegador). Al detall del dia sí que hi surten tots.
-const leerCerrados = () => { try { return JSON.parse(localStorage.getItem('sio_avisos_cerrados') || '[]') } catch { return [] } }
-const avisosCerrados = ref(new Set(leerCerrados()))
+// Es guarda {clau: dia en què es va tancar}; l'endemà torna a sortir.
+const leerCerrados = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem('sio_avisos_cerrados_dia') || '{}')
+    return new Set(Object.keys(v).filter(k => v[k] === hoy))
+  } catch { return new Set() }
+}
+const avisosCerrados = ref(leerCerrados())
 // «responsable:21:2026-11-12» → «responsable:21»: la data del final depèn del mes que es mira
 const claveAviso = (a) => a.id.split(':').length > 2 ? a.id.replace(/:\d{4}-\d{2}-\d{2}$/, '') : a.id
 const avisoVisible = (a) => (a.fin || a.fecha) >= hoy && !avisosCerrados.value.has(claveAviso(a))
 const cerrarAviso = (a) => {
   avisosCerrados.value = new Set([...avisosCerrados.value, claveAviso(a)])
-  try { localStorage.setItem('sio_avisos_cerrados', JSON.stringify([...avisosCerrados.value].slice(-300))) } catch { /* sense emmagatzematge */ }
+  try {
+    localStorage.setItem('sio_avisos_cerrados_dia', JSON.stringify(Object.fromEntries([...avisosCerrados.value].map(k => [k, hoy]))))
+    localStorage.removeItem('sio_avisos_cerrados')
+  } catch { /* sense emmagatzematge */ }
 }
 const avisosMes = computed(() => {
   const inicio = esMesActual.value ? celdas.value[0].iso : aIso(mesVisible.value)
@@ -155,7 +164,7 @@ const desdeVentana = (accion, ...args) => {
 const chips = (r) => [
   ...r.entradas.map(e => ({
     clave: `e${e.id}`, color: tipoCalendario(e.tipo).color,
-    texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : t('intranet.comun.equipoCorto')}`,
+    texto: `${tipoCalendario(e.tipo).icono} ${e.persona ? nombreCorto(e.persona, datos.value.equipo) : t('intranet.comun.equipoCorto')}${e.tipo === 'absencia' && horario(e) ? ' ' + horario(e) : ''}`,
     titulo: `${tipoCalendario(e.tipo).etiqueta}: ${e.persona || t('intranet.comun.todoEquipoMin')}${horario(e) ? ' · 🕘 ' + horario(e) : ''}${e.nota ? ' · ' + e.nota : ''}${e.proyecto ? ' · ' + e.proyecto : ''}`
   })),
   ...r.reservas.map(x => ({

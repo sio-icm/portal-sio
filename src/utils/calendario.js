@@ -11,6 +11,7 @@ export const TIPOS_CALENDARIO = [
   { valor: 'campanya', get etiqueta() { return t('intranet.tipos.calendario.campanya') }, icono: '🚢', color: '#0086c0', fuera: true },
   { valor: 'vacances', get etiqueta() { return t('intranet.tipos.calendario.vacances') }, icono: '🌴', color: '#20a39e', fuera: true },
   { valor: 'baixa', get etiqueta() { return t('intranet.tipos.calendario.baixa') }, icono: '🩺', color: '#b02a37', fuera: true },
+  { valor: 'absencia', get etiqueta() { return t('intranet.tipos.calendario.absencia') }, icono: '⏳', color: '#c2255c', fuera: true },
   { valor: 'formacio', get etiqueta() { return t('intranet.tipos.calendario.formacio') }, icono: '🎓', color: '#198754', fuera: true },
   { valor: 'reunio', get etiqueta() { return t('intranet.tipos.calendario.reunio') }, icono: '💬', color: '#fd7e14', fuera: false },
   { valor: 'altres', get etiqueta() { return t('intranet.tipos.calendario.altres') }, icono: '📌', color: '#495057', fuera: false }
