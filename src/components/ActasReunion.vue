@@ -388,6 +388,9 @@ const imprimir = () => {
               <button v-if="au.puede_borrar" type="button" class="btn-mini peligro" :aria-label="$t('intranet.comun.borrar')" @click="borrarAudio(au)">🗑️</button>
 
               <!-- Transcripció -->
+              <div v-if="!au.transcripcion_estado && au.completo && !au.audio_borrado" class="tr-estado">
+                <button type="button" class="btn-mini" @click="retranscribir(au)">📝 {{ $t('intranet.actas.trTranscribir') }}</button>
+              </div>
               <div v-if="au.transcripcion_estado" class="tr-estado" :class="au.transcripcion_estado">
                 <template v-if="au.transcripcion_estado === 'pendent'">⏳ {{ $t('intranet.actas.trPendiente') }}</template>
                 <template v-else-if="au.transcripcion_estado === 'processant'">⚙️ {{ $t('intranet.actas.trProcesando') }}<template v-if="au.transcripcion_progreso"> · {{ au.transcripcion_progreso }}</template></template>

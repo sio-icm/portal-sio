@@ -37,7 +37,7 @@ cp "$ORIGEN/transcriure.py" "$DIR/transcriure.py"
 PIP="$DIR/venv/bin/pip"
 "$PIP" install -q --upgrade pip
 echo "-> Instal·lant Whisper"
-"$PIP" install -q "faster-whisper==1.1.1"
+"$PIP" install -q "faster-whisper==1.1.1" requests  # requests: faster-whisper l'importa però no sempre s'instal·la sol
 
 # 3. Configuració
 touch "$CONF"; chmod 600 "$CONF"

@@ -718,6 +718,7 @@ export default {
     trPendiente: { ca: "Pendent de transcriure (quan l'ordinador de transcripció estigui encès)", es: 'Pendiente de transcribir (cuando el ordenador de transcripción esté encendido)', en: 'Waiting to be transcribed (when the transcription computer is on)' },
     trProcesando: { ca: 'Transcrivint', es: 'Transcribiendo', en: 'Transcribing' },
     trError: { ca: "No s'ha pogut transcriure.", es: 'No se ha podido transcribir.', en: 'Could not be transcribed.' },
+    trTranscribir: { ca: 'Transcriure', es: 'Transcribir', en: 'Transcribe' },
     trReintentar: { ca: 'Tornar a transcriure', es: 'Volver a transcribir', en: 'Transcribe again' },
     trVer: { ca: 'Veure la transcripció', es: 'Ver la transcripción', en: 'Show transcript' },
     trOcultar: { ca: 'Amagar la transcripció', es: 'Ocultar la transcripción', en: 'Hide transcript' },
