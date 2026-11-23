@@ -4,6 +4,7 @@ import os
 import re
 import smtplib
 import sqlite3
+import shutil
 import time
 import uuid
 from collections import defaultdict, deque
@@ -2912,6 +2913,392 @@ def version_pagina(id, vid):
     if not v:
         return jsonify({"error": "No existe"}), 404
     return jsonify(dict(v))
+
+
+# ---------------------------------------------------------------------------
+# ACTES DE REUNIÓ
+# Actes de les reunions (d'un projecte o del departament). Cada acta té un text (amb una
+# plantilla: ordre del dia, desenvolupament, acords), els assistents, les tasques que en
+# surten i, si es vol, la gravació de la reunió. L'àudio es puja a trossos mentre es grava
+# (si es talla la connexió no es perd el que ja s'ha pujat) i és temporal: s'esborra
+# DIAS_AUDIO_TRAS_APROBAR dies després d'aprovar l'acta. No s'envia res a serveis de fora
+# (la transcripció automàtica queda pendent d'un ordinador amb prou potència).
+# Els àudios no entren a les còpies de seguretat (copia-seguridad.sh només copia la base de
+# dades, les fotos, l'equip i els documents).
+# ---------------------------------------------------------------------------
+AUDIO_DIR = os.path.join(os.path.dirname(DB_PATH), 'actas_audio')
+MAX_AUDIO_BYTES = 400 * 1024 * 1024      # unes 8 hores gravant des de la web; una gravació llarga del mòbil
+MAX_TROZO_BYTES = 4 * 1024 * 1024
+MIN_DISCO_LIBRE = 800 * 1024 * 1024      # no s'omple el disc del servidor
+DIAS_AUDIO_TRAS_APROBAR = 30
+MAX_ACTA_BYTES = 4 * 1024 * 1024
+ESTADOS_ACTA = ('esborrany', 'aprovada')
+# Format de l'àudio: extensió del fitxer i tipus amb què es torna a servir
+FORMATOS_AUDIO = {'webm': 'audio/webm', 'ogg': 'audio/ogg', 'oga': 'audio/ogg', 'opus': 'audio/ogg',
+                  'm4a': 'audio/mp4', 'mp4': 'audio/mp4', 'aac': 'audio/aac', 'mp3': 'audio/mpeg',
+                  'wav': 'audio/wav', '3gp': 'audio/3gpp', 'amr': 'audio/amr'}
+MIME_A_EXTENSION = {'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a',
+                    'audio/aac': 'aac', 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav',
+                    'audio/x-wav': 'wav', 'audio/wave': 'wav', 'audio/3gpp': '3gp', 'audio/amr': 'amr',
+                    'video/webm': 'webm', 'video/mp4': 'm4a'}
+
+
+def crear_tablas_actas():
+    conexion = conectar_bd()
+    conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS actas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            fecha TEXT NOT NULL,
+            hora TEXT NOT NULL DEFAULT '',
+            lugar TEXT NOT NULL DEFAULT '',
+            proyecto_id INTEGER REFERENCES proyectos(id) ON DELETE SET NULL,
+            asistentes TEXT NOT NULL DEFAULT '[]',      -- ids d'usuaris de l'equip (JSON)
+            otros_asistentes TEXT NOT NULL DEFAULT '',  -- la resta, escrits
+            contenido TEXT NOT NULL DEFAULT '',
+            tareas TEXT NOT NULL DEFAULT '[]',          -- [{texto, responsable, fecha, hecha}] (JSON)
+            estado TEXT NOT NULL DEFAULT 'esborrany',
+            aprobada_en TEXT,
+            creado TEXT NOT NULL DEFAULT (datetime('now')),
+            creado_por TEXT NOT NULL DEFAULT '',
+            creado_por_id INTEGER,
+            actualizado TEXT NOT NULL DEFAULT (datetime('now')),
+            actualizado_por TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS actas_audios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            acta_id INTEGER NOT NULL REFERENCES actas(id) ON DELETE CASCADE,
+            archivo TEXT NOT NULL,
+            nombre TEXT NOT NULL DEFAULT '',
+            formato TEXT NOT NULL DEFAULT '',
+            bytes INTEGER NOT NULL DEFAULT 0,
+            trozos INTEGER NOT NULL DEFAULT 0,
+            duracion INTEGER NOT NULL DEFAULT 0,       -- segons (el que diu el navegador)
+            completo INTEGER NOT NULL DEFAULT 0,
+            avisados INTEGER NOT NULL DEFAULT 0,       -- qui grava confirma que els assistents ho saben
+            creado TEXT NOT NULL DEFAULT (datetime('now')),
+            creado_por TEXT NOT NULL DEFAULT '',
+            creado_por_id INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS actas_audios_acta ON actas_audios(acta_id);
+    """)
+    conexion.commit()
+    conexion.close()
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+
+
+crear_tablas_actas()
+
+
+def borrar_archivo_audio(archivo):
+    try:
+        os.remove(os.path.join(AUDIO_DIR, archivo))
+    except FileNotFoundError:
+        pass
+
+
+def limpiar_audios_caducados(conexion):
+    """Esborra l'àudio de les actes aprovades fa més de DIAS_AUDIO_TRAS_APROBAR dies."""
+    filas = conexion.execute(
+        "SELECT au.id, au.archivo FROM actas_audios au JOIN actas a ON a.id = au.acta_id "
+        "WHERE a.estado = 'aprovada' AND a.aprobada_en IS NOT NULL AND a.aprobada_en <= datetime('now', ?)",
+        (f'-{DIAS_AUDIO_TRAS_APROBAR} days',)).fetchall()
+    for f in filas:
+        borrar_archivo_audio(f['archivo'])
+        conexion.execute('DELETE FROM actas_audios WHERE id = ?', (f['id'],))
+    if filas:
+        conexion.commit()
+
+
+def puede_borrar_acta(fila):
+    return bool(session.get('es_admin')) or (fila['creado_por_id'] is not None and fila['creado_por_id'] == session.get('usuario_id'))
+
+
+def audio_json(fila):
+    d = dict(fila)
+    d.pop('archivo', None)
+    d['enlace'] = f"/api/actas/audios/{d['id']}"
+    d['puede_borrar'] = bool(session.get('es_admin')) or (d['creado_por_id'] is not None and d['creado_por_id'] == session.get('usuario_id'))
+    return d
+
+
+def acta_json(conexion, fila, completa=True):
+    d = dict(fila)
+    for c in ('asistentes', 'tareas'):
+        try:
+            d[c] = json_lib.loads(d[c] or '[]')
+        except ValueError:
+            d[c] = []
+    d['puede_borrar'] = puede_borrar_acta(fila)
+    audios = conexion.execute('SELECT * FROM actas_audios WHERE acta_id = ? ORDER BY id', (fila['id'],)).fetchall()
+    d['n_audios'] = len(audios)
+    d['tareas_pendientes'] = sum(1 for t in d['tareas'] if not t.get('hecha'))
+    if d['estado'] == 'aprovada' and d['aprobada_en'] and audios:
+        d['audio_se_borra'] = conexion.execute('SELECT date(?, ?)', (d['aprobada_en'], f'+{DIAS_AUDIO_TRAS_APROBAR} days')).fetchone()[0]
+    if completa:
+        d['audios'] = [audio_json(a) for a in audios]
+    else:
+        d.pop('contenido', None)
+    return d
+
+
+def validar_acta(conexion, datos):
+    titulo = str(datos.get('titulo', '') or '').strip()
+    if not titulo:
+        return None, "Pon un título al acta"
+    fecha = fecha_valida(str(datos.get('fecha', '') or ''))
+    if not fecha:
+        return None, "Fecha no válida"
+    hora = hora_valida(datos.get('hora'))
+    if hora is None:
+        return None, "Hora no válida (HH:MM)"
+    lugar = str(datos.get('lugar', '') or '').strip()
+    otros = str(datos.get('otros_asistentes', '') or '').strip()
+    contenido = str(datos.get('contenido', '') or '')
+    if len(titulo) > 200 or len(lugar) > 200 or len(otros) > 2000:
+        return None, "Algún campo es demasiado largo"
+    if len(contenido.encode('utf-8')) > MAX_ACTA_BYTES:
+        return None, "El acta es demasiado grande (máximo 4 MB, imágenes incluidas)"
+    if contrasena_escrita(titulo + '\n' + contenido):
+        return None, "Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda"
+    proyecto_id = datos.get('proyecto_id')
+    if proyecto_id in ('', None):
+        proyecto_id = None
+    else:
+        try:
+            proyecto_id = int(proyecto_id)
+        except (TypeError, ValueError):
+            return None, "Proyecto no válido"
+        if not conexion.execute('SELECT 1 FROM proyectos WHERE id = ?', (proyecto_id,)).fetchone():
+            return None, "Proyecto no válido"
+    validos = {u['id'] for u in conexion.execute('SELECT id FROM usuarios')}
+    asistentes = []
+    for a in datos.get('asistentes') or []:
+        try:
+            a = int(a)
+        except (TypeError, ValueError):
+            continue
+        if a in validos and a not in asistentes:
+            asistentes.append(a)
+    tareas = []
+    for t in (datos.get('tareas') or [])[:200]:
+        if not isinstance(t, dict):
+            continue
+        texto = str(t.get('texto', '') or '').strip()[:500]
+        if not texto:
+            continue
+        fecha_t = str(t.get('fecha', '') or '')
+        tareas.append({'texto': texto, 'responsable': str(t.get('responsable', '') or '').strip()[:100],
+                       'fecha': fecha_t if fecha_valida(fecha_t) else '', 'hecha': bool(t.get('hecha'))})
+    estado = datos.get('estado', 'esborrany')
+    if estado not in ESTADOS_ACTA:
+        return None, "Datos incorrectos"
+    return {'titulo': titulo, 'fecha': fecha.isoformat(), 'hora': hora, 'lugar': lugar, 'proyecto_id': proyecto_id,
+            'asistentes': json_lib.dumps(asistentes), 'otros_asistentes': otros, 'contenido': contenido,
+            'tareas': json_lib.dumps(tareas, ensure_ascii=False), 'estado': estado}, None
+
+
+@app.route('/api/actas', methods=['GET', 'POST'])
+@requiere_login
+def gestionar_actas():
+    conexion = conectar_bd()
+    if request.method == 'POST':
+        valores, error = validar_acta(conexion, request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        nombre = nombre_sesion()
+        valores['aprobada_en'] = None
+        columnas = list(valores) + ['creado_por', 'creado_por_id', 'actualizado_por']
+        cursor = conexion.execute(
+            f"INSERT INTO actas ({', '.join(columnas)}) VALUES ({', '.join('?' * len(columnas))})",
+            list(valores.values()) + [nombre, session.get('usuario_id'), nombre])
+        if valores['estado'] == 'aprovada':
+            conexion.execute("UPDATE actas SET aprobada_en = datetime('now') WHERE id = ?", (cursor.lastrowid,))
+        conexion.commit()
+        fila = conexion.execute('SELECT * FROM actas WHERE id = ?', (cursor.lastrowid,)).fetchone()
+        respuesta = acta_json(conexion, fila)
+        conexion.close()
+        return jsonify(respuesta), 201
+    limpiar_audios_caducados(conexion)
+    actas = [acta_json(conexion, f, completa=False)
+             for f in conexion.execute('SELECT * FROM actas ORDER BY fecha DESC, hora DESC, id DESC')]
+    proyectos = [dict(p) for p in conexion.execute('SELECT id, titulo FROM proyectos ORDER BY titulo')]
+    usuarios = [dict(u) for u in conexion.execute('SELECT id, nombre, plantilla FROM usuarios WHERE activo = 1 ORDER BY nombre')]
+    conexion.close()
+    return jsonify({'actas': actas, 'proyectos': proyectos, 'usuarios': usuarios,
+                    'dias_audio': DIAS_AUDIO_TRAS_APROBAR})
+
+
+@app.route('/api/actas/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@requiere_login
+def acta(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM actas WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'DELETE':
+        if not puede_borrar_acta(fila):
+            conexion.close()
+            return jsonify({"error": "Solo puede borrarlo quien lo creó o un administrador"}), 403
+        for a in conexion.execute('SELECT archivo FROM actas_audios WHERE acta_id = ?', (id,)).fetchall():
+            borrar_archivo_audio(a['archivo'])
+        conexion.execute('DELETE FROM actas_audios WHERE acta_id = ?', (id,))
+        conexion.execute('DELETE FROM actas WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        return jsonify({"ok": True})
+    if request.method == 'PUT':
+        valores, error = validar_acta(conexion, request.get_json(silent=True) or {})
+        if error:
+            conexion.close()
+            return jsonify({"error": error}), 400
+        # La data d'aprovació compta des que s'aprova (per esborrar l'àudio més endavant)
+        if valores['estado'] == 'aprovada':
+            valores['aprobada_en'] = fila['aprobada_en'] if fila['estado'] == 'aprovada' else None
+        else:
+            valores['aprobada_en'] = None
+        conexion.execute(
+            f"UPDATE actas SET {', '.join(c + ' = ?' for c in valores)}, actualizado = datetime('now'), actualizado_por = ? WHERE id = ?",
+            list(valores.values()) + [nombre_sesion(), id])
+        if valores['estado'] == 'aprovada' and not valores['aprobada_en']:
+            conexion.execute("UPDATE actas SET aprobada_en = datetime('now') WHERE id = ?", (id,))
+        conexion.commit()
+        fila = conexion.execute('SELECT * FROM actas WHERE id = ?', (id,)).fetchone()
+    respuesta = acta_json(conexion, fila)
+    conexion.close()
+    return jsonify(respuesta)
+
+
+def disco_lleno():
+    try:
+        return shutil.disk_usage(AUDIO_DIR).free < MIN_DISCO_LIBRE
+    except OSError:
+        return False
+
+
+@app.route('/api/actas/<int:id>/audios', methods=['POST'])
+@requiere_login
+def empezar_audio(id):
+    """Comença un àudio (gravació des de la web o un fitxer que es puja): després s'hi envien els trossos."""
+    datos = request.get_json(silent=True) or {}
+    conexion = conectar_bd()
+    if not conexion.execute('SELECT 1 FROM actas WHERE id = ?', (id,)).fetchone():
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if disco_lleno():
+        conexion.close()
+        return jsonify({"error": "No queda espacio en el servidor para más audio"}), 507
+    nombre = str(datos.get('nombre', '') or '').strip()[:200]
+    tipo = str(datos.get('tipo', '') or '').split(';')[0].strip().lower()
+    extension = MIME_A_EXTENSION.get(tipo)
+    if not extension and '.' in nombre:
+        extension = nombre.rsplit('.', 1)[-1].lower()
+    if extension not in FORMATOS_AUDIO:
+        conexion.close()
+        return jsonify({"error": "Formato de audio no admitido"}), 400
+    archivo = f'{uuid.uuid4().hex}.{extension}'
+    open(os.path.join(AUDIO_DIR, archivo), 'wb').close()
+    cursor = conexion.execute(
+        'INSERT INTO actas_audios (acta_id, archivo, nombre, formato, avisados, creado_por, creado_por_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (id, archivo, nombre, extension, 1 if datos.get('avisados') else 0, nombre_sesion(), session.get('usuario_id')))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM actas_audios WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    conexion.close()
+    return jsonify(audio_json(fila)), 201
+
+
+def audio_propio(conexion, aid):
+    fila = conexion.execute('SELECT * FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+    if not fila:
+        return None, (jsonify({"error": "No existe"}), 404)
+    if not session.get('es_admin') and fila['creado_por_id'] != session.get('usuario_id'):
+        return None, (jsonify({"error": "Solo puede hacerlo quien lo grabó o un administrador"}), 403)
+    return fila, None
+
+
+@app.route('/api/actas/audios/<int:aid>/trozo', methods=['POST'])
+@requiere_login
+def trozo_audio(aid):
+    """Afegeix un tros a l'àudio. Van numerats (n = 0, 1, 2...): si un tros arriba repetit
+    (el navegador el torna a enviar perquè no li ha arribat la resposta) no s'hi torna a afegir."""
+    try:
+        n = int(request.args.get('n', ''))
+    except ValueError:
+        return jsonify({"error": "Datos incorrectos"}), 400
+    datos = request.get_data(cache=False)
+    if not datos or len(datos) > MAX_TROZO_BYTES:
+        return jsonify({"error": "Datos incorrectos"}), 400
+    conexion = conectar_bd()
+    fila, error = audio_propio(conexion, aid)
+    if error:
+        conexion.close()
+        return error
+    if fila['completo']:
+        conexion.close()
+        return jsonify({"error": "Esta grabación ya está terminada"}), 409
+    if n < fila['trozos']:
+        conexion.close()
+        return jsonify({"trozos": fila['trozos'], "bytes": fila['bytes']})  # ja hi era
+    if n > fila['trozos']:
+        conexion.close()
+        return jsonify({"error": "Falta un trozo anterior", "trozos": fila['trozos']}), 409
+    if fila['bytes'] + len(datos) > MAX_AUDIO_BYTES:
+        conexion.close()
+        return jsonify({"error": "La grabación es demasiado larga"}), 413
+    if disco_lleno():
+        conexion.close()
+        return jsonify({"error": "No queda espacio en el servidor para más audio"}), 507
+    with open(os.path.join(AUDIO_DIR, fila['archivo']), 'ab') as f:
+        f.write(datos)
+    conexion.execute('UPDATE actas_audios SET trozos = trozos + 1, bytes = bytes + ? WHERE id = ?', (len(datos), aid))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"trozos": fila['trozos'] + 1, "bytes": fila['bytes'] + len(datos)})
+
+
+@app.route('/api/actas/audios/<int:aid>', methods=['GET', 'PUT', 'DELETE'])
+@requiere_login
+def audio_acta(aid):
+    conexion = conectar_bd()
+    if request.method == 'GET':
+        fila = conexion.execute('SELECT archivo, nombre, formato FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+        conexion.close()
+        if not fila:
+            return jsonify({"error": "No existe"}), 404
+        respuesta = send_from_directory(AUDIO_DIR, fila['archivo'], mimetype=FORMATOS_AUDIO.get(fila['formato']),
+                                        download_name=fila['nombre'] or fila['archivo'], max_age=0, conditional=True)
+        respuesta.headers['Cache-Control'] = 'private, no-cache'
+        respuesta.headers['X-Content-Type-Options'] = 'nosniff'
+        return respuesta
+    fila, error = audio_propio(conexion, aid)
+    if error:
+        conexion.close()
+        return error
+    if request.method == 'DELETE':
+        borrar_archivo_audio(fila['archivo'])
+        conexion.execute('DELETE FROM actas_audios WHERE id = ?', (aid,))
+        conexion.commit()
+        conexion.close()
+        return jsonify({"ok": True})
+    # PUT: s'ha acabat de gravar o de pujar (i quant dura)
+    datos = request.get_json(silent=True) or {}
+    try:
+        duracion = max(0, min(24 * 3600, int(datos.get('duracion') or 0)))
+    except (TypeError, ValueError):
+        duracion = 0
+    if not fila['bytes']:
+        borrar_archivo_audio(fila['archivo'])
+        conexion.execute('DELETE FROM actas_audios WHERE id = ?', (aid,))
+        conexion.commit()
+        conexion.close()
+        return jsonify({"error": "La grabación está vacía"}), 400
+    conexion.execute('UPDATE actas_audios SET completo = 1, duracion = ? WHERE id = ?', (duracion or fila['duracion'], aid))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM actas_audios WHERE id = ?', (aid,)).fetchone()
+    conexion.close()
+    return jsonify(audio_json(fila))
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ import { QuillEditor } from '@vueup/vue-quill'
 import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són de Quill 1 i no pinten bé llistes ni codi)
 import PaginasDocs from './PaginasDocs.vue'
 import Compras from './Compras.vue'
+import ActasReunion from './ActasReunion.vue'
 import GestionEquipo from './GestionEquipo.vue'
 import DiarioActividad from './DiarioActividad.vue'
 import InformeSemestral from './InformeSemestral.vue'
@@ -206,6 +207,7 @@ const gruposMenu = computed(() => [
   { titulo: 'intranet.panel.menu.grupoEquipo', items: [
     { id: 'calendari', texto: 'intranet.panel.menu.calendario' },
     { id: 'diario', texto: 'intranet.panel.menu.diario' },
+    { id: 'actas', texto: 'intranet.panel.menu.actas' },
     { id: 'informe', texto: 'intranet.panel.menu.informe' },
     { id: 'equipo', texto: 'intranet.panel.menu.equipo' }
   ] },
@@ -446,6 +448,7 @@ const eliminarProyecto = async (id) => {
         <!-- Documentació: tot són pàgines (amb els fitxers adjunts) -->
         <PaginasDocs v-else-if="seccionActiva === 'documentacion'" :key="docsKey" @sesion-caducada="sesionCaducada" />
         <Compras v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <ActasReunion v-else-if="seccionActiva === 'actas'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
           <button type="button" class="btn-tornar" @click="volverDashboard('instrumentos')">← {{ $t('intranet.panel.volverInstrumentos') }}</button>

@@ -93,7 +93,7 @@ watch(locale, () => actualizarTitulo(route))
       </div>
     </header>
 
-    <main class="main-content">
+    <main class="main-content" :class="{ 'main-inicio': route.name === 'inicio' }">
       <RouterView />
     </main>
 
@@ -187,6 +187,10 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .nav-item:hover::after { width: 100%; }
 
 .main-content { margin-top: 0; }
+/* A la portada la pàgina ocupa com a mínim tota la pantalla: les fitxes creixen fins al peu
+   (sense espai blanc a sota). La resta de pàgines no canvien. */
+.icm-layout:has(.main-inicio) { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+.main-inicio { flex: 1 0 auto; display: flex; flex-direction: column; }
 .titulo-seccion { color: var(--icm-navy); font-size: 28px; border-bottom: 2px solid var(--icm-blue); padding-bottom: 10px; margin-bottom: 30px; }
 .contacto-unacolumna { display: flex; flex-direction: column; gap: 30px; max-width: 900px; margin: 0 auto; }
 .pagina-contacto { padding: 80px 0; background: #fdfdfd; animation: fadeIn 0.5s ease; }

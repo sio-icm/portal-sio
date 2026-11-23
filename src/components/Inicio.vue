@@ -10,3 +10,8 @@ import QuienesSomos from './QuienesSomos.vue'
     <QuienesSomos />
   </div>
 </template>
+
+<style scoped>
+/* Ocupa l'espai que queda fins al peu (vegeu .main-inicio a App.vue) */
+.inicio-container { flex: 1 0 auto; display: flex; flex-direction: column; }
+</style>
