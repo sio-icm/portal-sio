@@ -16,7 +16,7 @@ function leerGuardado() {
 }
 
 export function useSolicitud(tipo) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const guardado = leerGuardado()
 
   const nombre = ref(guardado.nombre)
@@ -28,7 +28,8 @@ export function useSolicitud(tipo) {
   // Si el usuario vuelve a tocar el formulario, se borra el aviso anterior
   watch([nombre, email], () => { if (estado.value !== 'enviando') estado.value = '' })
 
-  const enviar = async ({ asunto, cuerpo, adjunto = null }) => {
+  // dias: dates 'AAAA-MM-DD' demanades (perquè a la intranet es puguin passar al calendari)
+  const enviar = async ({ asunto, cuerpo, adjunto = null, dias = [], institucion = '', instrumentoId = null }) => {
     if (estado.value === 'enviando') return false
     estado.value = 'enviando'
     error.value = ''
@@ -41,6 +42,10 @@ export function useSolicitud(tipo) {
     formulario.append('asunto', asunto)
     formulario.append('cuerpo', cuerpo)
     if (adjunto) formulario.append('adjunto', adjunto)
+    formulario.append('idioma', locale.value)
+    if (dias.length) formulario.append('dias', dias.join(','))
+    if (institucion) formulario.append('institucion', institucion)
+    if (instrumentoId) formulario.append('instrumento_id', String(instrumentoId))
 
     try {
       const respuesta = await fetch('/api/solicitud', { method: 'POST', body: formulario })
@@ -51,7 +56,8 @@ export function useSolicitud(tipo) {
         } catch { /* navegador sin almacenamiento: no pasa nada */ }
         return true
       }
-      if (respuesta.status === 400) error.value = t('solicitud.errorDatos')
+      if (respuesta.status === 422) error.value = t('solicitud.errorFirma')
+      else if (respuesta.status === 400) error.value = t('solicitud.errorDatos')
       else if (respuesta.status === 413 || respuesta.status === 415) error.value = t('solicitud.errorAdjunto')
       else if (respuesta.status === 429) error.value = t('solicitud.errorLimite')
       else error.value = t('solicitud.errorEnvio')

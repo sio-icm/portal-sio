@@ -107,6 +107,7 @@ export default {
   },
 
   solicitud: {
+    errorFirma: 'The document is not digitally signed. Sign it with your digital certificate (AutoFirma, Adobe Acrobat...) and attach it again.',
     nombre: 'Full name',
     nombrePh: 'E.g. Eve Galimany Sanromà',
     email: 'Email',
@@ -186,6 +187,32 @@ export default {
   },
 
   instrumentacion: {
+    doc: {
+      organismo: 'Oceanographic Engineering Service (SIO) · Institute of Marine Sciences (ICM-CSIC) · Pg. Marítim de la Barceloneta 37-49, 08003 Barcelona · sio{\'@\'}icm.csic.es',
+      titulo: 'Instrument loan agreement',
+      intro: 'The Oceanographic Engineering Service (SIO) of the Institute of Marine Sciences (ICM-CSIC) temporarily lends the instrument below to the applicant, who accepts the following conditions of use and return.',
+      datos: 'Loan details',
+      nombre: 'Applicant',
+      email: 'Email',
+      institucion: 'Institution / research group',
+      instrumento: 'Instrument',
+      numeroSerie: 'Serial number',
+      fechas: 'Requested days',
+      clausulasTitulo: 'Conditions',
+      clausulas: ['The applicant is responsible for the instrument from collection until it is returned to the SIO.', 'The instrument will only be used for the activity stated in the request and according to the manufacturer\'s and SIO staff\'s instructions.', 'The instrument will be returned in the same condition in which it was delivered: clean (rinsed with fresh water if used at sea), complete (with cables, connectors, batteries and accessories) and on the agreed date.', 'Any fault, damage, loss or abnormal behaviour will be reported immediately to the SIO (sio{\'@\'}icm.csic.es). No repairs or internal handling will be carried out without SIO authorisation.', 'Repair or replacement costs for damage or loss caused by misuse, negligence or transport will be borne by the applicant\'s group or institution.', 'Transport, insurance (if applicable) and any permits required to use the instrument are the responsibility of the applicant.', 'The SIO may inspect the instrument on delivery and on return, and record its condition in writing or with photographs.'],
+      firmaTitulo: 'Acceptance and signature',
+      firmaTexto: 'I, {nombre}, declare that I have read and accept these conditions, and I undertake to return the instrument in the same condition in which I receive it. Date: {fecha}.',
+      recuadro: 'Applicant\'s digital signature',
+      pie: 'This document must be digitally signed (for example with AutoFirma or Adobe Acrobat and a digital certificate) and attached to the request on the SIO website.',
+      bloqueTitulo: 'Loan agreement (required)',
+      paso1: 'Download the document with your details:',
+      descargar: 'Download the document (PDF)',
+      faltan: 'First choose the days and enter your name and email.',
+      paso2: 'Sign it digitally with your certificate (AutoFirma, Adobe Acrobat...). A drawn signature is not valid.',
+      paso3: 'Attach the signed PDF here:',
+      falta: 'Please attach the digitally signed loan agreement.',
+      adjuntoCorreo: 'The digitally signed loan agreement is attached.'
+    },
     enPrestamo: 'On loan',
     enPrestamoHasta: 'On loan until {fecha}',
     avisoPrestamo: 'It is currently on loan or booked until {fecha}. You can request it for later dates.',
@@ -219,7 +246,7 @@ export default {
     prestamos: 'SIO equipment loans',
     ayuda: 'Click the name of any instrument on the left to see its full technical sheet and availability.',
     comoFunciona: 'How does it work?',
-    pasos: ['Select an instrument from the list.', 'Click the days you need on the calendar.', 'Enter your name and email and press “Send request”.', 'The SIO will reply by email to confirm the booking.'],
+    pasos: ['Select an instrument from the list.', 'Click the days you need on the calendar.', 'Download the loan agreement, sign it digitally and attach it.', 'Enter your name and email and press “Send request”.', 'The SIO will reply by email to confirm the booking.'],
     faltanDatos: 'Select at least one day and enter your name.',
     correo: {
       asunto: 'SIO equipment loan request: {instrumento}',

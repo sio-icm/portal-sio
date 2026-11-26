@@ -107,6 +107,7 @@ export default {
   },
 
   solicitud: {
+    errorFirma: 'El document no està signat digitalment. Signa\'l amb el teu certificat digital (AutoFirma, Adobe Acrobat...) i torna\'l a adjuntar.',
     nombre: 'Nom i cognoms',
     nombrePh: 'Ex.: Eve Galimany Sanromà',
     email: 'Correu electrònic',
@@ -186,6 +187,32 @@ export default {
   },
 
   instrumentacion: {
+    doc: {
+      organismo: 'Servei d\'Enginyeria Oceanogràfica (SIO) · Institut de Ciències del Mar (ICM-CSIC) · Pg. Marítim de la Barceloneta 37-49, 08003 Barcelona · sio{\'@\'}icm.csic.es',
+      titulo: 'Document de préstec d\'instrumentació',
+      intro: 'El Servei d\'Enginyeria Oceanogràfica (SIO) de l\'Institut de Ciències del Mar (ICM-CSIC) cedeix temporalment l\'instrument que s\'indica a la persona sol·licitant, que n\'accepta les condicions d\'ús i de retorn següents.',
+      datos: 'Dades del préstec',
+      nombre: 'Persona sol·licitant',
+      email: 'Correu electrònic',
+      institucion: 'Institució / grup de recerca',
+      instrumento: 'Instrument',
+      numeroSerie: 'Número de sèrie',
+      fechas: 'Dies sol·licitats',
+      clausulasTitulo: 'Condicions',
+      clausulas: ['La persona sol·licitant es fa responsable de l\'instrument des que el recull fins que el retorna al SIO.', 'L\'instrument s\'utilitzarà només per a l\'activitat indicada a la sol·licitud i segons les indicacions del fabricant i del personal del SIO.', 'L\'instrument es retornarà en el mateix estat en què es va lliurar, net (rentat amb aigua dolça si ha estat al mar), complet (amb cables, connectors, bateries i accessoris) i en la data acordada.', 'Qualsevol avaria, dany, pèrdua o funcionament anòmal es comunicarà immediatament al SIO (sio{\'@\'}icm.csic.es). No es farà cap reparació ni manipulació interna sense l\'autorització del SIO.', 'Les despeses de reparació o de reposició per danys o pèrdues derivats d\'un ús indegut, de negligència o del transport aniran a càrrec del grup o de la institució de la persona sol·licitant.', 'El transport, l\'assegurança (si escau) i els permisos necessaris per a l\'ús de l\'instrument són responsabilitat de la persona sol·licitant.', 'El SIO pot revisar l\'estat de l\'instrument en lliurar-lo i en recuperar-lo, i en pot deixar constància escrita o fotogràfica.'],
+      firmaTitulo: 'Acceptació i signatura',
+      firmaTexto: 'Jo, {nombre}, declaro que he llegit i accepto aquestes condicions, i em comprometo a retornar l\'instrument en el mateix estat en què el rebo. Data: {fecha}.',
+      recuadro: 'Signatura digital de la persona sol·licitant',
+      pie: 'Aquest document s\'ha de signar digitalment (per exemple amb AutoFirma o amb Adobe Acrobat i un certificat digital) i adjuntar-lo a la sol·licitud de la web del SIO.',
+      bloqueTitulo: 'Document de préstec (obligatori)',
+      paso1: 'Descarrega el document amb les teves dades:',
+      descargar: 'Descarregar el document (PDF)',
+      faltan: 'Primer tria els dies i escriu el teu nom i el teu correu.',
+      paso2: 'Signa\'l digitalment amb el teu certificat (AutoFirma, Adobe Acrobat...). Una signatura dibuixada no serveix.',
+      paso3: 'Adjunta aquí el PDF signat:',
+      falta: 'Falta adjuntar el document de préstec signat digitalment.',
+      adjuntoCorreo: 'S\'adjunta el document de préstec signat digitalment.'
+    },
     enPrestamo: 'En préstec',
     enPrestamoHasta: 'En préstec fins al {fecha}',
     avisoPrestamo: 'Ara està prestat o reservat fins al {fecha}. Pots sol·licitar-lo per a dies posteriors.',
@@ -219,7 +246,7 @@ export default {
     prestamos: 'Préstecs SIO',
     ayuda: "Fes clic al nom de qualsevol instrument de l'esquerra per veure'n la fitxa tècnica completa i la disponibilitat.",
     comoFunciona: 'Com funciona?',
-    pasos: ['Selecciona un instrument de la llista.', 'Fes clic als dies del calendari que necessitis.', 'Escriu el teu nom i el teu correu i prem «Enviar sol·licitud».', 'El SIO et respondrà per correu per confirmar la reserva.'],
+    pasos: ['Selecciona un instrument de la llista.', 'Fes clic als dies del calendari que necessitis.', 'Descarrega el document de préstec, signa\'l digitalment i adjunta\'l.', 'Escriu el teu nom i el teu correu i prem «Enviar sol·licitud».', 'El SIO et respondrà per correu per confirmar la reserva.'],
     faltanDatos: 'Selecciona almenys un dia i escriu el teu nom.',
     correo: {
       asunto: 'Sol·licitud de préstec SIO: {instrumento}',

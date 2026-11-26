@@ -107,6 +107,7 @@ export default {
   },
 
   solicitud: {
+    errorFirma: 'El documento no está firmado digitalmente. Fírmalo con tu certificado digital (AutoFirma, Adobe Acrobat...) y vuelve a adjuntarlo.',
     nombre: 'Nombre y apellidos',
     nombrePh: 'Ej.: Eve Galimany Sanromà',
     email: 'Correo electrónico',
@@ -186,6 +187,32 @@ export default {
   },
 
   instrumentacion: {
+    doc: {
+      organismo: 'Servicio de Ingeniería Oceanográfica (SIO) · Instituto de Ciencias del Mar (ICM-CSIC) · Pg. Marítim de la Barceloneta 37-49, 08003 Barcelona · sio{\'@\'}icm.csic.es',
+      titulo: 'Documento de préstamo de instrumentación',
+      intro: 'El Servicio de Ingeniería Oceanográfica (SIO) del Instituto de Ciencias del Mar (ICM-CSIC) cede temporalmente el instrumento que se indica a la persona solicitante, que acepta las siguientes condiciones de uso y devolución.',
+      datos: 'Datos del préstamo',
+      nombre: 'Persona solicitante',
+      email: 'Correo electrónico',
+      institucion: 'Institución / grupo de investigación',
+      instrumento: 'Instrumento',
+      numeroSerie: 'Número de serie',
+      fechas: 'Días solicitados',
+      clausulasTitulo: 'Condiciones',
+      clausulas: ['La persona solicitante se hace responsable del instrumento desde que lo recoge hasta que lo devuelve al SIO.', 'El instrumento se utilizará solo para la actividad indicada en la solicitud y según las indicaciones del fabricante y del personal del SIO.', 'El instrumento se devolverá en el mismo estado en que se entregó, limpio (enjuagado con agua dulce si ha estado en el mar), completo (con cables, conectores, baterías y accesorios) y en la fecha acordada.', 'Cualquier avería, daño, pérdida o funcionamiento anómalo se comunicará inmediatamente al SIO (sio{\'@\'}icm.csic.es). No se hará ninguna reparación ni manipulación interna sin la autorización del SIO.', 'Los gastos de reparación o reposición por daños o pérdidas derivados de un uso indebido, negligencia o del transporte correrán a cargo del grupo o la institución de la persona solicitante.', 'El transporte, el seguro (si procede) y los permisos necesarios para el uso del instrumento son responsabilidad de la persona solicitante.', 'El SIO puede revisar el estado del instrumento al entregarlo y al recuperarlo, y dejar constancia escrita o fotográfica.'],
+      firmaTitulo: 'Aceptación y firma',
+      firmaTexto: 'Yo, {nombre}, declaro que he leído y acepto estas condiciones, y me comprometo a devolver el instrumento en el mismo estado en que lo recibo. Fecha: {fecha}.',
+      recuadro: 'Firma digital de la persona solicitante',
+      pie: 'Este documento debe firmarse digitalmente (por ejemplo con AutoFirma o con Adobe Acrobat y un certificado digital) y adjuntarse a la solicitud de la web del SIO.',
+      bloqueTitulo: 'Documento de préstamo (obligatorio)',
+      paso1: 'Descarga el documento con tus datos:',
+      descargar: 'Descargar el documento (PDF)',
+      faltan: 'Primero elige los días y escribe tu nombre y tu correo.',
+      paso2: 'Fírmalo digitalmente con tu certificado (AutoFirma, Adobe Acrobat...). Una firma dibujada no sirve.',
+      paso3: 'Adjunta aquí el PDF firmado:',
+      falta: 'Falta adjuntar el documento de préstamo firmado digitalmente.',
+      adjuntoCorreo: 'Se adjunta el documento de préstamo firmado digitalmente.'
+    },
     enPrestamo: 'En préstamo',
     enPrestamoHasta: 'En préstamo hasta el {fecha}',
     avisoPrestamo: 'Ahora está prestado o reservado hasta el {fecha}. Puedes solicitarlo para días posteriores.',
@@ -219,7 +246,7 @@ export default {
     prestamos: 'Préstamos SIO',
     ayuda: 'Haz clic en el nombre de cualquier instrumento de la izquierda para ver su ficha técnica completa y su disponibilidad.',
     comoFunciona: '¿Cómo funciona?',
-    pasos: ['Selecciona un instrumento de la lista.', 'Haz clic en los días del calendario que necesites.', 'Escribe tu nombre y tu correo y pulsa «Enviar solicitud».', 'El SIO te responderá por correo para confirmar la reserva.'],
+    pasos: ['Selecciona un instrumento de la lista.', 'Haz clic en los días del calendario que necesites.', 'Descarga el documento de préstamo, fírmalo digitalmente y adjúntalo.', 'Escribe tu nombre y tu correo y pulsa «Enviar solicitud».', 'El SIO te responderá por correo para confirmar la reserva.'],
     faltanDatos: 'Selecciona al menos un día y escribe tu nombre.',
     correo: {
       asunto: 'Solicitud de préstamo SIO: {instrumento}',

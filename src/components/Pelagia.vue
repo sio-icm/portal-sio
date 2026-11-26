@@ -43,7 +43,7 @@ const enviarSolicitud = async () => {
     `${t('pelagia.correo.adjunto')}\n\n` +
     `${t('pelagia.correo.despedida')}`
   )
-  if (await enviar({ asunto: t('pelagia.correo.asunto'), cuerpo, adjunto: plan.value })) {
+  if (await enviar({ asunto: t('pelagia.correo.asunto'), cuerpo, adjunto: plan.value, dias: diasSeleccionados.value.map(k => { const [a, m, d] = k.split('-').map(Number); return `${a}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` }) })) {
     diasSeleccionados.value = []
     plan.value = null
     if (inputPlan.value) inputPlan.value.value = ''

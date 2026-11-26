@@ -91,6 +91,10 @@ export default {
 
   // Errores que devuelve el servidor (en castellano); traducirError() los busca aquí
   errores: {
+    'Esta solicitud no tiene días que reservar': { ca: 'Aquesta sol·licitud no té dies per reservar', es: 'Esta solicitud no tiene días que reservar', en: 'This request has no days to book' },
+    'Envío no configurado en el servidor': { ca: 'El correu no està configurat al servidor', es: 'Envío no configurado en el servidor', en: 'Email is not configured on the server' },
+    'Escribe la respuesta': { ca: 'Escriu la resposta', es: 'Escribe la respuesta', en: 'Write the reply' },
+    'No se ha podido enviar el correo': { ca: "No s'ha pogut enviar el correu", es: 'No se ha podido enviar el correo', en: 'The email could not be sent' },
     'Pon un título al acta': { ca: "Posa un títol a l'acta", es: 'Pon un título al acta', en: 'Give the minutes a title' },
     'El acta es demasiado grande (máximo 4 MB, imágenes incluidas)': { ca: "L'acta és massa gran (màxim 4 MB, imatges incloses)", es: 'El acta es demasiado grande (máximo 4 MB, imágenes incluidas)', en: 'The minutes are too large (4 MB max, images included)' },
     'No queda espacio en el servidor para más audio': { ca: "No queda espai al servidor per a més àudio. Esborreu gravacions que ja no calguin.", es: 'No queda espacio en el servidor para más audio. Borrad grabaciones que ya no hagan falta.', en: 'There is no space left on the server for more audio. Delete recordings you no longer need.' },
@@ -236,6 +240,7 @@ export default {
       grupoAltas: { ca: 'Altes', es: 'Altas', en: 'New entries' },
       grupoCuenta: { ca: 'Compte', es: 'Cuenta', en: 'Account' },
       general: { ca: '📊 Visió general', es: '📊 Visión general', en: '📊 Overview' },
+      solicitudes: { ca: '📬 Sol·licituds web', es: '📬 Solicitudes web', en: '📬 Web requests' },
       calendario: { ca: "🗓️ Calendari d'equip", es: '🗓️ Calendario de equipo', en: '🗓️ Team calendar' },
       diario: { ca: "📓 Diari d'activitat", es: '📓 Diario de actividad', en: '📓 Activity log' },
       actas: { ca: '📝 Actes de reunió', es: '📝 Actas de reunión', en: '📝 Meeting minutes' },
@@ -814,6 +819,64 @@ export default {
     paso3: { ca: "i deixeu aquesta pàgina oberta fins que pareu la gravació.", es: 'y dejad esta página abierta hasta que paréis la grabación.', en: 'and keep this page open until you stop recording.' },
     confirmoAvisados: { ca: "Els assistents saben que es grava i hi estan d'acord", es: 'Los asistentes saben que se graba y están de acuerdo', en: 'The attendees know it is being recorded and agree' },
     empezar: { ca: 'Començar a gravar', es: 'Empezar a grabar', en: 'Start recording' }
+  },
+
+  solicitudes: {
+    titulo: { ca: 'Sol·licituds de la web', es: 'Solicitudes de la web', en: 'Web requests' },
+    ayuda: { ca: "Tot el que arriba dels formularis de la web (Pelagia, tancs, instruments, salinitat, fondejos, prototipatge, R+D+I i contacte). Responeu des d'aquí: el correu surt cap a qui ho ha demanat, amb còpia a sio{'@'}. Si demana dies, passeu-los al calendari amb un clic.", es: "Todo lo que llega de los formularios de la web (Pelagia, tanques, instrumentos, salinidad, fondeos, prototipado, I+D+I y contacto). Responded desde aquí: el correo sale hacia quien lo ha pedido, con copia a sio{'@'}. Si pide días, pasadlos al calendario con un clic.", en: "Everything that comes in through the website forms (Pelagia, tanks, instruments, salinity, moorings, prototyping, R&D and contact). Reply from here: the email goes to the requester, with a copy to sio{'@'}. If days are requested, add them to the calendar with one click." },
+    avisoEntrada: { ca: 'Hi ha {n} sol·licitud nova de la web per respondre | Hi ha {n} sol·licituds noves de la web per respondre', es: 'Hay {n} solicitud nueva de la web por responder | Hay {n} solicitudes nuevas de la web por responder', en: 'There is {n} new web request to answer | There are {n} new web requests to answer' },
+    verlas: { ca: 'Veure-les', es: 'Verlas', en: 'Show them' },
+    pendientes: { ca: 'Per atendre', es: 'Por atender', en: 'To handle' },
+    todas: { ca: 'Totes', es: 'Todas', en: 'All' },
+    nuevas: { ca: '{n} noves', es: '{n} nuevas', en: '{n} new' },
+    ninguna: { ca: 'No hi ha cap sol·licitud per atendre.', es: 'No hay ninguna solicitud por atender.', en: 'There are no requests to handle.' },
+    volver: { ca: 'Tornar a la llista', es: 'Volver a la lista', en: 'Back to the list' },
+    quien: { ca: 'Qui ho demana', es: 'Quién lo pide', en: 'Requested by' },
+    correo: { ca: 'Correu', es: 'Correo', en: 'Email' },
+    instrumento: { ca: 'Instrument', es: 'Instrumento', en: 'Instrument' },
+    dias: { ca: 'Dies', es: 'Días', en: 'Days' },
+    adjunto: { ca: 'Adjunt', es: 'Adjunto', en: 'Attachment' },
+    firmado: { ca: 'signat digitalment', es: 'firmado digitalmente', en: 'digitally signed' },
+    sinFirma: { ca: 'sense signatura digital', es: 'sin firma digital', en: 'not digitally signed' },
+    pasarCalendario: { ca: 'Acceptar i passar al calendari', es: 'Aceptar y pasar al calendario', en: 'Accept and add to the calendar' },
+    confirmarReserva: { ca: 'Es crearà la reserva al calendari per a aquests dies (i la sol·licitud quedarà acceptada). Continuar?', es: 'Se creará la reserva en el calendario para estos días (y la solicitud quedará aceptada). ¿Continuar?', en: 'A booking will be created in the calendar for these days (and the request marked as accepted). Continue?' },
+    reservada: { ca: 'Reserva afegida al calendari.', es: 'Reserva añadida al calendario.', en: 'Booking added to the calendar.' },
+    yaEnCalendario: { ca: 'Ja és al calendari ({n} reserva/es)', es: 'Ya está en el calendario ({n} reserva/s)', en: 'Already in the calendar ({n} booking/s)' },
+    estado: { ca: 'Estat', es: 'Estado', en: 'Status' },
+    estados: {
+      nova: { ca: 'Nova', es: 'Nueva', en: 'New' },
+      en_curs: { ca: 'En curs', es: 'En curso', en: 'In progress' },
+      acceptada: { ca: 'Acceptada', es: 'Aceptada', en: 'Accepted' },
+      rebutjada: { ca: 'Rebutjada', es: 'Rechazada', en: 'Declined' },
+      tancada: { ca: 'Tancada', es: 'Cerrada', en: 'Closed' }
+    },
+    tipos: {
+      pelagia: { ca: 'Pelagia', es: 'Pelagia', en: 'Pelagia' },
+      tanque: { ca: 'Tancs de proves', es: 'Tanques de pruebas', en: 'Test tanks' },
+      instrumento: { ca: "Préstec d'instrument", es: 'Préstamo de instrumento', en: 'Instrument loan' },
+      salinidad: { ca: 'Anàlisi de salinitat', es: 'Análisis de salinidad', en: 'Salinity analysis' },
+      fondeo: { ca: 'Fondeig', es: 'Fondeo', en: 'Mooring' },
+      prototipado: { ca: 'Prototipatge', es: 'Prototipado', en: 'Prototyping' },
+      idi: { ca: 'R+D+I', es: 'I+D+I', en: 'R&D' },
+      contacto: { ca: 'Contacte', es: 'Contacto', en: 'Contact' }
+    },
+    responder: { ca: 'Respondre', es: 'Responder', en: 'Reply' },
+    idiomaSol: { ca: 'idioma de la sol·licitud: {idioma}', es: 'idioma de la solicitud: {idioma}', en: 'request language: {idioma}' },
+    plantillas: { ca: 'Plantilles:', es: 'Plantillas:', en: 'Templates:' },
+    pAceptar: { ca: 'Acceptar', es: 'Aceptar', en: 'Accept' },
+    pRechazar: { ca: 'No és possible', es: 'No es posible', en: 'Not possible' },
+    pInfo: { ca: 'Demanar més informació', es: 'Pedir más información', en: 'Ask for more information' },
+    respuestaPh: { ca: "Escriu la resposta (o tria una plantilla i retoca-la). S'hi afegirà la signatura del SIO.", es: 'Escribe la respuesta (o elige una plantilla y retócala). Se añadirá la firma del SIO.', en: 'Write the reply (or choose a template and edit it). The SIO signature will be added.' },
+    estadoTras: { ca: 'Després, estat:', es: 'Después, estado:', en: 'Then set status:' },
+    automatico: { ca: 'automàtic', es: 'automático', en: 'automatic' },
+    enviar: { ca: 'Enviar a {email}', es: 'Enviar a {email}', en: 'Send to {email}' },
+    confirmarEnvio: { ca: "S'enviarà el correu a {email} (amb còpia a sio{'@'}icm.csic.es). Continuar?", es: "Se enviará el correo a {email} (con copia a sio{'@'}icm.csic.es). ¿Continuar?", en: "The email will be sent to {email} (copied to sio{'@'}icm.csic.es). Continue?" },
+    enviada: { ca: 'Resposta enviada.', es: 'Respuesta enviada.', en: 'Reply sent.' },
+    notaCopia: { ca: "El correu surt amb còpia a sio{'@'}icm.csic.es, i si la persona contesta, la resposta arriba a sio{'@'}.", es: "El correo sale con copia a sio{'@'}icm.csic.es, y si la persona contesta, la respuesta llega a sio{'@'}.", en: "The email is copied to sio{'@'}icm.csic.es, and any reply from the person goes to sio{'@'}." },
+    notas: { ca: 'Notes internes', es: 'Notas internas', en: 'Internal notes' },
+    notasPh: { ca: 'Només les veu el SIO (qui se n\'encarrega, què falta...).', es: 'Solo las ve el SIO (quién se encarga, qué falta...).', en: 'Only visible to SIO (who is handling it, what is missing...).' },
+    guardado: { ca: 'Desat.', es: 'Guardado.', en: 'Saved.' },
+    confirmarBorrar: { ca: 'Segur que vols esborrar aquesta sol·licitud?', es: '¿Seguro que quieres borrar esta solicitud?', en: 'Delete this request?' }
   },
 
   paginas: {

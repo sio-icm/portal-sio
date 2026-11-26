@@ -8,6 +8,7 @@ import 'quill/dist/quill.snow.css' // estils de Quill 2 (els de vue-quill són d
 import PaginasDocs from './PaginasDocs.vue'
 import Compras from './Compras.vue'
 import ActasReunion from './ActasReunion.vue'
+import SolicitudesWeb from './SolicitudesWeb.vue'
 import GestionEquipo from './GestionEquipo.vue'
 import DiarioActividad from './DiarioActividad.vue'
 import InformeSemestral from './InformeSemestral.vue'
@@ -161,6 +162,7 @@ onMounted(async () => {
       cargarInstrumentos()
       cargarProyectos()
       aplicarEnlace()
+      cargarSolicitudesNuevas()
     }
   } catch (error) { console.error("Error comprovant la sessió:", error) }
 })
@@ -183,6 +185,7 @@ const iniciarSesion = async () => {
       cargarInstrumentos()
       cargarProyectos()
       aplicarEnlace()
+      cargarSolicitudesNuevas()
     } else if (respuesta.status === 401) {
       alert(t('intranet.panel.loginIncorrecto'))
     } else if (respuesta.status === 429) {
@@ -207,6 +210,7 @@ const cerrarSesion = async () => {
 const menuAbierto = ref(false)
 const gruposMenu = computed(() => [
   { titulo: 'intranet.panel.menu.grupoEquipo', items: [
+    { id: 'solicitudes', texto: 'intranet.panel.menu.solicitudes', badge: solicitudesNuevas.value },
     { id: 'calendari', texto: 'intranet.panel.menu.calendario' },
     { id: 'diario', texto: 'intranet.panel.menu.diario' },
     { id: 'actas', texto: 'intranet.panel.menu.actas' },
@@ -230,6 +234,16 @@ const seccionMenu = computed(() => SECCION_DEL_MENU[seccionActiva.value] || secc
 const opcionActual = computed(() => gruposMenu.value.flatMap(g => g.items).find(i => i.id === seccionMenu.value))
 // En tornar a prémer «Documentació» es torna a l'inici de la documentació
 const docsKey = ref(0)
+// Sol·licituds noves de la web: avís en entrar i comptador al menú
+const solicitudesNuevas = ref(0)
+const avisoSolicitudesCerrado = ref(false)
+const cargarSolicitudesNuevas = async () => {
+  try {
+    const r = await peticionApi(`${apiBase}/solicitudes/pendientes`)
+    if (r.ok) solicitudesNuevas.value = (await r.json()).nuevas
+  } catch { /* res */ }
+}
+const irASolicitudes = () => { destinoInicial.value = {}; seccionActiva.value = 'solicitudes'; avisoSolicitudesCerrado.value = true }
 // Enllaços de la cerca: obrir directament una pàgina, una carpeta, una acta o una secció
 const destinoInicial = ref({})
 const aplicarEnlace = () => {
@@ -238,10 +252,13 @@ const aplicarEnlace = () => {
     destinoInicial.value = { doc: Number(q.get('doc')) || null, carpeta: q.get('carpeta') || null }
     docsKey.value++
     seccionActiva.value = 'documentacion'
+  } else if (q.get('solicitud')) {
+    destinoInicial.value = { solicitud: Number(q.get('solicitud')) || null }
+    seccionActiva.value = 'solicitudes'
   } else if (q.get('acta')) {
     destinoInicial.value = { acta: Number(q.get('acta')) || null }
     seccionActiva.value = 'actas'
-  } else if (['diario', 'calendari', 'compras', 'informe'].includes(q.get('seccion'))) {
+  } else if (['diario', 'calendari', 'compras', 'informe', 'solicitudes'].includes(q.get('seccion'))) {
     seccionActiva.value = q.get('seccion')
   } else return
   window.history.replaceState({}, '', window.location.pathname)
@@ -445,7 +462,7 @@ const eliminarProyecto = async (id) => {
           <div v-for="g in gruposMenu" :key="g.titulo" class="grupo-menu">
             <p class="grupo-titulo">{{ $t(g.titulo) }}</p>
             <a v-for="item in g.items" :key="item.id" href="#" :class="{ active: seccionMenu === item.id }"
-              :aria-current="seccionMenu === item.id ? 'page' : null" @click.prevent="irA(item.id)">{{ $t(item.texto) }}</a>
+              :aria-current="seccionMenu === item.id ? 'page' : null" @click.prevent="irA(item.id)">{{ $t(item.texto) }}<span v-if="item.badge" class="badge-menu">{{ item.badge }}</span></a>
           </div>
         </nav>
         <div class="sidebar-pie">
@@ -458,7 +475,14 @@ const eliminarProyecto = async (id) => {
       <main class="main-content">
         
 
-        <CalendariEquip v-if="seccionActiva === 'calendari'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <!-- Avís: sol·licituds de la web per respondre -->
+        <div v-if="solicitudesNuevas && !avisoSolicitudesCerrado && seccionActiva !== 'solicitudes'" class="aviso-solicitudes" role="alert">
+          <span>📬 <strong>{{ $t('intranet.solicitudes.avisoEntrada', { n: solicitudesNuevas }, solicitudesNuevas) }}</strong></span>
+          <button type="button" class="btn-aviso" @click="irASolicitudes">{{ $t('intranet.solicitudes.verlas') }}</button>
+          <button type="button" class="cerrar-aviso" :aria-label="$t('intranet.comun.cerrar')" @click="avisoSolicitudesCerrado = true">✕</button>
+        </div>
+        <SolicitudesWeb v-if="seccionActiva === 'solicitudes'" :sesion="sesion" :inicial="destinoInicial.solicitud || null" @sesion-caducada="sesionCaducada" @cambio="cargarSolicitudesNuevas" />
+        <CalendariEquip v-else-if="seccionActiva === 'calendari'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <DiarioActividad v-else-if="seccionActiva === 'diario'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <InformeSemestral v-else-if="seccionActiva === 'informe'" @sesion-caducada="sesionCaducada" />
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
@@ -745,4 +769,8 @@ const eliminarProyecto = async (id) => {
 }
 .cambio-obligatorio { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 40px 15px; background: #f4f7f9; }
 .btn-salir-cambio { background: none; border: none; color: #012169; text-decoration: underline; cursor: pointer; }
+.badge-menu { display: inline-block; margin-left: 6px; background: #c62828; color: white; border-radius: 10px; padding: 0 7px; font-size: 0.75rem; font-weight: bold; line-height: 1.5; }
+.aviso-solicitudes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff4e5; border: 1px solid #f0c37a; border-left: 5px solid #c62828; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; color: #7a2b00; }
+.aviso-solicitudes .btn-aviso { background: #c62828; color: white; border: none; border-radius: 5px; padding: 6px 14px; font-weight: bold; cursor: pointer; }
+.aviso-solicitudes .cerrar-aviso { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 1rem; color: #7a4300; }
 </style>

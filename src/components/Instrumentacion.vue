@@ -6,7 +6,7 @@ import { useSolicitud } from '../composables/useSolicitud'
 import DatosSolicitante from './DatosSolicitante.vue'
 import EstadoSolicitud from './EstadoSolicitud.vue'
 
-const { t, locale } = useI18n()
+const { t, tm, rt, locale } = useI18n()
 
 const apiUrl = '/api/instrumentos'
 const emit = defineEmits(['volver'])
@@ -39,7 +39,8 @@ const cargarDatos = async () => {
       prestadoHasta: fila.prestado_hasta || null,
       ultimaCalibracion: fila.ultima_calibracion || '',
       descripcionCompleta: fila.descripcion || '',
-      parametros: fila.parametros_tecnicos || ''
+      parametros: fila.parametros_tecnicos || '',
+      numeroSerie: fila.numero_serie || ''
     }))
     cargando.value = false
     // ?i=<id> (des de la cerca): obrir aquell instrument
@@ -118,10 +119,68 @@ const toggleDia = (n) => {
 
 const diasOrdenadosTexto = computed(() => [...diasSeleccionados.value].sort((a, b) => a - b).join(', '))
 
+// Dies triats en format AAAA-MM-DD (per passar-los al calendari des de la intranet)
+const diasIso = () => [...diasSeleccionados.value].sort((a, b) => a - b)
+  .map(n => `${anioActual.value}-${String(mesActual.value + 1).padStart(2, '0')}-${String(n).padStart(2, '0')}`)
+
+// ---------- Document de préstec ----------
+// Es genera aquí mateix, amb les dades de qui el demana. L'ha de signar digitalment
+// (AutoFirma, Adobe amb certificat...) i adjuntar-lo: sense document signat no s'envia.
+const docPrestec = ref(null)
+const inputDoc = ref(null)
+const elegirDoc = (e) => { docPrestec.value = e.target.files?.[0] || null }
+const puedeGenerar = computed(() => diasSeleccionados.value.length > 0 && nombre.value.trim() && email.value.trim())
+const generarDocumento = async () => {
+  if (!puedeGenerar.value) { alert(t('instrumentacion.doc.faltan')); return }
+  const { jsPDF } = await import('jspdf')
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  const M = 20, ANCHO = 170
+  let y = 22
+  const linea = (texto, { mida = 10, negreta = false, espai = 5 } = {}) => {
+    pdf.setFont('helvetica', negreta ? 'bold' : 'normal'); pdf.setFontSize(mida)
+    for (const l of pdf.splitTextToSize(texto, ANCHO)) {
+      if (y > 275) { pdf.addPage(); y = 22 }
+      pdf.text(l, M, y); y += mida * 0.45
+    }
+    y += espai - 2
+  }
+  const eq = equipoSeleccionado.value
+  const hoyTexto = new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
+  pdf.setDrawColor(1, 33, 105); pdf.setLineWidth(0.8); pdf.line(M, 14, M + ANCHO, 14)
+  linea(t('instrumentacion.doc.organismo'), { mida: 9, espai: 3 })
+  linea(t('instrumentacion.doc.titulo'), { mida: 15, negreta: true, espai: 6 })
+  linea(t('instrumentacion.doc.intro'), { espai: 6 })
+  linea(t('instrumentacion.doc.datos'), { mida: 11, negreta: true, espai: 3 })
+  const campos = [
+    [t('instrumentacion.doc.nombre'), nombre.value.trim()],
+    [t('instrumentacion.doc.email'), email.value.trim()],
+    [t('instrumentacion.doc.institucion'), institucionInvestigador.value.trim() || '—'],
+    [t('instrumentacion.doc.instrumento'), `${eq.nombre}${eq.marca ? ' (' + eq.marca + ')' : ''}`],
+    [t('instrumentacion.doc.numeroSerie'), eq.numeroSerie || '—'],
+    [t('instrumentacion.doc.fechas'), diasIso().map(d => d.split('-').reverse().join('/')).join(', ')]
+  ]
+  for (const [k, v] of campos) linea(`${k}: ${v}`, { espai: 2 })
+  y += 3
+  linea(t('instrumentacion.doc.clausulasTitulo'), { mida: 11, negreta: true, espai: 3 })
+  tm('instrumentacion.doc.clausulas').forEach((c, i) => linea(`${i + 1}. ${rt(c)}`, { espai: 3 }))
+  y += 4
+  linea(t('instrumentacion.doc.firmaTitulo'), { mida: 11, negreta: true, espai: 3 })
+  linea(t('instrumentacion.doc.firmaTexto', { nombre: nombre.value.trim(), fecha: hoyTexto }), { espai: 4 })
+  pdf.setDrawColor(150); pdf.setLineWidth(0.3); pdf.rect(M, y, 80, 30)
+  pdf.setFontSize(8); pdf.text(t('instrumentacion.doc.recuadro'), M + 2, y + 5)
+  y += 38
+  linea(t('instrumentacion.doc.pie'), { mida: 8, espai: 2 })
+  pdf.save(`Prestec_SIO_${eq.nombre.replace(/[^\w\d-]+/g, '_')}.pdf`)
+}
+
 // Envia la sol·licitud al SIO des de la web (sense obrir el programa de correu)
 const enviarSolicitud = async () => {
   if (diasSeleccionados.value.length === 0) {
     alert(t('instrumentacion.faltanDatos'))
+    return
+  }
+  if (!docPrestec.value) {
+    alert(t('instrumentacion.doc.falta'))
     return
   }
   const instrumento = equipoSeleccionado.value.nombre
@@ -134,10 +193,14 @@ const enviarSolicitud = async () => {
     `${t('instrumentacion.correo.dias')}: ${dias}\n` +
     `${t('instrumentacion.correo.nombre')}: ${nombre.value.trim()}\n` +
     (institucion ? `${t('instrumentacion.correo.institucion')}: ${institucion}\n` : '') +
+    `\n${t('instrumentacion.doc.adjuntoCorreo')}\n` +
     `\n${t('instrumentacion.correo.despedida')}`
   )
-  if (await enviar({ asunto: t('instrumentacion.correo.asunto', { instrumento }), cuerpo })) {
+  if (await enviar({ asunto: t('instrumentacion.correo.asunto', { instrumento }), cuerpo, adjunto: docPrestec.value,
+    dias: diasIso(), institucion, instrumentoId: equipoSeleccionado.value.id })) {
     diasSeleccionados.value = []
+    docPrestec.value = null
+    if (inputDoc.value) inputDoc.value.value = ''
   }
 }
 </script>
@@ -249,10 +312,26 @@ const enviarSolicitud = async () => {
                   <input type="text" id="institucion-investigador" v-model="institucionInvestigador" :placeholder="$t('instrumentacion.institucionPh')" class="input-form">
                 </div>
 
+                <!-- Document de préstec: descarregar, signar digitalment i adjuntar -->
+                <div class="bloque-doc">
+                  <h4>📄 {{ $t('instrumentacion.doc.bloqueTitulo') }}</h4>
+                  <ol>
+                    <li>{{ $t('instrumentacion.doc.paso1') }}
+                      <button type="button" class="btn-doc" :disabled="!puedeGenerar" @click="generarDocumento">⬇️ {{ $t('instrumentacion.doc.descargar') }}</button>
+                      <small v-if="!puedeGenerar" class="nota-doc">{{ $t('instrumentacion.doc.faltan') }}</small>
+                    </li>
+                    <li>{{ $t('instrumentacion.doc.paso2') }}</li>
+                    <li>{{ $t('instrumentacion.doc.paso3') }}
+                      <input ref="inputDoc" type="file" accept=".pdf,application/pdf" class="input-doc" @change="elegirDoc">
+                      <small v-if="docPrestec" class="ok-doc">✔ {{ docPrestec.name }}</small>
+                    </li>
+                  </ol>
+                </div>
+
                 <button
                   type="submit"
-                  :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 || estado === 'enviando' }]"
-                  :disabled="diasSeleccionados.length === 0 || estado === 'enviando'"
+                  :class="['btn-submit', { 'btn-desactivado': diasSeleccionados.length === 0 || !docPrestec || estado === 'enviando' }]"
+                  :disabled="diasSeleccionados.length === 0 || !docPrestec || estado === 'enviando'"
                 >
                   {{ estado === 'enviando' ? $t('solicitud.enviando') : $t('instrumentacion.preparar') }}
                 </button>
@@ -280,6 +359,15 @@ const enviarSolicitud = async () => {
 </template>
 
 <style scoped>
+.bloque-doc { background: #f4f7f9; border-left: 4px solid #0086c0; border-radius: 6px; padding: 10px 14px; margin: 12px 0; font-size: 0.85rem; color: #333; }
+.bloque-doc h4 { margin: 0 0 6px; color: #012169; font-size: 0.95rem; }
+.bloque-doc ol { margin: 0; padding-left: 18px; line-height: 1.5; }
+.bloque-doc li { margin-bottom: 6px; }
+.btn-doc { display: block; margin-top: 4px; background: #012169; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+.btn-doc:disabled { background: #9aa5b4; cursor: not-allowed; }
+.input-doc { display: block; margin-top: 4px; font-size: 0.82rem; max-width: 100%; }
+.nota-doc { color: #7a4300; display: block; }
+.ok-doc { color: #1e7e34; font-weight: bold; display: block; }
 /* ESTILOS GLOBALES UNIFICADOS */
 .servicios-hub { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-servicios { 

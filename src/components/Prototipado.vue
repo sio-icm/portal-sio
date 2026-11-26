@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useSolicitud } from '../composables/useSolicitud'
 import DatosSolicitante from './DatosSolicitante.vue'
 import EstadoSolicitud from './EstadoSolicitud.vue'
-const fondoInstrumentacion = '/instrumentacion.webp'
+// Capçalera fosca amb foto, com la resta de pàgines de serveis (el títol és blanc)
+const backgroundStyle = `linear-gradient(rgba(1, 33, 105, 0.65), rgba(1, 33, 105, 0.85)), url('/oficinatecnica.webp')`
 
 const { t } = useI18n()
 

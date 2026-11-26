@@ -34,7 +34,7 @@ const enviarSolicitud = async () => {
     `🏗️ ${t('tanques.correo.grua')}:\n${grua}\n\n` +
     `${t('tanques.correo.despedida')}`
   )
-  if (await enviar({ asunto: t('tanques.correo.asunto'), cuerpo })) {
+  if (await enviar({ asunto: t('tanques.correo.asunto'), cuerpo, dias: diasSeleccionados.value.map(k => { const [a, m, d] = k.split('-').map(Number); return `${a}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` }) })) {
     diasSeleccionados.value = []
     proposito.value = ''
     necesitaGrua.value = 'no'

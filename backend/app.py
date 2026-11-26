@@ -224,23 +224,26 @@ def contacto():
     if len(nombre) > 200 or len(email) > 254 or len(texto) > 5000 or '\n' in nombre or '\r' in nombre:
         return jsonify({"error": "Algún campo es demasiado largo"}), 400
 
-    if not os.environ.get('SIO_SMTP_HOST'):
-        return jsonify({"error": "Envío no configurado en el servidor"}), 503
     if demasiados_envios(request.remote_addr):
         return jsonify({"error": "Demasiadas consultas. Inténtalo más tarde"}), 429
+    # Es desa a la intranet (Sol·licituds web), encara que el correu no surti
+    id_solicitud = guardar_solicitud({'tipo': 'contacto', 'nombre': nombre, 'email': email, 'idioma': str(datos.get('idioma', ''))[:5],
+                                      'asunto': f'Consulta desde la web del SIO: {nombre}', 'cuerpo': texto})
+    if not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"mensaje": "Consulta enviada"}), 200
 
     mensaje = EmailMessage()
     mensaje['Subject'] = f'Consulta desde la web del SIO: {nombre}'
     mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
     mensaje['To'] = CONTACTO_DESTINO
     mensaje['Reply-To'] = email
-    mensaje.set_content(f'Nombre: {nombre}\nEmail: {email}\n\n{texto}\n')
+    mensaje.set_content(f'Nombre: {nombre}\nEmail: {email}\n\n{texto}\n\n'
+                        f'Gestiónala en la intranet: {WEB_PUBLICA}/intranet?solicitud={id_solicitud}\n')
 
     try:
         enviar_correo(mensaje)
     except Exception as e:
-        print("Error enviando consulta:", e)
-        return jsonify({"error": "No se ha podido enviar la consulta"}), 502
+        print("Error enviando consulta (queda guardada en la intranet):", e)
     return jsonify({"mensaje": "Consulta enviada"}), 200
 
 
@@ -305,11 +308,34 @@ def solicitud():
             return jsonify({"error": "El archivo adjunto ocupa más de 10 MB"}), 413
     elif tipo == 'pelagia':
         return jsonify({"error": "Falta el Plan de Campaña"}), 400
+    elif tipo == 'instrumento':
+        return jsonify({"error": "Falta el documento de préstamo firmado"}), 400
 
-    if not os.environ.get('SIO_SMTP_HOST'):
-        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+    # Dades estructurades (per gestionar-la a la intranet i passar els dies al calendari)
+    institucion = datos.get('institucion', '').strip()[:200]
+    dias = [d.strip() for d in datos.get('dias', '').split(',') if fecha_valida(d.strip())][:200]
+    try:
+        instrumento_id = int(datos.get('instrumento_id') or 0) or None
+    except ValueError:
+        instrumento_id = None
+    firmado = False
+    if tipo == 'instrumento':
+        # El document de préstec ha de tornar signat digitalment (AutoFirma, Adobe amb certificat...)
+        if not adjunto.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "El documento de préstamo debe ser un PDF firmado digitalmente"}), 415
+        firmado = pdf_firmado(contenido_adjunto)
+        if not firmado:
+            return jsonify({"error": "El documento de préstamo no está firmado digitalmente"}), 422
+
     if demasiadas_solicitudes(request.remote_addr):
         return jsonify({"error": "Demasiadas solicitudes. Inténtalo más tarde"}), 429
+    id_solicitud = guardar_solicitud({
+        'tipo': tipo, 'nombre': nombre, 'email': email, 'institucion': institucion, 'idioma': datos.get('idioma', '')[:5],
+        'asunto': f'[Web SIO] {asunto}', 'cuerpo': cuerpo, 'dias': dias, 'instrumento_id': instrumento_id,
+        'adjunto_contenido': contenido_adjunto, 'firmado': firmado,
+        'adjunto_nombre': os.path.basename(adjunto.filename.replace('\\', '/'))[:150] if contenido_adjunto is not None else ''})
+    if not os.environ.get('SIO_SMTP_HOST'):
+        return jsonify({"mensaje": "Solicitud enviada"}), 200
 
     mensaje = EmailMessage()
     mensaje['Subject'] = f'[Web SIO] {asunto}'
@@ -319,7 +345,8 @@ def solicitud():
     mensaje.set_content(
         f'Solicitud enviada desde la web del SIO.\n'
         f'Nombre: {nombre}\nEmail: {email}\n'
-        f'(Para contestar, responde a este correo: va a {email}.)\n\n'
+        f'(Para contestar, responde a este correo: va a {email}.)\n'
+        f'Gestiónala en la intranet (responder, pasarla al calendario): {WEB_PUBLICA}/intranet?solicitud={id_solicitud}\n\n'
         f'----------------------------------------\n\n{cuerpo}\n')
     if contenido_adjunto is not None:
         tipo_mime, subtipo = EXTENSIONES_ADJUNTO[os.path.splitext(adjunto.filename)[1].lower()]
@@ -329,8 +356,7 @@ def solicitud():
     try:
         enviar_correo(mensaje)
     except Exception as e:
-        print("Error enviando solicitud:", e)
-        return jsonify({"error": "No se ha podido enviar la solicitud"}), 502
+        print("Error enviando solicitud (queda guardada en la intranet):", e)
     return jsonify({"mensaje": "Solicitud enviada"}), 200
 
 
@@ -3695,6 +3721,276 @@ def buscar():
                                    'extracto': extracto(texto, palabras), 'enlace': '/intranet?seccion=diario'})
     conexion.close()
     return jsonify(resultados[:300])
+
+
+# ---------------------------------------------------------------------------
+# SOL·LICITUDS DE LA WEB (serveis i contacte)
+# Totes les sol·licituds de la web (Pelagia, tanc, instruments, salinitat, fondejos,
+# prototipatge, R+D+I i el formulari de contacte) es guarden aquí, a més d'enviar-se per
+# correu a sio@. A la intranet es veuen, es responen (el correu surt cap al sol·licitant)
+# i, si es demanen dies, es poden passar al calendari com a reserva.
+# Estats: nova → en_curs → acceptada / rebutjada → tancada.
+# ---------------------------------------------------------------------------
+SOLICITUDES_DIR = os.path.join(os.path.dirname(DB_PATH), 'solicitudes')
+ESTADOS_SOLICITUD = ('nova', 'en_curs', 'acceptada', 'rebutjada', 'tancada')
+# Recurs del calendari per a cada tipus que reserva dies
+RECURSO_DE_SOLICITUD = {'pelagia': 'pelagia', 'tanque': 'tanc', 'instrumento': 'instrument'}
+WEB_PUBLICA = os.environ.get('SIO_WEB', 'https://sio.icm.csic.es')
+
+
+def crear_tablas_solicitudes():
+    conexion = conectar_bd()
+    conexion.executescript("""
+        CREATE TABLE IF NOT EXISTS solicitudes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo TEXT NOT NULL,
+            nombre TEXT NOT NULL,
+            email TEXT NOT NULL,
+            institucion TEXT NOT NULL DEFAULT '',
+            idioma TEXT NOT NULL DEFAULT '',
+            asunto TEXT NOT NULL DEFAULT '',
+            cuerpo TEXT NOT NULL DEFAULT '',
+            dias TEXT NOT NULL DEFAULT '[]',
+            instrumento_id INTEGER,
+            adjunto_archivo TEXT NOT NULL DEFAULT '',
+            adjunto_nombre TEXT NOT NULL DEFAULT '',
+            adjunto_firmado INTEGER NOT NULL DEFAULT 0,
+            estado TEXT NOT NULL DEFAULT 'nova',
+            notas TEXT NOT NULL DEFAULT '',
+            reserva_ids TEXT NOT NULL DEFAULT '[]',
+            creado TEXT NOT NULL DEFAULT (datetime('now')),
+            actualizado TEXT NOT NULL DEFAULT (datetime('now')),
+            actualizado_por TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS solicitudes_mensajes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            solicitud_id INTEGER NOT NULL REFERENCES solicitudes(id) ON DELETE CASCADE,
+            autor TEXT NOT NULL DEFAULT '',
+            texto TEXT NOT NULL,
+            creado TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS solicitudes_estado ON solicitudes(estado);
+    """)
+    conexion.commit()
+    conexion.close()
+    os.makedirs(SOLICITUDES_DIR, exist_ok=True)
+
+
+crear_tablas_solicitudes()
+
+
+def pdf_firmado(contenido):
+    """Té una signatura digital (PAdES/PKCS#7: AutoFirma, Adobe amb certificat...)?"""
+    return bool(contenido) and b'/ByteRange' in contenido and (
+        b'/Sig' in contenido or b'adbe.pkcs7' in contenido or b'ETSI.CAdES' in contenido)
+
+
+def guardar_solicitud(datos):
+    """Desa una sol·licitud que arriba de la web. Torna l'id."""
+    conexion = conectar_bd()
+    archivo = ''
+    if datos.get('adjunto_contenido') is not None:
+        extension = os.path.splitext(datos['adjunto_nombre'])[1].lower() or '.pdf'
+        archivo = f'{uuid.uuid4().hex}{extension}'
+        with open(os.path.join(SOLICITUDES_DIR, archivo), 'wb') as f:
+            f.write(datos['adjunto_contenido'])
+    cursor = conexion.execute(
+        'INSERT INTO solicitudes (tipo, nombre, email, institucion, idioma, asunto, cuerpo, dias, instrumento_id, '
+        'adjunto_archivo, adjunto_nombre, adjunto_firmado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (datos['tipo'], datos['nombre'], datos['email'], datos.get('institucion', ''), datos.get('idioma', ''),
+         datos.get('asunto', ''), datos.get('cuerpo', ''), json_lib.dumps(datos.get('dias') or []),
+         datos.get('instrumento_id'), archivo, datos.get('adjunto_nombre', '') if archivo else '',
+         1 if datos.get('firmado') else 0))
+    conexion.commit()
+    conexion.close()
+    return cursor.lastrowid
+
+
+def solicitud_json(conexion, fila, completa=False):
+    d = dict(fila)
+    d.pop('adjunto_archivo', None)
+    for c in ('dias', 'reserva_ids'):
+        try:
+            d[c] = json_lib.loads(d[c] or '[]')
+        except ValueError:
+            d[c] = []
+    d['tiene_adjunto'] = bool(fila['adjunto_archivo'])
+    d['enlace_adjunto'] = f"/api/solicitudes/{fila['id']}/adjunto" if fila['adjunto_archivo'] else None
+    if fila['instrumento_id']:
+        i = conexion.execute('SELECT nombre, numero_serie FROM instrumentos WHERE id = ?', (fila['instrumento_id'],)).fetchone()
+        d['instrumento'] = (i['nombre'] + (f" ({i['numero_serie']})" if i['numero_serie'] else '')) if i else ''
+    d['puede_reservar'] = fila['tipo'] in RECURSO_DE_SOLICITUD and bool(d['dias'])
+    if completa:
+        d['mensajes'] = [dict(m) for m in conexion.execute(
+            'SELECT * FROM solicitudes_mensajes WHERE solicitud_id = ? ORDER BY id', (fila['id'],))]
+    else:
+        d['cuerpo'] = d['cuerpo'][:300]
+    return d
+
+
+@app.route('/api/solicitudes', methods=['GET'])
+@requiere_login
+def listar_solicitudes():
+    conexion = conectar_bd()
+    filas = conexion.execute('SELECT * FROM solicitudes ORDER BY (estado = \'nova\') DESC, id DESC LIMIT 500').fetchall()
+    respuesta = [solicitud_json(conexion, f) for f in filas]
+    conexion.close()
+    return jsonify(respuesta)
+
+
+@app.route('/api/solicitudes/pendientes', methods=['GET'])
+@requiere_login
+def solicitudes_pendientes():
+    conexion = conectar_bd()
+    n = conexion.execute("SELECT COUNT(*) FROM solicitudes WHERE estado = 'nova'").fetchone()[0]
+    en_curso = conexion.execute("SELECT COUNT(*) FROM solicitudes WHERE estado = 'en_curs'").fetchone()[0]
+    conexion.close()
+    return jsonify({'nuevas': n, 'en_curso': en_curso})
+
+
+@app.route('/api/solicitudes/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@requiere_login
+def gestionar_solicitud(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if request.method == 'DELETE':
+        if not session.get('es_admin'):
+            conexion.close()
+            return jsonify({"error": "Solo administradores"}), 403
+        if fila['adjunto_archivo']:
+            try:
+                os.remove(os.path.join(SOLICITUDES_DIR, fila['adjunto_archivo']))
+            except FileNotFoundError:
+                pass
+        conexion.execute('DELETE FROM solicitudes_mensajes WHERE solicitud_id = ?', (id,))
+        conexion.execute('DELETE FROM solicitudes WHERE id = ?', (id,))
+        conexion.commit()
+        conexion.close()
+        return jsonify({"ok": True})
+    if request.method == 'PUT':
+        datos = request.get_json(silent=True) or {}
+        estado = datos.get('estado', fila['estado'])
+        notas = str(datos.get('notas', fila['notas']) or '')[:5000]
+        if estado not in ESTADOS_SOLICITUD:
+            conexion.close()
+            return jsonify({"error": "Datos incorrectos"}), 400
+        conexion.execute("UPDATE solicitudes SET estado = ?, notas = ?, actualizado = datetime('now'), actualizado_por = ? WHERE id = ?",
+                         (estado, notas, nombre_sesion(), id))
+        conexion.commit()
+        fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    respuesta = solicitud_json(conexion, fila, completa=True)
+    conexion.close()
+    return jsonify(respuesta)
+
+
+@app.route('/api/solicitudes/<int:id>/adjunto', methods=['GET'])
+@requiere_login
+def adjunto_solicitud(id):
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT adjunto_archivo, adjunto_nombre FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    conexion.close()
+    if not fila or not fila['adjunto_archivo']:
+        return jsonify({"error": "No existe"}), 404
+    en_linea = fila['adjunto_archivo'].lower().endswith('.pdf')
+    respuesta = send_from_directory(SOLICITUDES_DIR, fila['adjunto_archivo'], download_name=fila['adjunto_nombre'] or fila['adjunto_archivo'],
+                                    as_attachment=not en_linea, max_age=0)
+    respuesta.headers['Cache-Control'] = 'private, no-cache'
+    respuesta.headers['X-Content-Type-Options'] = 'nosniff'
+    return respuesta
+
+
+@app.route('/api/solicitudes/<int:id>/respuesta', methods=['POST'])
+@requiere_login
+def responder_solicitud(id):
+    """Envia un correu al sol·licitant (Reply-To: sio@) i el desa a l'historial."""
+    datos = request.get_json(silent=True) or {}
+    texto = str(datos.get('texto', '') or '').strip()
+    estado = datos.get('estado')
+    if not texto or len(texto) > 10000:
+        return jsonify({"error": "Escribe la respuesta"}), 400
+    if estado is not None and estado not in ESTADOS_SOLICITUD:
+        return jsonify({"error": "Datos incorrectos"}), 400
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    if not os.environ.get('SIO_SMTP_HOST'):
+        conexion.close()
+        return jsonify({"error": "Envío no configurado en el servidor"}), 503
+    mensaje = EmailMessage()
+    asunto = fila['asunto'] or 'Sol·licitud al SIO'
+    mensaje['Subject'] = asunto if asunto.lower().startswith('re:') else f'Re: {asunto}'
+    mensaje['From'] = os.environ.get('SIO_SMTP_FROM', CONTACTO_DESTINO)
+    mensaje['To'] = fila['email']
+    mensaje['Reply-To'] = CONTACTO_DESTINO
+    mensaje['Cc'] = CONTACTO_DESTINO
+    mensaje.set_content(f"{texto}\n\n--\n{nombre_sesion()}\nServei d'Enginyeria Oceanogràfica (SIO) · Institut de Ciències del Mar (ICM-CSIC)\n"
+                        f"{CONTACTO_DESTINO} · {WEB_PUBLICA}\n")
+    try:
+        enviar_correo(mensaje)
+    except Exception as e:
+        print('Error enviant la resposta:', e)
+        conexion.close()
+        return jsonify({"error": "No se ha podido enviar el correo"}), 502
+    conexion.execute('INSERT INTO solicitudes_mensajes (solicitud_id, autor, texto) VALUES (?, ?, ?)', (id, nombre_sesion(), texto))
+    nuevo = estado or ('en_curs' if fila['estado'] == 'nova' else fila['estado'])
+    conexion.execute("UPDATE solicitudes SET estado = ?, actualizado = datetime('now'), actualizado_por = ? WHERE id = ?",
+                     (nuevo, nombre_sesion(), id))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    respuesta = solicitud_json(conexion, fila, completa=True)
+    conexion.close()
+    return jsonify(respuesta)
+
+
+def tramos_de_dias(dias):
+    """['2026-12-09','2026-12-10','2026-12-12'] → [('2026-12-09','2026-12-10'), ('2026-12-12','2026-12-12')]"""
+    fechas = sorted({date.fromisoformat(d) for d in dias})
+    tramos = []
+    for f in fechas:
+        if tramos and (f - tramos[-1][1]).days == 1:
+            tramos[-1][1] = f
+        else:
+            tramos.append([f, f])
+    return [(a.isoformat(), b.isoformat()) for a, b in tramos]
+
+
+@app.route('/api/solicitudes/<int:id>/reserva', methods=['POST'])
+@requiere_login
+def reservar_solicitud(id):
+    """Passa els dies demanats al calendari com a reserva (una per cada tram de dies seguits)."""
+    conexion = conectar_bd()
+    fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    if not fila:
+        conexion.close()
+        return jsonify({"error": "No existe"}), 404
+    recurso = RECURSO_DE_SOLICITUD.get(fila['tipo'])
+    try:
+        dias = [d for d in json_lib.loads(fila['dias'] or '[]') if fecha_valida(d)]
+    except ValueError:
+        dias = []
+    if not recurso or not dias or (recurso == 'instrument' and not fila['instrumento_id']):
+        conexion.close()
+        return jsonify({"error": "Esta solicitud no tiene días que reservar"}), 400
+    para = fila['nombre'] + (f" ({fila['institucion']})" if fila['institucion'] else '')
+    ids = json_lib.loads(fila['reserva_ids'] or '[]')
+    for inicio, fin in tramos_de_dias(dias):
+        cursor = conexion.execute(
+            'INSERT INTO reservas (recurso, instrumento_id, inicio, fin, usuario_id, para, proposito, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (recurso, fila['instrumento_id'] if recurso == 'instrument' else None, inicio, fin, session.get('usuario_id'),
+             para[:200], f"Sol·licitud web nº {id}", session.get('usuario_id')))
+        ids.append(cursor.lastrowid)
+    conexion.execute("UPDATE solicitudes SET reserva_ids = ?, estado = CASE WHEN estado IN ('nova', 'en_curs') THEN 'acceptada' ELSE estado END, "
+                     "actualizado = datetime('now'), actualizado_por = ? WHERE id = ?", (json_lib.dumps(ids), nombre_sesion(), id))
+    conexion.commit()
+    fila = conexion.execute('SELECT * FROM solicitudes WHERE id = ?', (id,)).fetchone()
+    respuesta = solicitud_json(conexion, fila, completa=True)
+    conexion.close()
+    return jsonify(respuesta)
 
 
 if __name__ == '__main__':
