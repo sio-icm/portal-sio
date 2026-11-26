@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useEditor, EditorContent } from '@tiptap/vue-3'
+import { useEditor, EditorContent, Extension } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
@@ -66,7 +66,15 @@ const editor = useEditor({
     Subscript, Superscript,
     Table.configure({ resizable: true }), TableRow, TableHeader, TableCell,
     TaskList, TaskItem.configure({ nested: true }),
-    Placeholder.configure({ placeholder: () => props.placeholder })
+    Placeholder.configure({ placeholder: () => props.placeholder }),
+    // Conservar l'«id» dels títols: és el destí dels enllaços d'un índex (#apartat)
+    Extension.create({
+      name: 'idTitulos',
+      addGlobalAttributes: () => [{
+        types: ['heading'],
+        attributes: { id: { default: null, parseHTML: (el) => el.getAttribute('id') || null, renderHTML: (a) => (a.id ? { id: a.id } : {}) } }
+      }]
+    })
   ],
   editorProps: {
     handlePaste: (vista, evento) => {

@@ -131,6 +131,15 @@ const abrir = async (id) => {
   vista.value = 'ver'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+// Enllaços interns d'una pàgina (#apartat, p. ex. un índex): baixar fins a l'apartat
+const seguirEnlace = (e) => {
+  const a = e.target.closest?.('a[href^="#"]')
+  if (!a) return
+  const destino = document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)))
+  if (!destino) return
+  e.preventDefault()
+  destino.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const volver = async () => { vista.value = 'lista'; pagina.value = null; version.value = null; await cargarLista() }
 
 const nueva = () => {
@@ -341,7 +350,7 @@ const restaurar = async () => {
             </select>
           </span>
         </div>
-        <div v-if="textoPlano(pagina.contenido).trim() || /<img/i.test(pagina.contenido || '')" class="contenido-wiki" v-html="limpiarHtml(pagina.contenido)"></div>
+        <div v-if="textoPlano(pagina.contenido).trim() || /<img/i.test(pagina.contenido || '')" class="contenido-wiki" v-html="limpiarHtml(pagina.contenido)" @click="seguirEnlace"></div>
 
         <!-- Fitxers adjunts -->
         <section class="adjuntos">

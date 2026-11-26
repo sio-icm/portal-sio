@@ -76,7 +76,12 @@ watch(locale, () => actualizarTitulo(route))
           <form class="top-item border-left cerca-top" :class="{ abierta: cercaAbierta }" role="search" @submit.prevent="buscarWeb">
             <input ref="inputCerca" v-model="textoCerca" type="search" :placeholder="$t('cerca.placeholderCorto')" :aria-label="$t('cerca.titulo')"
               @keydown.esc="cercaAbierta = false">
-            <button type="submit" class="btn-reset lupa" :aria-label="$t('cerca.buscar')" @click="obrirCerca">🔍</button>
+            <!-- Només al mòbil: la lupa obre el quadre (a l'ordinador ja es llegeix «Cercar...») -->
+            <button type="submit" class="btn-reset lupa" :aria-label="$t('cerca.buscar')" @click="obrirCerca">
+              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <circle cx="10.5" cy="10.5" r="6.5" /><line x1="15.5" y1="15.5" x2="21" y2="21" />
+              </svg>
+            </button>
           </form>
         </div>
       </div>
@@ -177,7 +182,8 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .cerca-top input { width: 150px; height: 26px; border: 1px solid rgba(255,255,255,0.35); border-radius: 13px; background: rgba(255,255,255,0.12); color: white; font: inherit; font-size: 12px; font-weight: normal; padding: 0 10px; outline: none; transition: width 0.25s, background 0.2s; }
 .cerca-top input::placeholder { color: rgba(255,255,255,0.7); }
 .cerca-top input:focus { width: 210px; background: white; color: #012169; }
-.cerca-top .lupa { font-size: 14px; line-height: 1; padding: 4px; }
+.cerca-top .lupa { display: none; color: white; line-height: 0; padding: 4px; }
+.cerca-top .lupa:hover { opacity: 0.8; }
 
 .header-transparente { 
   position: absolute; 
@@ -268,6 +274,8 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
   .idiomas-container { gap: 4px; }
   /* Al mòbil només es veu la lupa; en prémer-la, el quadre s'obre a sota de la barra */
   .cerca-top input { display: none; }
+  .cerca-top .lupa { display: block; }
+  .cerca-top.abierta input::placeholder { color: #8a94a6; }
   .cerca-top.abierta input { display: block; position: absolute; top: 40px; right: 0; width: min(320px, 92vw); height: 38px; border-radius: 0 0 0 8px; background: white; color: #012169; font-size: 15px; border: none; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
 }
 
