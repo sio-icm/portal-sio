@@ -15,6 +15,7 @@ export default {
   },
 
   rutas: {
+    cerca: 'Búsqueda',
     servicios: 'Servicios',
     instrumentacion: 'Instrumentación',
     pelagia: 'Embarcación Pelagia',
@@ -118,6 +119,29 @@ export default {
     errorEnvio: 'No se ha podido enviar la solicitud',
     errorConexion: 'No se ha podido conectar con el servidor',
     alternativa: 'Puedes escribirnos directamente a'
+  },
+
+  cerca: {
+    titulo: 'Búsqueda',
+    placeholder: '¿Qué buscas? (servicios, instrumentos, proyectos, documentación...)',
+    placeholderCorto: 'Buscar...',
+    buscar: 'Buscar',
+    escribe: 'Escribe al menos una palabra.',
+    buscando: 'Buscando…',
+    resultados: '{n} resultados para «{q}»',
+    nada: 'No se ha encontrado nada. Prueba con otras palabras.',
+    interno: 'Solo personal',
+    paginaPdf: 'página {n} del PDF',
+    grupos: {
+      web: 'Páginas de la web',
+      proyectos: 'Proyectos',
+      instrumentos: 'Instrumentos',
+      equipo: 'Equipo',
+      documentacion: 'Documentación interna',
+      pdf: 'Dentro de los documentos (PDF)',
+      actas: 'Actas de reunión',
+      diario: 'Diario de actividad'
+    }
   },
 
   noEncontrado: {

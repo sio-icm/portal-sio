@@ -169,8 +169,8 @@ const chips = (r) => [
   })),
   ...r.reservas.map(x => ({
     clave: `r${x.id}`, color: '#012169',
-    texto: `${recurso(x.recurso).icono} ${nombreReserva(x)}`,
-    titulo: `${nombreReserva(x)}: ${x.persona || x.para}${x.proposito ? ' · ' + x.proposito : ''}`
+    texto: `${recurso(x.recurso).icono} ${nombreReserva(x)}${quienReserva(x) ? ' · ' + nombreCorto(quienReserva(x), datos.value.equipo) : ''}`,
+    titulo: `${nombreReserva(x)}: ${quienReserva(x)}${x.persona && x.persona !== quienReserva(x) ? ' · ' + t('intranet.calendario.responsable') + ': ' + x.persona : ''}${x.proposito ? ' · ' + x.proposito : ''}`
   }))
 ]
 
@@ -185,20 +185,25 @@ const nuevaEntrada = () => {
 }
 const nuevaReserva = () => {
   errorFormulario.value = ''
-  formulario.value = { clase: 'reserva', id: null, recurso: 'pelagia', instrumento_id: '', usuario_id: props.sesion.usuario_id ?? '', para: '', inicio: diaSeleccionado.value, fin: diaSeleccionado.value, proposito: '' }
+  formulario.value = { clase: 'reserva', id: null, recurso: 'pelagia', instrumento_id: '', usuario_id: datos.value.equipo.some(u => u.plantilla && u.id === props.sesion.usuario_id) ? props.sesion.usuario_id : '', para: miNombre.value, inicio: diaSeleccionado.value, fin: diaSeleccionado.value, proposito: '' }
 }
 const editar = (clase, x) => {
   errorFormulario.value = ''
   formulario.value = clase === 'entrada'
     ? { clase, id: x.id, tipo: x.tipo, usuario_id: x.usuario_id ?? '', inicio: x.inicio, fin: x.fin, hora_inicio: x.hora_inicio || '', hora_fin: x.hora_fin || '', nota: x.nota, proyecto_id: x.proyecto_id ?? '' }
-    : { clase, id: x.id, recurso: x.recurso, instrumento_id: x.instrumento_id ?? '', usuario_id: x.usuario_id ?? '', para: x.para, inicio: x.inicio, fin: x.fin, proposito: x.proposito }
+    : { clase, id: x.id, recurso: x.recurso, instrumento_id: x.instrumento_id ?? '', usuario_id: x.usuario_id ?? '', para: quienReserva(x), inicio: x.inicio, fin: x.fin, proposito: x.proposito }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // Persones que es poden triar: l'administrador, qualsevol; els altres, ells mateixos
-const personasElegibles = computed(() => props.sesion.es_admin
-  ? datos.value.equipo
-  : datos.value.equipo.filter(u => u.id === props.sesion.usuario_id))
+// Qualsevol persona pot apuntar qualsevol del calendari (és de tot l'equip). Per al responsable
+// d'una reserva, la gent del SIO.
+const personasElegibles = computed(() => formulario.value?.clase === 'reserva'
+  ? datos.value.equipo.filter(u => u.plantilla || u.id === formulario.value.usuario_id)
+  : datos.value.equipo)
+// Qui fa la reserva: per defecte, qui l'apunta
+const miNombre = computed(() => datos.value?.equipo.find(u => u.id === props.sesion.usuario_id)?.nombre || props.sesion.nombre || '')
+const quienReserva = (x) => x.para || x.persona || x.creador || ''
 const permiteEquipo = computed(() => formulario.value?.clase === 'reserva' || ['reunio', 'altres'].includes(formulario.value?.tipo))
 
 const guardar = async () => {
@@ -346,21 +351,21 @@ const treureFestiu = async (f) => {
             </select>
           </label>
         </template>
+        <label v-if="formulario.clase === 'reserva'" class="ancho destacado">{{ $t('intranet.calendario.para') }}
+          <input v-model="formulario.para" maxlength="200" required list="cal-personas" :placeholder="$t('intranet.calendario.paraPh')">
+          <datalist id="cal-personas"><option v-for="u in datos.equipo" :key="u.id" :value="u.nombre" /></datalist>
+        </label>
         <label>{{ $t(formulario.clase === 'entrada' ? 'intranet.calendario.quien' : 'intranet.calendario.responsable') }}
           <select v-model="formulario.usuario_id">
-            <option v-if="personasElegibles.length === 0 && !permiteEquipo" value="" disabled>{{ $t('intranet.calendario.eligePersona') }}</option>
             <option v-for="u in personasElegibles" :key="u.id" :value="u.id">{{ u.nombre }}</option>
             <option v-if="formulario.clase === 'entrada' && permiteEquipo" value="">{{ $t('intranet.comun.todoEquipo') }}</option>
-            <option v-if="formulario.clase === 'reserva' && sesion.es_admin" value="">{{ $t('intranet.calendario.alguienFuera') }}</option>
+            <option v-if="formulario.clase === 'reserva'" value="">{{ $t('intranet.calendario.sinResponsable') }}</option>
           </select>
         </label>
         <label>{{ $t('intranet.calendario.desde') }} <input type="date" v-model="formulario.inicio" required></label>
         <label>{{ $t('intranet.calendario.hastaFecha') }} <input type="date" v-model="formulario.fin" :min="formulario.inicio" required></label>
       </div>
       <div class="fila">
-        <label v-if="formulario.clase === 'reserva'" class="ancho">{{ $t('intranet.calendario.para') }}
-          <input v-model="formulario.para" maxlength="200" :required="formulario.usuario_id === ''" :placeholder="$t('intranet.calendario.paraPh')">
-        </label>
         <template v-if="formulario.clase === 'entrada'">
           <label>{{ $t('intranet.calendario.horaInicio') }} <input type="time" v-model="formulario.hora_inicio" step="300"></label>
           <label>{{ $t('intranet.calendario.horaFin') }} <input type="time" v-model="formulario.hora_fin" step="300"

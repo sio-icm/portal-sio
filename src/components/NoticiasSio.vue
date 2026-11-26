@@ -44,7 +44,9 @@ const formatoFecha = (iso) => {
 }
 
 // Notícia oberta a la finestra «Llegir més» (índex dins de «noticias»), o null
-const abierta = ref(null)
+// ?n=<i> (des de la cerca): obrir aquella notícia
+const nInicial = Number(new URLSearchParams(window.location.search).get('n'))
+const abierta = ref(Number.isInteger(nInicial) && new URLSearchParams(window.location.search).has('n') ? nInicial : null)
 const abrir = (i) => { abierta.value = i }
 const cerrar = () => { abierta.value = null }
 const alPulsarTecla = (e) => { if (e.key === 'Escape') cerrar() }

@@ -22,6 +22,7 @@ const routes = [
   { path: '/diario', name: 'diario', component: () => import('./components/DiarioCampana.vue'), meta: { titulo: 'rutas.diario' } },
   { path: '/noticias', name: 'noticias', component: () => import('./components/NoticiasSio.vue'), meta: { titulo: 'rutas.noticias' } },
   { path: '/memoria', name: 'memoria', component: () => import('./components/MemoriaAnual.vue'), meta: { titulo: 'rutas.memoria' } },
+  { path: '/cerca', name: 'cerca', component: () => import('./components/CercaWeb.vue'), meta: { titulo: 'rutas.cerca', cabeceraSolida: true } },
   { path: '/contacto', name: 'contacto', component: () => import('./components/Contacto.vue'), meta: { titulo: 'rutas.contacto', cabeceraSolida: true } },
   { path: '/intranet', name: 'intranet', component: () => import('./components/IntranetPanel.vue'), meta: { titulo: 'rutas.intranet', sinCabecera: true } },
   { path: '/:ruta(.*)*', name: 'no-encontrado', component: () => import('./components/NoEncontrado.vue'), meta: { titulo: 'rutas.noEncontrado', cabeceraSolida: true } }

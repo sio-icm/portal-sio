@@ -41,7 +41,8 @@ defineEmits(['editar', 'borrar'])
       </li>
       <li v-for="x in detalle.reservas" :key="'r' + x.id">
         <span class="tag reserva">{{ recurso(x.recurso).icono }} {{ nombreReserva(x) }}</span>
-        <b>{{ x.persona || x.para }}</b><span v-if="x.persona && x.para"> → {{ x.para }}</span>
+        <b>{{ x.para || x.persona || x.creador }}</b>
+        <span v-if="x.persona && x.persona !== (x.para || x.persona)" class="responsable">· 🔑 {{ $t('intranet.calendario.responsable') }}: {{ x.persona }}</span>
         <span class="rango">{{ rangoTexto(x.inicio, x.fin) }}</span>
         <span v-if="x.proposito" class="nota">· {{ x.proposito }}</span>
         <span v-if="x.editable" class="acciones">
@@ -58,6 +59,7 @@ h3 { margin: 0 0 10px; color: #012169; }
 h3::first-letter { text-transform: uppercase; }
 .festiu-texto { color: #b02a37; margin: 0 0 6px; }
 .presentes { margin: 0 0 6px; color: #333; }
+.responsable { color: #555; font-size: 0.9em; }
 .aviso { background: #fff4e5; border-left: 3px solid #f0a640; padding: 6px 10px; margin: 6px 0; color: #7a4300; }
 .vacio { color: #666; font-style: italic; }
 .lista { list-style: none; padding: 0; margin: 8px 0 0; }

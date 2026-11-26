@@ -8,6 +8,8 @@ import smtplib
 import sqlite3
 import shutil
 import time
+import unicodedata
+import urllib.parse
 import uuid
 from collections import defaultdict, deque
 from datetime import date, timedelta
@@ -1257,10 +1259,8 @@ def usuario_existe(conexion, usuario_id):
 
 
 def puede_editar_calendario(fila):
-    if session.get('es_admin'):
-        return True
-    yo = session.get('usuario_id')
-    return yo is not None and yo in (fila['usuario_id'], fila['creado_por'])
+    """El calendari és de tot l'equip: qualsevol persona amb sessió pot editar qualsevol entrada o reserva."""
+    return bool(session.get('autenticado'))
 
 
 def calcular_avisos(conexion, desde, hasta):
@@ -1351,18 +1351,8 @@ def calcular_avisos(conexion, desde, hasta):
                            'datos': {'persona': a['persona'], 'a': datos_e(a), 'b': datos_e(b)},
                            'texto': f"{a['persona']}: {que(a)} i {que(b)} coincideixen"})
 
-    # 5. El responsable d'una reserva no hi és (a la Pelagia, una campanya pot ser la mateixa sortida)
-    for r in reservas:
-        if r['usuario_id'] is None or (r['recurso'] == 'pelagia' and patron and r['usuario_id'] == patron['id']):
-            continue  # sense responsable de l'equip, o ja ho cobreix l'avís del patró
-        tipos = FUERA_DEL_CENTRO - ({'campanya'} if r['recurso'] == 'pelagia' else set())
-        dias = [d for d in dias_entre(max(r['inicio'], desde), min(r['fin'], hasta))
-                if laborable(d) and fuera(r['usuario_id'], d, tipos)]
-        if dias:
-            nombre = (r['instrumento'] or 'Instrument') if r['recurso'] == 'instrument' else NOMBRE_RECURSO[r['recurso']]
-            avisos.append({'id': f"responsable:{r['id']}:{dias[0]}", 'tipo': 'responsable', 'fecha': dias[0], 'fin': dias[-1],
-                           'datos': {'recurso': r['recurso'], 'instrumento': r['instrumento'], 'persona': r['persona']},
-                           'texto': f"{nombre}: reservat per {r['persona']}, que no hi serà"})
+    # (El responsable d'una reserva no cal que hi sigui: és qui en sap més del préstec, no qui
+    #  fa servir el recurs. Per això no hi ha avís si està de vacances, campanya, etc.)
 
     # 6. Instrument reservat que està en manteniment o reparació
     for r in reservas:
@@ -1395,8 +1385,9 @@ def ver_calendario():
            LEFT JOIN usuarios u ON u.id = c.usuario_id LEFT JOIN proyectos p ON p.id = c.proyecto_id
            WHERE c.inicio <= ? AND c.fin >= ? ORDER BY c.inicio, c.id''', (hasta, desde)).fetchall()
     reservas = conexion.execute(
-        '''SELECT r.*, u.nombre AS persona, i.nombre AS instrumento FROM reservas r
+        '''SELECT r.*, u.nombre AS persona, i.nombre AS instrumento, uc.nombre AS creador FROM reservas r
            LEFT JOIN usuarios u ON u.id = r.usuario_id LEFT JOIN instrumentos i ON i.id = r.instrumento_id
+           LEFT JOIN usuarios uc ON uc.id = r.creado_por
            WHERE r.inicio <= ? AND r.fin >= ? ORDER BY r.inicio, r.id''', (hasta, desde)).fetchall()
     festius = conexion.execute(
         'SELECT fecha, nombre FROM festius WHERE fecha BETWEEN ? AND ? ORDER BY fecha', (desde, hasta)).fetchall()
@@ -1444,8 +1435,6 @@ def validar_entrada(conexion, datos):
             return None, "Persona no válida"
         if not usuario_existe(conexion, usuario_id):
             return None, "La persona no existe"
-        if not session.get('es_admin') and usuario_id != session.get('usuario_id'):
-            return None, "Solo puedes apuntar tus propios días"
     proyecto_id = datos.get('proyecto_id')
     if proyecto_id in ('', None):
         proyecto_id = None
@@ -1536,10 +1525,11 @@ def validar_reserva(conexion, datos):
             return None, "Persona no válida"
         if not usuario_existe(conexion, usuario_id):
             return None, "La persona no existe"
-        if not session.get('es_admin') and usuario_id != session.get('usuario_id'):
-            return None, "Solo puedes hacer reservas a tu nombre"
-    if usuario_id is None and not para:
-        return None, "Indica el responsable de la reserva"
+    if not para:
+        # Qui fa la reserva: si no s'escriu, qui l'apunta
+        para = nombre_sesion()
+    if not para:
+        return None, "Indica quién hace la reserva"
     return (recurso, instrumento_id, inicio, fin, usuario_id, para, proposito), None
 
 
@@ -1975,11 +1965,8 @@ def gestionar_equipo():
         filas = conexion.execute(
             'SELECT * FROM equipo' + ('' if todas else ' WHERE visible = 1') + ' ORDER BY orden, id').fetchall()
         conexion.close()
-        fichas = [ficha_equipo(f) for f in filas]
-        if not session.get('autenticado'):
-            for f in fichas:
-                f.pop('email', None)
-        return jsonify(fichas)
+        # El correu també es veu a la web pública (la gent ha de poder contactar amb cada persona)
+        return jsonify([ficha_equipo(f) for f in filas])
     return crear_ficha_equipo()
 
 
@@ -2762,9 +2749,10 @@ def gestionar_paginas():
         return jsonify({"id": cursor.lastrowid}), 201
     # Llista (amb el text pla per poder cercar dins de les pàgines, sense les imatges)
     filas = conexion.execute('SELECT * FROM paginas ORDER BY categoria, titulo').fetchall()
-    adjuntos = {}
-    for a in conexion.execute('SELECT pagina_id, formato FROM paginas_adjuntos ORDER BY id'):
+    adjuntos, primero = {}, {}
+    for a in conexion.execute('SELECT id, pagina_id, formato, nombre, url FROM paginas_adjuntos ORDER BY id'):
         adjuntos.setdefault(a['pagina_id'], []).append(a['formato'])
+        primero.setdefault(a['pagina_id'], {'nombre': a['nombre'], 'href': a['url'] or f"/api/paginas/{a['pagina_id']}/adjuntos/{a['id']}"})
     conexion.close()
     return jsonify([{
         'id': f['id'], 'titulo': f['titulo'], 'categoria': f['categoria'],
@@ -2772,6 +2760,7 @@ def gestionar_paginas():
         'actualizado': f['actualizado'], 'actualizado_por': f['actualizado_por'],
         'texto': re.sub(r'\s+', ' ', texto_plano(f['contenido']))[:5000],
         'adjuntos': adjuntos.get(f['id'], []),
+        'adjunto': primero.get(f['id']),
     } for f in filas])
 
 
@@ -2866,9 +2855,11 @@ def subir_adjunto(id):
     ruta = os.path.join(DOCS_DIR, nombre)
     fichero.save(ruta)
     original = os.path.basename(fichero.filename.replace('\\', '/'))[:200] or nombre
+    # El text del PDF, perquè la cerca el trobi
+    texto = texto_de_pdf(ruta) if extension == 'pdf' else ''
     cursor = conexion.execute(
-        'INSERT INTO paginas_adjuntos (pagina_id, nombre, archivo, formato, tamano, subido_por, subido_por_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        (id, original, nombre, EXTENSIONES_DOC[extension], os.path.getsize(ruta), nombre_sesion(), session.get('usuario_id')))
+        'INSERT INTO paginas_adjuntos (pagina_id, nombre, archivo, formato, tamano, subido_por, subido_por_id, texto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        (id, original, nombre, EXTENSIONES_DOC[extension], os.path.getsize(ruta), nombre_sesion(), session.get('usuario_id'), texto))
     tocar_pagina(conexion, id)
     conexion.commit()
     fila = conexion.execute('SELECT * FROM paginas_adjuntos WHERE id = ?', (cursor.lastrowid,)).fetchone()
@@ -3532,6 +3523,178 @@ def resultado_transcripcion(aid):
     conexion.commit()
     conexion.close()
     return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# TEXT DELS ADJUNTS I INTRODUCCIÓ DE CADA CARPETA DE LA DOCUMENTACIÓ
+# Del PDF de cada adjunt se'n guarda el text (pàgina per pàgina, separades per \f) perquè la
+# cerca el trobi i porti directament a la pàgina del PDF. Cada carpeta (categoria) de la
+# documentació pot tenir una introducció.
+# ---------------------------------------------------------------------------
+MAX_TEXTO_ADJUNTO = 3 * 1024 * 1024
+
+
+def crear_tablas_documentacion():
+    conexion = conectar_bd()
+    columnas = {c['name'] for c in conexion.execute('PRAGMA table_info(paginas_adjuntos)')}
+    if 'texto' not in columnas:
+        conexion.execute("ALTER TABLE paginas_adjuntos ADD COLUMN texto TEXT NOT NULL DEFAULT ''")
+    conexion.execute("""CREATE TABLE IF NOT EXISTS paginas_carpetas (
+        nombre TEXT PRIMARY KEY,
+        introduccion TEXT NOT NULL DEFAULT '',
+        actualizado TEXT NOT NULL DEFAULT (datetime('now')),
+        actualizado_por TEXT NOT NULL DEFAULT ''
+    )""")
+    conexion.commit()
+    conexion.close()
+
+
+crear_tablas_documentacion()
+
+
+def texto_de_pdf(ruta):
+    """Text d'un PDF, pàgina per pàgina (separades per \\f). Buit si no es pot llegir (p. ex. escanejat)."""
+    try:
+        from pypdf import PdfReader
+        lector = PdfReader(ruta)
+        paginas = []
+        for p in lector.pages:
+            try:
+                paginas.append(re.sub(r'[ \t]+', ' ', p.extract_text() or '').strip())
+            except Exception:
+                paginas.append('')
+        return '\f'.join(paginas)[:MAX_TEXTO_ADJUNTO]
+    except Exception:
+        return ''
+
+
+@app.route('/api/paginas/carpetas', methods=['GET'])
+@requiere_login
+def carpetas_documentacion():
+    conexion = conectar_bd()
+    filas = conexion.execute('SELECT * FROM paginas_carpetas').fetchall()
+    conexion.close()
+    return jsonify({f['nombre']: {'introduccion': f['introduccion'], 'actualizado': f['actualizado'],
+                                  'actualizado_por': f['actualizado_por']} for f in filas})
+
+
+@app.route('/api/paginas/carpetas', methods=['PUT'])
+@requiere_login
+def guardar_carpeta_documentacion():
+    datos = request.get_json(silent=True) or {}
+    nombre = str(datos.get('nombre', '') or '').strip()
+    introduccion = str(datos.get('introduccion', '') or '')
+    if not nombre or len(nombre) > 100:
+        return jsonify({"error": "Datos incorrectos"}), 400
+    if len(introduccion.encode('utf-8')) > MAX_PAGINA_BYTES:
+        return jsonify({"error": "La página es demasiado grande (máximo 8 MB, imágenes incluidas)"}), 400
+    if contrasena_escrita(introduccion):
+        return jsonify({"error": "Parece que hay una contraseña escrita. No se guardan contraseñas en la web: indica dónde se guarda"}), 400
+    conexion = conectar_bd()
+    conexion.execute("INSERT OR REPLACE INTO paginas_carpetas (nombre, introduccion, actualizado, actualizado_por) "
+                     "VALUES (?, ?, datetime('now'), ?)", (nombre, introduccion, nombre_sesion()))
+    conexion.commit()
+    conexion.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# CERCA (barra de dalt de la web)
+# Busca a la part pública (projectes, instruments, equip) i, amb sessió, també a la
+# documentació interna (pàgines, carpetes i el text dels PDF adjunts), les actes i el diari.
+# Els textos fixos de la web (serveis, notícies...) els busca el navegador.
+# ---------------------------------------------------------------------------
+def normalizar(texto):
+    texto = unicodedata.normalize('NFKD', str(texto or '').lower())
+    return ''.join(c for c in texto if not unicodedata.combining(c))
+
+
+def coincide(palabras, *textos):
+    tot = normalizar(' '.join(t or '' for t in textos))
+    return all(p in tot for p in palabras)
+
+
+def extracto(texto, palabras, largo=220):
+    """Tros del text al voltant de la primera paraula trobada."""
+    plano = re.sub(r'\s+', ' ', texto or '').strip()
+    # Normalitzat lletra a lletra: així té la mateixa llargada que el text i les posicions coincideixen
+    norm = ''.join((normalizar(c) or ' ')[:1] for c in plano)
+    pos = min([i for i in (norm.find(p) for p in palabras) if i >= 0] or [0])
+    inicio = max(0, pos - largo // 3)
+    trozo = plano[inicio:inicio + largo]
+    return ('…' if inicio else '') + trozo + ('…' if inicio + largo < len(plano) else '')
+
+
+@app.route('/api/buscar', methods=['GET'])
+def buscar():
+    q = str(request.args.get('q', '') or '').strip()[:200]
+    palabras = [p for p in normalizar(q).split() if len(p) >= 2][:8]
+    if not palabras:
+        return jsonify([])
+    idioma = request.args.get('idioma', 'ca')
+    sufijo = '' if idioma == 'ca' else f'_{idioma}' if idioma in ('es', 'en') else ''
+    resultados = []
+    conexion = conectar_bd()
+
+    for p in conexion.execute('SELECT * FROM proyectos'):
+        corta = p[f'descripcion_corta{sufijo}'] or p['descripcion_corta']
+        ampliada = texto_plano(p[f'descripcion_ampliada{sufijo}'] or p['descripcion_ampliada'])
+        if coincide(palabras, p['titulo'], corta, ampliada, p['investigador_principal'], p['pit'], p['categoria']):
+            resultados.append({'tipo': 'proyecto', 'id': p['id'], 'titulo': p['titulo'],
+                               'extracto': extracto(' '.join([corta or '', ampliada, p['investigador_principal'] or '', p['pit'] or '']), palabras),
+                               'enlace': f"/proyectos?p={p['id']}"})
+
+    for i in conexion.execute('SELECT * FROM instrumentos'):
+        if coincide(palabras, i['nombre'], i['marca'], i['categoria'], i['subcategoria'], i['descripcion'],
+                    texto_plano(i['parametros_tecnicos'])):
+            resultados.append({'tipo': 'instrumento', 'id': i['id'], 'titulo': i['nombre'],
+                               'extracto': extracto(' '.join([i['marca'] or '', i['descripcion'] or '', texto_plano(i['parametros_tecnicos'])]), palabras),
+                               'enlace': f"/servicios/instrumentacion?i={i['id']}"})
+
+    for e in conexion.execute('SELECT * FROM equipo WHERE visible = 1 ORDER BY orden'):
+        cargo = e[f'cargo_{idioma}'] if f'cargo_{idioma}' in e.keys() and e[f'cargo_{idioma}'] else e['cargo_es']
+        descripcion = e[f'descripcion_{idioma}'] if f'descripcion_{idioma}' in e.keys() and e[f'descripcion_{idioma}'] else e['descripcion_es']
+        if coincide(palabras, e['nombre'], e['email'], cargo, descripcion):
+            resultados.append({'tipo': 'equipo', 'id': e['id'], 'titulo': e['nombre'],
+                               'extracto': ' · '.join(x for x in (cargo, e['email']) if x), 'enlace': '/equipo'})
+
+    if session.get('autenticado'):
+        adjuntos = {}
+        for a in conexion.execute('SELECT id, pagina_id, nombre, url, formato, texto FROM paginas_adjuntos'):
+            adjuntos.setdefault(a['pagina_id'], []).append(a)
+        for pg in conexion.execute('SELECT id, titulo, categoria, contenido FROM paginas'):
+            texto = texto_plano(pg['contenido'])
+            if coincide(palabras, pg['titulo'], pg['categoria'], texto):
+                resultados.append({'tipo': 'pagina', 'id': pg['id'], 'titulo': pg['titulo'], 'carpeta': pg['categoria'],
+                                   'extracto': extracto(texto, palabras), 'enlace': f"/intranet?doc={pg['id']}"})
+            # Dins dels PDF: el document ha de tenir totes les paraules; s'obre a la pàgina on n'hi ha més
+            for a in adjuntos.get(pg['id'], []):
+                if not a['texto'] or not coincide(palabras, a['texto']):
+                    continue
+                pags = a['texto'].split('\f')
+                n = max(range(len(pags)), key=lambda i: (sum(p in normalizar(pags[i]) for p in palabras), -i)) + 1
+                href = (a['url'] or f"/api/paginas/{pg['id']}/adjuntos/{a['id']}") + f'#page={n}'
+                resultados.append({'tipo': 'adjunto', 'id': a['id'], 'titulo': a['nombre'], 'carpeta': pg['categoria'],
+                                   'pagina': pg['titulo'], 'pagina_id': pg['id'], 'pagina_pdf': n,
+                                   'extracto': extracto(pags[n - 1], palabras), 'enlace': href, 'externo': True})
+        for c in conexion.execute('SELECT nombre, introduccion FROM paginas_carpetas'):
+            texto = texto_plano(c['introduccion'])
+            if coincide(palabras, c['nombre'], texto):
+                resultados.append({'tipo': 'carpeta', 'id': c['nombre'], 'titulo': c['nombre'],
+                                   'extracto': extracto(texto, palabras),
+                                   'enlace': '/intranet?carpeta=' + urllib.parse.quote(c['nombre'])})
+        for a in conexion.execute('SELECT id, titulo, fecha, contenido, otros_asistentes FROM actas ORDER BY fecha DESC'):
+            texto = texto_plano(a['contenido'])
+            if coincide(palabras, a['titulo'], texto, a['otros_asistentes']):
+                resultados.append({'tipo': 'acta', 'id': a['id'], 'titulo': a['titulo'], 'fecha': a['fecha'],
+                                   'extracto': extracto(texto, palabras), 'enlace': f"/intranet?acta={a['id']}"})
+        for n in conexion.execute('SELECT id, titulo, fecha, texto, autor FROM notas ORDER BY fecha DESC LIMIT 2000'):
+            texto = texto_plano(n['texto'])
+            if coincide(palabras, n['titulo'], texto):
+                resultados.append({'tipo': 'nota', 'id': n['id'], 'titulo': n['titulo'] or n['fecha'], 'fecha': n['fecha'],
+                                   'extracto': extracto(texto, palabras), 'enlace': '/intranet?seccion=diario'})
+    conexion.close()
+    return jsonify(resultados[:300])
 
 
 if __name__ == '__main__':

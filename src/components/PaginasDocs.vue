@@ -11,6 +11,8 @@ import { exportarPagina, FORMATOS, normalizarHtml } from '../utils/exportarPagin
 // edició amb historial (qui i quan) i recuperació de versions anteriors.
 // Només per al personal amb sessió. No s'hi poden escriure contrasenyes.
 const emit = defineEmits(['sesion-caducada'])
+// inicial: { doc, carpeta } per obrir directament una pàgina o una carpeta (enllaços de la cerca)
+const props = defineProps({ inicial: { type: Object, default: () => ({}) } })
 const { t, locale } = useI18n()
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
 const json = (metodo, cuerpo) => ({ method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
@@ -48,7 +50,44 @@ const cargarLista = async () => {
   if (r.ok) paginas.value = await r.json()
   else error.value = t('intranet.paginas.errorCarga')
 }
-onMounted(cargarLista)
+onMounted(async () => {
+  await cargarLista()
+  cargarCarpetas()
+  if (props.inicial?.carpeta) carpeta.value = props.inicial.carpeta
+  if (props.inicial?.doc) abrir(props.inicial.doc)
+})
+
+// ---------- Introducció de cada carpeta ----------
+const introducciones = ref({})
+const cargarCarpetas = async () => {
+  const r = await api('/api/paginas/carpetas')
+  if (r.ok) introducciones.value = await r.json()
+}
+const introCarpeta = computed(() => introducciones.value[carpeta.value]?.introduccion || '')
+const editandoIntro = ref(false)
+const borradorIntro = ref('')
+const editarIntro = () => { borradorIntro.value = introCarpeta.value; editandoIntro.value = true }
+const guardarIntro = async () => {
+  const sospecha = contrasenaEscrita(borradorIntro.value)
+  if (sospecha) { error.value = t('intranet.paginas.hayContrasena', { fragmento: sospecha }); return }
+  const r = await api('/api/paginas/carpetas', json('PUT', { nombre: carpeta.value, introduccion: borradorIntro.value }))
+  if (!r.ok) return fallo(r)
+  editandoIntro.value = false
+  await cargarCarpetas()
+}
+
+// ---------- Cerca també dins dels PDF ----------
+const enPdf = ref([])
+let temporizadorPdf = null
+const buscarEnPdf = () => {
+  clearTimeout(temporizadorPdf)
+  const q = buscador.value.trim()
+  if (q.length < 2) { enPdf.value = []; return }
+  temporizadorPdf = setTimeout(async () => {
+    const r = await api(`/api/buscar?q=${encodeURIComponent(q)}&idioma=${locale.value}`)
+    if (r.ok && buscador.value.trim() === q) enPdf.value = (await r.json()).filter(x => x.tipo === 'adjunto')
+  }, 350)
+}
 
 const normalizar = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 const agrupadas = computed(() => {
@@ -212,7 +251,7 @@ const restaurar = async () => {
           <p class="subtitulo">{{ $t('intranet.paginas.subtitulo') }}</p>
         </div>
         <div class="acciones">
-          <input v-model="buscador" type="search" class="buscador" :placeholder="$t('intranet.paginas.buscar')">
+          <input v-model="buscador" type="search" class="buscador" :placeholder="$t('intranet.paginas.buscar')" @input="buscarEnPdf">
           <button type="button" class="btn-principal" @click="nueva">{{ $t('intranet.paginas.nueva') }}</button>
         </div>
       </div>
@@ -239,7 +278,22 @@ const restaurar = async () => {
 
       <!-- Dins d'una carpeta o resultats de la cerca: fitxes -->
       <template v-else>
-        <p v-if="!visibles.length" class="vacio">{{ $t('intranet.paginas.sinResultados') }}</p>
+        <!-- Introducció de la carpeta -->
+        <section v-if="carpeta && !buscando" class="intro-carpeta">
+          <template v-if="!editandoIntro">
+            <div v-if="introCarpeta" class="intro-texto contenido-wiki" v-html="limpiarHtml(introCarpeta)"></div>
+            <p v-else class="vacio">{{ $t('intranet.paginas.sinIntro') }}</p>
+            <button type="button" class="btn-mini" @click="editarIntro">✏️ {{ introCarpeta ? $t('intranet.paginas.editarIntro') : $t('intranet.paginas.anadirIntro') }}</button>
+          </template>
+          <template v-else>
+            <EditorRico v-model="borradorIntro" :placeholder="$t('intranet.paginas.introPh')" />
+            <div class="botones-intro">
+              <button type="button" class="btn-principal" @click="guardarIntro">{{ $t('intranet.comun.guardar') }}</button>
+              <button type="button" class="btn-mini" @click="editandoIntro = false">{{ $t('intranet.comun.cancelar') }}</button>
+            </div>
+          </template>
+        </section>
+        <p v-if="!visibles.length && !enPdf.length" class="vacio">{{ $t('intranet.paginas.sinResultados') }}</p>
         <ul class="graella fichas">
           <li v-for="p in visibles" :key="p.id">
             <button type="button" class="ficha" @click="abrir(p.id)" :title="p.titulo">
@@ -250,8 +304,20 @@ const restaurar = async () => {
               <span class="nombre">{{ p.titulo }}</span>
               <span class="detalle"><template v-if="buscando">📂 {{ p.categoria || SIN_CATEGORIA() }} · </template>{{ fechaCorta(p.actualizado) }}</span>
             </button>
+            <a v-if="p.adjunto" class="obrir-adjunt" :href="p.adjunto.href" target="_blank" rel="noopener" :title="p.adjunto.nombre">📎 {{ $t('intranet.paginas.obrirAdjunt') }}</a>
           </li>
         </ul>
+        <!-- Resultats de dins dels PDF -->
+        <section v-if="buscando && enPdf.length" class="en-pdf">
+          <h3>📄 {{ $t('intranet.paginas.dinsPdf', { n: enPdf.length }) }}</h3>
+          <ul>
+            <li v-for="r in enPdf" :key="r.id">
+              <a :href="r.enlace" target="_blank" rel="noopener"><strong>{{ r.pagina }}</strong></a>
+              <span class="detalle">📂 {{ r.carpeta }} · {{ r.titulo }} · {{ $t('intranet.paginas.paginaPdf', { n: r.pagina_pdf }) }}</span>
+              <p>{{ r.extracto }}</p>
+            </li>
+          </ul>
+        </section>
       </template>
     </template>
 
@@ -361,6 +427,19 @@ const restaurar = async () => {
 .btn-principal:disabled { opacity: 0.6; cursor: wait; }
 .btn-secundario { background: #f4f7f9; border: 1px solid #ccd5df; padding: 9px 18px; border-radius: 6px; cursor: pointer; font: inherit; }
 .btn-peligro { background: white; color: #b02a37; border: 1px solid #e3b5ba; padding: 9px 16px; border-radius: 6px; cursor: pointer; font: inherit; }
+/* Introducció de la carpeta i enllaç directe a l'adjunt */
+.intro-carpeta { background: #f4f9fb; border-left: 4px solid #17a2b8; border-radius: 6px; padding: 12px 16px; margin: 0 0 16px; }
+.intro-texto { border-top: none; padding-top: 0; margin-bottom: 8px; }
+.botones-intro { display: flex; gap: 8px; margin-top: 8px; }
+.obrir-adjunt { display: block; text-align: center; font-size: 0.78rem; color: #0060a0; text-decoration: none; margin-top: 4px; }
+.obrir-adjunt:hover { text-decoration: underline; }
+.en-pdf { margin-top: 20px; border-top: 1px solid #e3e8ee; padding-top: 10px; }
+.en-pdf h3 { color: #012169; font-size: 1rem; margin: 0 0 6px; }
+.en-pdf ul { list-style: none; padding: 0; margin: 0; }
+.en-pdf li { padding: 8px 0; border-bottom: 1px solid #f0f2f4; }
+.en-pdf a { color: #0060a0; text-decoration: none; }
+.en-pdf .detalle { display: block; color: #777; font-size: 0.8rem; }
+.en-pdf p { margin: 3px 0 0; font-size: 0.88rem; color: #333; }
 .btn-mini { background: #f4f7f9; border: 1px solid #d0d7de; border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 0.8rem; }
 .btn-volver { background: none; border: none; color: #0086c0; font-weight: bold; cursor: pointer; padding: 0; margin-bottom: 14px; font: inherit; font-weight: bold; }
 .aviso-ok { color: #198754; font-weight: bold; }

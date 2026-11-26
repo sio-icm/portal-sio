@@ -10,7 +10,7 @@ import fondoTanques from '../assets/tanques.jpg'
 const { t } = useI18n()
 const {
   nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
-  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
+  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas, esHoy
 } = useCalendarioReservas('tanc')
 
 // --- FORMULARIO ---
@@ -97,7 +97,8 @@ const enviarSolicitud = async () => {
                         class="dia" 
                         :class="{ 
                           'ocupado': esOcupado(dia), 
-                          'seleccionado': estaSeleccionado(dia) 
+                          'seleccionado': estaSeleccionado(dia),
+                          'hoy': esHoy(dia)
                         }"
                         @click="toggleDia(dia)">
                      {{ dia }}
@@ -196,6 +197,11 @@ const enviarSolicitud = async () => {
 .dia:hover:not(.ocupado) { background: #e0f2fe; }
 .dia.ocupado { background: #ffebee; color: #d32f2f; font-weight: bold; cursor: not-allowed; opacity: 0.7; }
 .dia.seleccionado { background: #0086c0; color: white; font-weight: bold; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+/* Avui, ben marcat */
+.dia.hoy { outline: 3px solid #012169; outline-offset: -3px; font-weight: bold; color: #012169; position: relative; }
+.dia.hoy::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #012169; }
+.dia.hoy.seleccionado { color: white; }
+.dia.hoy.seleccionado::after { background: white; }
 
 /* ESTILOS DEL FORMULARIO */
 .formulario-animado { animation: fadeIn 0.4s ease-out; border-top: 2px dashed #eee; padding-top: 25px; }

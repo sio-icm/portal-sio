@@ -59,6 +59,12 @@ const cargarProyectos = async () => {
     const res = await fetch('/api/proyectos')
     if (!res.ok) throw new Error(res.status)
     proyectos.value = await res.json()
+    // ?p=<id> (des de la cerca): obrir aquell projecte
+    const id = Number(new URLSearchParams(window.location.search).get('p'))
+    if (id) {
+      const i = lista.value.findIndex(p => p.id === id)
+      if (i >= 0) { actual.value = i; abrir() }
+    }
   } catch (error) {
     console.error('Error cargando proyectos:', error)
     errorCarga.value = true

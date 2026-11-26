@@ -160,6 +160,7 @@ onMounted(async () => {
       estaLogueado.value = true
       cargarInstrumentos()
       cargarProyectos()
+      aplicarEnlace()
     }
   } catch (error) { console.error("Error comprovant la sessió:", error) }
 })
@@ -181,6 +182,7 @@ const iniciarSesion = async () => {
       estaLogueado.value = true
       cargarInstrumentos()
       cargarProyectos()
+      aplicarEnlace()
     } else if (respuesta.status === 401) {
       alert(t('intranet.panel.loginIncorrecto'))
     } else if (respuesta.status === 429) {
@@ -228,6 +230,22 @@ const seccionMenu = computed(() => SECCION_DEL_MENU[seccionActiva.value] || secc
 const opcionActual = computed(() => gruposMenu.value.flatMap(g => g.items).find(i => i.id === seccionMenu.value))
 // En tornar a prémer «Documentació» es torna a l'inici de la documentació
 const docsKey = ref(0)
+// Enllaços de la cerca: obrir directament una pàgina, una carpeta, una acta o una secció
+const destinoInicial = ref({})
+const aplicarEnlace = () => {
+  const q = new URLSearchParams(window.location.search)
+  if (q.get('doc') || q.get('carpeta')) {
+    destinoInicial.value = { doc: Number(q.get('doc')) || null, carpeta: q.get('carpeta') || null }
+    docsKey.value++
+    seccionActiva.value = 'documentacion'
+  } else if (q.get('acta')) {
+    destinoInicial.value = { acta: Number(q.get('acta')) || null }
+    seccionActiva.value = 'actas'
+  } else if (['diario', 'calendari', 'compras', 'informe'].includes(q.get('seccion'))) {
+    seccionActiva.value = q.get('seccion')
+  } else return
+  window.history.replaceState({}, '', window.location.pathname)
+}
 const irA = (id) => {
   if (id === 'documentacion') docsKey.value++
   if (id === 'proyectos' || id === 'instrumentos') volverDashboard(id)
@@ -446,9 +464,9 @@ const eliminarProyecto = async (id) => {
         <MiCuenta v-else-if="seccionActiva === 'cuenta'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <GestionUsuarios v-else-if="seccionActiva === 'usuarios' && sesion.es_admin" @sesion-caducada="sesionCaducada" />
         <!-- Documentació: tot són pàgines (amb els fitxers adjunts) -->
-        <PaginasDocs v-else-if="seccionActiva === 'documentacion'" :key="docsKey" @sesion-caducada="sesionCaducada" />
+        <PaginasDocs v-else-if="seccionActiva === 'documentacion'" :key="docsKey" :inicial="destinoInicial" @sesion-caducada="sesionCaducada" />
         <Compras v-else-if="seccionActiva === 'compras'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
-        <ActasReunion v-else-if="seccionActiva === 'actas'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
+        <ActasReunion v-else-if="seccionActiva === 'actas'" :sesion="sesion" :acta-inicial="destinoInicial.acta || null" @sesion-caducada="sesionCaducada" />
         <GestionEquipo v-else-if="seccionActiva === 'equipo'" :sesion="sesion" @sesion-caducada="sesionCaducada" />
         <div v-else-if="seccionActiva === 'instrumentacion'" class="admin-panel">
           <button type="button" class="btn-tornar" @click="volverDashboard('instrumentos')">← {{ $t('intranet.panel.volverInstrumentos') }}</button>

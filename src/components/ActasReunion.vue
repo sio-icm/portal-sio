@@ -12,7 +12,7 @@ import GrabadoraReunion from './GrabadoraReunion.vue'
 // si es vol, la gravació de la reunió (l'àudio és temporal: s'esborra un temps després
 // d'aprovar l'acta). Les gravacions les transcriu l'ordinador de transcripció del SIO
 // (deploy/transcripcio/): en surt la transcripció, amb qui parla, i un esborrany de l'acta.
-const props = defineProps({ sesion: { type: Object, required: true } })
+const props = defineProps({ sesion: { type: Object, required: true }, actaInicial: { type: Number, default: null } })
 const emit = defineEmits(['sesion-caducada'])
 const { t, locale } = useI18n()
 const api = (url, opciones) => peticionIntranet(url, opciones, () => emit('sesion-caducada'))
@@ -72,6 +72,7 @@ const copiarClave = () => { navigator.clipboard?.writeText(claveNueva.value).the
 let temporizador = null
 onMounted(() => {
   cargar()
+  if (props.actaInicial) verActa({ id: props.actaInicial })
   cargarTranscriptor()
   temporizador = setInterval(() => {
     if (acta.value?.id && (acta.value.audios || []).some(a => ['pendent', 'processant'].includes(a.transcripcion_estado))) {

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, watch, ref, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { cambiarIdioma } from './i18n'
 import { actualizarTitulo } from './router'
@@ -12,6 +12,25 @@ import logoIcm from './assets/icm.png'
 import logoSevero from './assets/severo.png'
 
 const route = useRoute()
+const router = useRouter()
+// Cerca de la barra de dalt (al mòbil, la lupa obre el quadre)
+const textoCerca = ref('')
+const cercaAbierta = ref(false)
+const inputCerca = ref(null)
+const obrirCerca = (e) => {
+  if (!cercaAbierta.value && !textoCerca.value.trim() && window.matchMedia('(max-width: 768px)').matches) {
+    e.preventDefault()
+    cercaAbierta.value = true
+    nextTick(() => inputCerca.value?.focus())
+  }
+}
+const buscarWeb = () => {
+  const q = textoCerca.value.trim()
+  if (!q) { inputCerca.value?.focus(); return }
+  router.push({ name: 'cerca', query: { q } })
+  cercaAbierta.value = false
+}
+watch(() => route.query.q, (q) => { if (route.name === 'cerca') textoCerca.value = String(q || '') })
 const { locale } = useI18n()
 
 const idiomas = [
@@ -54,6 +73,11 @@ watch(locale, () => actualizarTitulo(route))
               >{{ idioma.etiqueta }}</button>
             </template>
           </div>
+          <form class="top-item border-left cerca-top" :class="{ abierta: cercaAbierta }" role="search" @submit.prevent="buscarWeb">
+            <input ref="inputCerca" v-model="textoCerca" type="search" :placeholder="$t('cerca.placeholderCorto')" :aria-label="$t('cerca.titulo')"
+              @keydown.esc="cercaAbierta = false">
+            <button type="submit" class="btn-reset lupa" :aria-label="$t('cerca.buscar')" @click="obrirCerca">🔍</button>
+          </form>
         </div>
       </div>
     </div>
@@ -148,6 +172,12 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
 .lang-link:hover::after { width: 100%; }
 .lang-link.active { color: white; }
 .lang-link.active::after { width: 100%; background-color: white; }
+/* Cerca */
+.cerca-top { gap: 4px; padding: 0 10px; }
+.cerca-top input { width: 150px; height: 26px; border: 1px solid rgba(255,255,255,0.35); border-radius: 13px; background: rgba(255,255,255,0.12); color: white; font: inherit; font-size: 12px; font-weight: normal; padding: 0 10px; outline: none; transition: width 0.25s, background 0.2s; }
+.cerca-top input::placeholder { color: rgba(255,255,255,0.7); }
+.cerca-top input:focus { width: 210px; background: white; color: #012169; }
+.cerca-top .lupa { font-size: 14px; line-height: 1; padding: 4px; }
 
 .header-transparente { 
   position: absolute; 
@@ -236,6 +266,9 @@ body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font
   .contacto-unacolumna { padding: 0 10px; }
   .top-item { padding: 0 8px; font-size: 10px; }
   .idiomas-container { gap: 4px; }
+  /* Al mòbil només es veu la lupa; en prémer-la, el quadre s'obre a sota de la barra */
+  .cerca-top input { display: none; }
+  .cerca-top.abierta input { display: block; position: absolute; top: 40px; right: 0; width: min(320px, 92vw); height: 38px; border-radius: 0 0 0 8px; background: white; color: #012169; font-size: 15px; border: none; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
 }
 
 .carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; }

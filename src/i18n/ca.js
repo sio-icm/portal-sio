@@ -15,6 +15,7 @@ export default {
   },
 
   rutas: {
+    cerca: 'Cerca',
     servicios: 'Serveis',
     instrumentacion: 'Instrumentació',
     pelagia: 'Embarcació Pelagia',
@@ -118,6 +119,29 @@ export default {
     errorEnvio: "No s'ha pogut enviar la sol·licitud",
     errorConexion: "No s'ha pogut connectar amb el servidor",
     alternativa: 'Ens pots escriure directament a'
+  },
+
+  cerca: {
+    titulo: 'Cerca',
+    placeholder: 'Què busques? (serveis, instruments, projectes, documentació...)',
+    placeholderCorto: 'Cercar...',
+    buscar: 'Cercar',
+    escribe: 'Escriu almenys una paraula.',
+    buscando: 'Cercant…',
+    resultados: '{n} resultats per a «{q}»',
+    nada: 'No s\'ha trobat res. Prova amb altres paraules.',
+    interno: 'Només personal',
+    paginaPdf: 'pàgina {n} del PDF',
+    grupos: {
+      web: 'Pàgines de la web',
+      proyectos: 'Projectes',
+      instrumentos: 'Instruments',
+      equipo: 'Equip',
+      documentacion: 'Documentació interna',
+      pdf: 'Dins dels documents (PDF)',
+      actas: 'Actes de reunió',
+      diario: 'Diari d\'activitat'
+    }
   },
 
   noEncontrado: {

@@ -11,3 +11,6 @@ blinker==1.9.0
 Pillow==12.3.0
 # Servidor para producción (en lugar del servidor de pruebas de Flask)
 gunicorn==26.2.0
+# Text dels PDF de la documentació (per a la cerca)
+pypdf==5.1.0
+cryptography==44.0.0  # pypdf: PDF protegits (p. ex. manuals de Sea-Bird)

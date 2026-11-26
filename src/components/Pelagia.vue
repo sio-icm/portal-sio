@@ -10,7 +10,7 @@ import fondoPelagia from '../assets/Pelagia.webp'
 const { t } = useI18n()
 const {
   nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
-  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
+  diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas, esHoy
 } = useCalendarioReservas('pelagia')
 
 const { nombre, email, web, estado, error, enviar } = useSolicitud('pelagia')
@@ -127,7 +127,8 @@ const enviarSolicitud = async () => {
                 :class="['dia', { 
                   ocupado: esOcupado(dia), 
                   seleccionado: estaSeleccionado(dia), 
-                  disponible: !esOcupado(dia) 
+                  disponible: !esOcupado(dia),
+                  hoy: esHoy(dia) 
                 }]"
               >
                 {{ dia }}
@@ -227,6 +228,10 @@ const enviarSolicitud = async () => {
 .dia.disponible:hover { border-color: #8cc63f; }
 .dia.ocupado { background: #0086c0; color: white; cursor: not-allowed; opacity: 0.6; }
 .dia.seleccionado { background: #8cc63f; color: #012169; border: 1px solid #012169; transform: scale(1.05); }
+/* Avui, ben marcat */
+.dia.hoy { outline: 3px solid #012169; outline-offset: -3px; position: relative; }
+.dia.hoy::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #012169; }
+.dia.hoy.ocupado::after, .dia.hoy.seleccionado::after { background: white; }
 .leyenda { font-size: 0.75rem; color: #999; margin-top: 10px; text-align: center; }
 
 /* FORMULARIO */

@@ -51,6 +51,8 @@ export function useCalendarioReservas(recurso, numeroMeses = 7) {
   }
 
   const estaSeleccionado = (dia) => diasSeleccionados.value.includes(claveDia(dia))
+  // El dia d'avui (per marcar-lo al calendari)
+  const esHoy = (dia) => mesVisible.value.getFullYear() === hoy.getFullYear() && mesVisible.value.getMonth() === hoy.getMonth() && dia === hoy.getDate()
 
   // Fechas elegidas, ordenadas y escritas en el idioma activo ("3 de noviembre de 2026")
   const fechasSeleccionadas = computed(() => {
@@ -63,6 +65,6 @@ export function useCalendarioReservas(recurso, numeroMeses = 7) {
 
   return {
     nombreMes, diasMesVisible, hayMesAnterior, hayMesSiguiente, mesAnterior, mesSiguiente,
-    diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas
+    diasSeleccionados, esOcupado, toggleDia, estaSeleccionado, fechasSeleccionadas, esHoy
   }
 }

@@ -33,7 +33,7 @@ const enIdioma = (p, campo) => p[`${campo}_${locale.value}`] || p[`${campo}_es`]
 const equipo = computed(() => {
   if (delServidor.value) {
     return delServidor.value.map(p => ({
-      id: p.id, nombre: p.nombre, etiqueta: p.etiqueta, fotoSrc: p.foto || '/fotos/equipo/perfil-default.svg',
+      id: p.id, nombre: p.nombre, email: p.email || '', etiqueta: p.etiqueta, fotoSrc: p.foto || '/fotos/equipo/perfil-default.svg',
       cargo: enIdioma(p, 'cargo'), descripcion: enIdioma(p, 'descripcion')
     }))
   }
@@ -65,6 +65,7 @@ const equipo = computed(() => {
           <div :class="['rol-tag', persona.etiqueta === 'liderazgo' ? 'lider' : 'tecnico']">{{ $t(`equipo.etiquetas.${persona.etiqueta}`) }}</div>
           <h3>{{ persona.nombre }}</h3>
           <p class="cargo">{{ persona.cargo }}</p>
+          <a v-if="persona.email" class="correo" :href="`mailto:${persona.email}`">✉️ {{ persona.email }}</a>
           <div v-if="persona.descripcion" class="descripcion-personal">
             {{ persona.descripcion }}
           </div>
@@ -76,6 +77,8 @@ const equipo = computed(() => {
 </template>
 
 <style scoped>
+.correo { display: inline-block; margin: -4px 0 12px; color: #0086c0; font-size: 0.9rem; text-decoration: none; word-break: break-all; }
+.correo:hover { text-decoration: underline; }
 .equipo-page { position: relative; min-height: 100vh; padding-bottom: 80px; background-color: #f4f7f9; }
 .fondo-equipo { position: absolute; top: 0; left: 0; width: 100%; height: 550px; background-size: cover; background-position: center; z-index: 0; }
 .contenido-equipo { position: relative; z-index: 10; padding-top: 120px; }

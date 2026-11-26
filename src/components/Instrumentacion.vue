@@ -42,6 +42,10 @@ const cargarDatos = async () => {
       parametros: fila.parametros_tecnicos || ''
     }))
     cargando.value = false
+    // ?i=<id> (des de la cerca): obrir aquell instrument
+    const id = Number(new URLSearchParams(window.location.search).get('i'))
+    const inst = id && instrumentos.value.find(x => x.id === id)
+    if (inst) { categoriaActiva.value = inst.tipo; verDetalles(inst) }
   } catch (error) {
     console.error("Error carregant:", error)
     errorCarga.value = true
@@ -93,6 +97,7 @@ const nombreMes = computed(() => {
     .format(new Date(anioActual.value, mesActual.value, 1))
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 })
+const esHoyInstr = (n) => anioActual.value === fechaHoy.getFullYear() && mesActual.value === fechaHoy.getMonth() && n === fechaHoy.getDate()
 const diasEnMes = computed(() => new Date(anioActual.value, mesActual.value + 1, 0).getDate())
 
 const cambiarMes = (dir) => {
@@ -225,7 +230,7 @@ const enviarSolicitud = async () => {
                 </div>
 
                 <div class="grid-dias">
-                  <div v-for="n in diasEnMes" :key="n" @click="toggleDia(n)" :class="['dia', { ocupado: esOcupado(n), seleccionado: diasSeleccionados.includes(n), disponible: !esOcupado(n) }]">
+                  <div v-for="n in diasEnMes" :key="n" @click="toggleDia(n)" :class="['dia', { ocupado: esOcupado(n), seleccionado: diasSeleccionados.includes(n), disponible: !esOcupado(n), hoy: esHoyInstr(n) }]">
                     {{ n }}
                   </div>
                 </div>
@@ -352,6 +357,10 @@ const enviarSolicitud = async () => {
 .dia.disponible:hover { border-color: #8cc63f; background: #f0f7e6; }
 .dia.ocupado { background: #0086c0; color: white; cursor: not-allowed; opacity: 0.6; }
 .dia.seleccionado { background: #8cc63f; color: #012169; border: 1px solid #012169; transform: scale(1.05); }
+/* Avui, ben marcat */
+.dia.hoy { outline: 3px solid #012169; outline-offset: -3px; position: relative; }
+.dia.hoy::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #012169; }
+.dia.hoy.ocupado::after, .dia.hoy.seleccionado::after { background: white; }
 .leyenda { font-size: 0.75rem; color: #999; margin-top: 10px; text-align: center; }
 
 /* GENERADOR DE DOCUMENTO Y FORMULARIO RESERVA */

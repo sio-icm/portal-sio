@@ -15,6 +15,7 @@ export default {
   },
 
   rutas: {
+    cerca: 'Search',
     servicios: 'Services',
     instrumentacion: 'Instrumentation',
     pelagia: 'Pelagia vessel',
@@ -118,6 +119,29 @@ export default {
     errorEnvio: 'The request could not be sent',
     errorConexion: 'Could not connect to the server',
     alternativa: 'You can also write to us directly at'
+  },
+
+  cerca: {
+    titulo: 'Search',
+    placeholder: 'What are you looking for? (services, instruments, projects, documents...)',
+    placeholderCorto: 'Search...',
+    buscar: 'Search',
+    escribe: 'Type at least one word.',
+    buscando: 'Searching…',
+    resultados: '{n} results for “{q}”',
+    nada: 'Nothing found. Try other words.',
+    interno: 'Staff only',
+    paginaPdf: 'PDF page {n}',
+    grupos: {
+      web: 'Website pages',
+      proyectos: 'Projects',
+      instrumentos: 'Instruments',
+      equipo: 'Team',
+      documentacion: 'Internal documentation',
+      pdf: 'Inside documents (PDF)',
+      actas: 'Meeting minutes',
+      diario: 'Activity log'
+    }
   },
 
   noEncontrado: {
